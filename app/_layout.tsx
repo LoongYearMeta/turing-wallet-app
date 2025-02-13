@@ -1,43 +1,60 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
-import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
-import "react-native-reanimated";
+import { Stack, useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
+import { LogBox } from 'react-native';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { getUserData } from '../services/userService';
+LogBox.ignoreLogs([
+	'Warning: TNodeChildrenRenderer',
+	'Warning: MemoizedTNodeRenderer',
+	'Warning: TRenderEngineProvider',
+]); // Ignore log notification by message
+const _layout = () => {
+	return (
+		<AuthProvider>
+			<MainLayout />
+		</AuthProvider>
+	);
+};
 
-import { useColorScheme } from "@/hooks/useColorScheme";
+const MainLayout = () => {
+	const { setAuth, setUserData } = useAuth();
+	const router = useRouter();
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+	useEffect(() => {
+		// triggers automatically when auth state changes
+		supabase.auth.onAuthStateChange((_event, session) => {
+			console.log('session: ', session?.user?.id);
+			if (session) {
+				setAuth(session?.user);
+				updateUserData(session?.user); // update user like image, phone, bio
+				router.replace('/home');
+			} else {
+				setAuth(null);
+				router.replace('/welcome');
+			}
+		});
+	}, []);
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-  });
+	const updateUserData = async (user) => {
+		let res = await getUserData(user.id);
+		if (res.success) setUserData(res.data);
+	};
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+	return (
+		<Stack
+			screenOptions={{
+				headerShown: false,
+			}}
+		>
+			<Stack.Screen
+				name="(main)/postDetails"
+				options={{
+					presentation: 'modal',
+				}}
+			/>
+		</Stack>
+	);
+};
 
-  if (!loaded) {
-    return null;
-  }
-
-  return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
-}
+export default _layout;
