@@ -27,9 +27,13 @@ export interface Account {
 
 export interface StorageObject {
 	accounts: { [tbcAddress: string]: Account };
-	selectedAccount: string;
 	lastActiveTime: number;
 	passKey: string;
 	salt: string;
-	isLocked: boolean;
+	currentAccount: string;
 }
+
+export type Keys = {
+	mnemonic: string;
+	walletWif: string;
+};

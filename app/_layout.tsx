@@ -1,15 +1,36 @@
+import { store } from '@/utils/store';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { LogBox } from 'react-native';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { getUserData } from '../services/userService';
+
 LogBox.ignoreLogs([
 	'Warning: TNodeChildrenRenderer',
 	'Warning: MemoizedTNodeRenderer',
 	'Warning: TRenderEngineProvider',
 ]); // Ignore log notification by message
+
 const _layout = () => {
+	useEffect(() => {
+		// 应用启动时初始化存储
+		const initializeStorage = async () => {
+			await store.init();
+			// 初始化完成后可以进行其他操作
+			const currentAccount = store.getCurrentAccount();
+			if (currentAccount) {
+				// 有账户，可以直接进入主页
+				router.replace('/home');
+			} else {
+				// 没有账户，进入欢迎页
+				router.replace('/welcome');
+			}
+		};
+
+		initializeStorage();
+	}, []);
+
 	return (
 		<AuthProvider>
 			<MainLayout />
