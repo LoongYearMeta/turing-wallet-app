@@ -1,6 +1,3 @@
-import '@/shim';
-import { Transaction } from 'tbc-lib-js';
-
 export type PubKeys = {
 	tbcPubKey: string;
 };
@@ -12,7 +9,11 @@ export type Balance = {
 	satoshis: number;
 };
 
-export interface StoredUtxo extends Transaction.IUnspentOutput {
+export interface StoredUtxo {
+	txId: string;
+	outputIndex: number;
+	satoshis: number;
+	height: number;
 	isSpented: boolean;
 }
 
@@ -34,6 +35,13 @@ export interface StorageObject {
 }
 
 export type Keys = {
-	mnemonic: string;
+	mnemonic?: string;
+	walletDerivationPath?: string;
 	walletWif: string;
 };
+
+export interface Transaction {
+	txHex: string;
+	fee: number;
+	address_to?: string;
+}

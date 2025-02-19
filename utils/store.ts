@@ -76,7 +76,7 @@ class Store {
 
 	public getCurrentAccountUtxos(): StoredUtxo[] | null {
 		const currentAccount = this.getCurrentAccount();
-		return currentAccount?.paymentUtxos || null;
+		return currentAccount?.paymentUtxos.filter((utxo) => !utxo.isSpented) || null;
 	}
 
 	public async updateCurrentAccountName(name: string): Promise<void> {
@@ -103,18 +103,8 @@ class Store {
 		}
 	}
 
-	public async setPassKey(passKey: string): Promise<void> {
-		this.storage.passKey = passKey;
-		await this.saveStorage();
-	}
-
 	public getPassKey(): string {
 		return this.storage.passKey;
-	}
-
-	public async setSalt(salt: string): Promise<void> {
-		this.storage.salt = salt;
-		await this.saveStorage();
 	}
 
 	public getSalt(): string {
