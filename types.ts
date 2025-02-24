@@ -1,13 +1,13 @@
-export type PubKeys = {
+export interface PubKeys {
 	tbcPubKey: string;
-};
-export type Addresses = {
+}
+export interface Addresses {
 	tbcAddress: string;
-};
-export type Balance = {
+}
+export interface Balance {
 	tbc: number;
 	satoshis: number;
-};
+}
 
 export interface StoredUtxo {
 	txId: string;
@@ -34,14 +34,37 @@ export interface StorageObject {
 	currentAccount: string;
 }
 
-export type Keys = {
+export interface Keys {
 	mnemonic?: string;
 	walletDerivationPath?: string;
 	walletWif: string;
-};
+}
 
 export interface Transaction {
 	txHex: string;
 	fee: number;
 	address_to?: string;
+	utxos?: StoredUtxo[];
+	satoshis?: number;
+}
+
+export interface TransactionHistory {
+	id: string;
+	send_address: string;
+	receive_address: string;
+	fee: number;
+	timestamp: number;
+	type: string;
+}
+
+export interface NFTHistory {
+	id: string;
+	send_address: string;
+	receive_address: string;
+	fee: number;
+	timestamp: number;
+	contract_id: string;
+	collection_id: string;
+	nft_icon: string;
+	nft_name: string;
 }

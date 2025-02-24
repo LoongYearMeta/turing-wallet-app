@@ -28,7 +28,17 @@ export const sendTbc = async (
 			}
 			tx.change(address_from).sign(privateKey).seal();
 			const fee = tx.getFee();
-			return { txHex: tx.uncheckedSerialize(), fee, address_to: receive_address };
+			return {
+				txHex: tx.uncheckedSerialize(),
+				fee,
+				address_to: receive_address,
+				utxos: utxos.map((utxo) => ({
+					...utxo,
+					height: 0,
+					isSpented: false,
+				})),
+				satoshis: satoshis_amount,
+			};
 		} else {
 			const txraw = contract.MultiSig.p2pkhToMultiSig_sendTBC(
 				address_from,
@@ -37,7 +47,17 @@ export const sendTbc = async (
 				utxos,
 				privateKey,
 			);
-			return { txHex: txraw, fee: calculateFee(txraw), address_to: receive_address };
+			return {
+				txHex: txraw,
+				fee: calculateFee(txraw),
+				address_to: receive_address,
+				utxos: utxos.map((utxo) => ({
+					...utxo,
+					height: 0,
+					isSpented: false,
+				})),
+				satoshis: satoshis_amount,
+			};
 		}
 	} catch (error: any) {
 		throw new Error(error.message);
@@ -102,8 +122,13 @@ export const sendTbc_multiSig_finish = async (
 			sigs,
 			pubKeys,
 		);
-		return await contract.API.broadcastTXraw(txraw, 'mainnet');
-	} catch (error) {
-		throw new Error('send fail');
+		const txId = await contract.API.broadcastTXraw(txraw, 'mainnet');
+		if (txId) {
+			return txId;
+		} else {
+			throw new Error('Failed to broadcast transaction.');
+		}
+	} catch (error: any) {
+		throw new Error(error.message);
 	}
 };

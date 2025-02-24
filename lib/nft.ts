@@ -2,9 +2,12 @@ import '@/shim';
 import * as contract from 'tbc-contract';
 import * as tbc from 'tbc-lib-js';
 
+import { getUTXOs } from '@/actions/get-utxos';
 import { calculateFee } from '@/lib/util';
-import { Transaction } from '@/types';
+import { NFTHistory, Transaction } from '@/types';
 import { retrieveKeys } from '@/utils/key';
+import type { Collection, NFT } from '@/utils/sqlite';
+import { database } from '@/utils/sqlite';
 
 export const createCollection = async (
 	collection_data: contract.CollectionData,
@@ -14,9 +17,17 @@ export const createCollection = async (
 	try {
 		const { walletWif } = retrieveKeys(password);
 		const privateKey = tbc.PrivateKey.fromString(walletWif);
-		const utxos = await contract.API.getUTXOs(address_from, 0.01, 'mainnet');
+		const utxos = await getUTXOs(address_from, 0.05);
 		const txraw = contract.NFT.createCollection(address_from, privateKey, collection_data, utxos);
-		return { txHex: txraw, fee: calculateFee(txraw) };
+		return {
+			txHex: txraw,
+			fee: calculateFee(txraw),
+			utxos: utxos.map((utxo) => ({
+				...utxo,
+				height: 0,
+				isSpented: false,
+			})),
+		};
 	} catch (error: any) {
 		throw new Error(error.message);
 	}
@@ -31,7 +42,7 @@ export const createNFT = async (
 	try {
 		const { walletWif } = retrieveKeys(password);
 		const privateKey = tbc.PrivateKey.fromString(walletWif);
-		const utxos = await contract.API.getUTXOs(address_from, 0.01, 'mainnet');
+		const utxos = await getUTXOs(address_from, 0.05);
 		const nfttxo = await contract.API.fetchNFTTXO({
 			script: contract.NFT.buildMintScript(address_from).toBuffer().toString('hex'),
 			tx_hash: collection_id,
@@ -45,7 +56,15 @@ export const createNFT = async (
 			utxos,
 			nfttxo,
 		);
-		return { txHex: txraw, fee: calculateFee(txraw) };
+		return {
+			txHex: txraw,
+			fee: calculateFee(txraw),
+			utxos: utxos.map((utxo) => ({
+				...utxo,
+				height: 0,
+				isSpented: false,
+			})),
+		};
 	} catch (error: any) {
 		throw new Error(error.message);
 	}
@@ -55,6 +74,7 @@ export const transferNFT = async (
 	contract_id: string,
 	address_to: string,
 	address_from: string,
+	transfer_times: number,
 	password: string,
 ): Promise<Transaction> => {
 	try {
@@ -64,7 +84,12 @@ export const transferNFT = async (
 		const nft = new contract.NFT(contract_id);
 		const nftInfo = await contract.API.fetchNFTInfo(contract_id, 'mainnet');
 		nft.initialize(nftInfo);
-		const utxos = await contract.API.getUTXOs(address_from, 0.5, 'mainnet');
+		let utxos;
+		if (transfer_times === 0) {
+			utxos = await getUTXOs(address_from, 0.5);
+		} else {
+			utxos = await getUTXOs(address_from, 0.05);
+		}
 		const nfttxo = await contract.API.fetchNFTTXO({
 			script: contract.NFT.buildCodeScript(nftInfo.collectionId, nftInfo.collectionIndex)
 				.toBuffer()
@@ -77,8 +102,115 @@ export const transferNFT = async (
 			'mainnet',
 		);
 		const txraw = nft.transferNFT(address_from, address_to, privateKey, utxos, pre_tx, pre_pre_tx);
-		return { txHex: txraw, fee: calculateFee(txraw), address_to };
+		return {
+			txHex: txraw,
+			fee: calculateFee(txraw),
+			address_to,
+			utxos: utxos.map((utxo) => ({
+				...utxo,
+				height: 0,
+				isSpented: false,
+			})),
+		};
 	} catch (error: any) {
 		throw new Error(error.message);
 	}
 };
+
+export async function addCollection(collection: Collection): Promise<void> {
+	try {
+		await database.addCollection(collection);
+	} catch (error) {
+		throw new Error('Failed to add collection');
+	}
+}
+
+export async function addNFT(nft: NFT): Promise<void> {
+	try {
+		await database.addNFT(nft);
+	} catch (error) {
+		throw new Error('Failed to add NFT');
+	}
+}
+
+export async function getNFTsByCollection(collectionId: string): Promise<NFT[]> {
+	try {
+		return await database.getNFTsByCollection(collectionId);
+	} catch (error) {
+		return [];
+	}
+}
+
+export async function getNFTWithCollection(
+	nftId: string,
+): Promise<{ nft: NFT; collection: Collection } | null> {
+	try {
+		return await database.getNFTWithCollection(nftId);
+	} catch (error) {
+		return null;
+	}
+}
+
+export async function removeNFT(nftId: string): Promise<void> {
+	try {
+		await database.removeNFT(nftId);
+	} catch (error) {
+		throw new Error('Failed to remove NFT');
+	}
+}
+
+export async function softDeleteCollection(collectionId: string): Promise<void> {
+	try {
+		await database.softDeleteCollection(collectionId);
+	} catch (error) {
+		throw new Error('Failed to delete collection');
+	}
+}
+
+export async function softDeleteNFT(nftId: string): Promise<void> {
+	try {
+		await database.softDeleteNFT(nftId);
+	} catch (error) {
+		throw new Error('Failed to delete NFT');
+	}
+}
+
+export async function updateNFTTransferTimes(nftId: string): Promise<void> {
+	try {
+		await database.updateNFTTransferTimes(nftId);
+	} catch (error) {
+		throw new Error('Failed to update NFT transfer times');
+	}
+}
+
+export async function getCollection(id: string): Promise<Collection | null> {
+	try {
+		return await database.getCollection(id);
+	} catch (error) {
+		return null;
+	}
+}
+
+export async function getAllCollections(): Promise<Collection[]> {
+	try {
+		return await database.getAllCollections();
+	} catch (error) {
+		return [];
+	}
+}
+
+export async function addNFTHistory(history: NFTHistory): Promise<void> {
+	try {
+		await database.addNFTHistory(history);
+	} catch (error) {
+		throw new Error('Failed to add NFT history');
+	}
+}
+
+export async function getNFTHistoryByContractId(contractId: string): Promise<NFTHistory[]> {
+	try {
+		return await database.getNFTHistoryByContractId(contractId);
+	} catch (error) {
+		return [];
+	}
+}
