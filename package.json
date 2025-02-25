@@ -44,7 +44,7 @@
     "react-native-svg": "^15.11.1",
     "react-native-web": "~0.19.13",
     "react-native-webview": "13.12.5",
-    "tbc-contract": "^1.1.15",
+    "tbc-contract": "^1.1.18",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

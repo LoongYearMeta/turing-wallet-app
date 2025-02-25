@@ -4,9 +4,9 @@ import * as tbc from 'tbc-lib-js';
 
 import { getUTXOs } from '@/actions/get-utxos';
 import { calculateFee } from '@/lib/util';
-import { NFTHistory, Transaction } from '@/types';
+import { Transaction } from '@/types';
 import { retrieveKeys } from '@/utils/key';
-import type { Collection, NFT } from '@/utils/sqlite';
+import type { Collection, NFT, NFTHistory } from '@/utils/sqlite';
 import { database } from '@/utils/sqlite';
 
 export const createCollection = async (
@@ -72,8 +72,8 @@ export const createNFT = async (
 
 export const transferNFT = async (
 	contract_id: string,
-	address_to: string,
 	address_from: string,
+	address_to: string,
 	transfer_times: number,
 	password: string,
 ): Promise<Transaction> => {
@@ -117,25 +117,29 @@ export const transferNFT = async (
 	}
 };
 
-export async function addCollection(collection: Collection): Promise<void> {
+export async function addCollection(collection: Collection, accountAddress: string): Promise<void> {
 	try {
-		await database.addCollection(collection);
+		await database.addCollection(collection, accountAddress);
 	} catch (error) {
 		throw new Error('Failed to add collection');
 	}
 }
 
-export async function addNFT(nft: NFT): Promise<void> {
+export async function addNFT(nft: NFT, accountAddress: string): Promise<void> {
 	try {
-		await database.addNFT(nft);
+		await database.addNFT(nft, accountAddress);
 	} catch (error) {
 		throw new Error('Failed to add NFT');
 	}
 }
 
-export async function getNFTsByCollection(collectionId: string): Promise<NFT[]> {
+export async function getNFTsByCollection(
+	collectionId: string,
+	userAddress: string,
+	pagination?: { page: number; pageSize: number },
+): Promise<NFT[]> {
 	try {
-		return await database.getNFTsByCollection(collectionId);
+		return await database.getNFTsByCollection(collectionId, userAddress, pagination);
 	} catch (error) {
 		return [];
 	}
@@ -191,9 +195,20 @@ export async function getCollection(id: string): Promise<Collection | null> {
 	}
 }
 
-export async function getAllCollections(): Promise<Collection[]> {
+export async function getNFT(id: string): Promise<NFT | null> {
 	try {
-		return await database.getAllCollections();
+		return await database.getNFT(id);
+	} catch (error) {
+		return null;
+	}
+}
+
+export async function getAllCollections(
+	userAddress: string,
+	pagination?: { page: number; pageSize: number },
+): Promise<Collection[]> {
+	try {
+		return await database.getAllCollections(userAddress, pagination);
 	} catch (error) {
 		return [];
 	}
@@ -207,10 +222,21 @@ export async function addNFTHistory(history: NFTHistory): Promise<void> {
 	}
 }
 
-export async function getNFTHistoryByContractId(contractId: string): Promise<NFTHistory[]> {
+export async function getNFTHistoryByContractId(
+	contractId: string,
+	pagination?: { page: number; pageSize: number },
+): Promise<NFTHistory[]> {
 	try {
-		return await database.getNFTHistoryByContractId(contractId);
+		return await database.getNFTHistoryByContractId(contractId, pagination);
 	} catch (error) {
 		return [];
+	}
+}
+
+export async function getNFTHistoryById(id: string): Promise<NFTHistory | null> {
+	try {
+		return await database.getNFTHistoryById(id);
+	} catch (error) {
+		return null;
 	}
 }

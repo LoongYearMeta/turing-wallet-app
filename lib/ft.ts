@@ -7,7 +7,7 @@ import { sendTbc } from '@/lib/tbc';
 import { calculateFee } from '@/lib/util';
 import { Transaction } from '@/types';
 import { retrieveKeys } from '@/utils/key';
-import type { FT } from '@/utils/sqlite';
+import type { FT, FTHistory } from '@/utils/sqlite';
 import { database } from '@/utils/sqlite';
 import { store } from '@/utils/store';
 
@@ -212,7 +212,7 @@ export const transferFT_multiSig_finish = async (
 	}
 };
 
-const mergeFT = async (contractId: string, address_from: string, password: string) => {
+export const mergeFT = async (contractId: string, address_from: string, password: string) => {
 	try {
 		const { walletWif } = retrieveKeys(password);
 		const privateKey = tbc.PrivateKey.fromString(walletWif);
@@ -250,7 +250,7 @@ const mergeFT = async (contractId: string, address_from: string, password: strin
 	}
 };
 
-async function getUTXO(
+export async function getUTXO(
 	address: string,
 	tbc_amount: number,
 	password: string,
@@ -322,33 +322,28 @@ async function getUTXO(
 	}
 }
 
-export async function addFT(ft: FT): Promise<void> {
+export async function getAllFTs(
+	userAddress: string,
+	pagination?: { page: number; pageSize: number },
+): Promise<FT[]> {
 	try {
-		await database.addFT(ft);
-	} catch (error) {
-		throw new Error('Failed to add FT');
-	}
-}
-
-export async function getFT(id: string): Promise<FT | null> {
-	try {
-		return await database.getFT(id);
-	} catch (error) {
-		return null;
-	}
-}
-
-export async function getAllFTs(): Promise<FT[]> {
-	try {
-		return await database.getAllFTs();
+		return await database.getAllFTs(userAddress, pagination);
 	} catch (error) {
 		return [];
 	}
 }
 
-export async function transferFT(id: string, amount: number): Promise<void> {
+export async function getFT(id: string, userAddress: string): Promise<FT | null> {
 	try {
-		await database.transferFT(id, amount);
+		return await database.getFT(id, userAddress);
+	} catch (error) {
+		return null;
+	}
+}
+
+export async function transferFT(id: string, amount: number, userAddress: string): Promise<void> {
+	try {
+		await database.transferFT(id, amount, userAddress);
 	} catch (error) {
 		if (error instanceof Error) {
 			throw error;
@@ -357,10 +352,45 @@ export async function transferFT(id: string, amount: number): Promise<void> {
 	}
 }
 
-export async function softDeleteFT(id: string): Promise<void> {
+export async function softDeleteFT(id: string, userAddress: string): Promise<void> {
 	try {
-		await database.softDeleteFT(id);
+		await database.softDeleteFT(id, userAddress);
 	} catch (error) {
 		throw new Error('Failed to delete FT');
+	}
+}
+
+export async function upsertFT(ft: FT, accountAddress: string): Promise<void> {
+	try {
+		await database.upsertFT(ft, accountAddress);
+	} catch (error) {
+		throw new Error('Failed to save FT data');
+	}
+}
+
+export async function addFTHistory(history: FTHistory): Promise<void> {
+	try {
+		await database.addFTHistory(history);
+	} catch (error) {
+		throw new Error('Failed to add FT history');
+	}
+}
+
+export async function getFTHistoryByContractId(
+	contractId: string,
+	pagination?: { page: number; pageSize: number },
+): Promise<FTHistory[]> {
+	try {
+		return await database.getFTHistoryByContractId(contractId, pagination);
+	} catch (error) {
+		return [];
+	}
+}
+
+export async function getFTHistoryById(id: string): Promise<FTHistory | null> {
+	try {
+		return await database.getFTHistoryById(id);
+	} catch (error) {
+		return null;
 	}
 }

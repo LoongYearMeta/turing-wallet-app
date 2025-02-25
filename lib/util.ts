@@ -28,6 +28,7 @@ export async function finish_transaction(txHex: string, utxos: StoredUtxo[]) {
 		});
 
 		await store.updateCurrentAccountUtxos(updatedUtxos);
+		return txId;
 	} else {
 		throw new Error('Failed to broadcast transaction.');
 	}

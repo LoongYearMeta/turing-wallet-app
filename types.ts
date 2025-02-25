@@ -47,24 +47,3 @@ export interface Transaction {
 	utxos?: StoredUtxo[];
 	satoshis?: number;
 }
-
-export interface TransactionHistory {
-	id: string;
-	send_address: string;
-	receive_address: string;
-	fee: number;
-	timestamp: number;
-	type: string;
-}
-
-export interface NFTHistory {
-	id: string;
-	send_address: string;
-	receive_address: string;
-	fee: number;
-	timestamp: number;
-	contract_id: string;
-	collection_id: string;
-	nft_icon: string;
-	nft_name: string;
-}
