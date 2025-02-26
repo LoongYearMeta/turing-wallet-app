@@ -125,9 +125,13 @@ export async function addCollection(collection: Collection, accountAddress: stri
 	}
 }
 
-export async function addNFT(nft: NFT, accountAddress: string): Promise<void> {
+export async function addNFT(nft: NFT, userAddress: string): Promise<void> {
 	try {
-		await database.addNFT(nft, accountAddress);
+		const collection = await getCollection(nft.collection_id);
+		if (!collection || collection.isDeleted) {
+			nft.isDeleted = true;
+		}
+		await database.addNFT(nft, userAddress);
 	} catch (error) {
 		throw new Error('Failed to add NFT');
 	}
@@ -179,9 +183,9 @@ export async function softDeleteNFT(nftId: string): Promise<void> {
 	}
 }
 
-export async function updateNFTTransferTimes(nftId: string): Promise<void> {
+export async function updateNFTTransferTimes(nftId: string, transferTimes: number): Promise<void> {
 	try {
-		await database.updateNFTTransferTimes(nftId);
+		await database.updateNFTTransferTimes(nftId, transferTimes);
 	} catch (error) {
 		throw new Error('Failed to update NFT transfer times');
 	}
@@ -222,12 +226,9 @@ export async function addNFTHistory(history: NFTHistory): Promise<void> {
 	}
 }
 
-export async function getNFTHistoryByContractId(
-	contractId: string,
-	pagination?: { page: number; pageSize: number },
-): Promise<NFTHistory[]> {
+export async function getNFTHistoryByContractId(contractId: string): Promise<NFTHistory[]> {
 	try {
-		return await database.getNFTHistoryByContractId(contractId, pagination);
+		return await database.getNFTHistoryByContractId(contractId);
 	} catch (error) {
 		return [];
 	}
@@ -238,5 +239,43 @@ export async function getNFTHistoryById(id: string): Promise<NFTHistory | null> 
 		return await database.getNFTHistoryById(id);
 	} catch (error) {
 		return null;
+	}
+}
+
+export async function getCollectionCount(userAddress: string): Promise<number> {
+	try {
+		return await database.getCollectionCount(userAddress);
+	} catch (error) {
+		return 0;
+	}
+}
+
+export async function getNFTCount(userAddress: string): Promise<number> {
+	try {
+		return await database.getNFTCount(userAddress);
+	} catch (error) {
+		return 0;
+	}
+}
+
+export async function getAllNFTs(
+	userAddress: string,
+	pagination?: { page: number; pageSize: number },
+): Promise<NFT[]> {
+	try {
+		return await database.getAllNFTs(userAddress, pagination);
+	} catch (error) {
+		return [];
+	}
+}
+
+export async function getActiveNFTs(
+	userAddress: string,
+	pagination?: { page: number; pageSize: number },
+): Promise<NFT[]> {
+	try {
+		return await database.getActiveNFTs(userAddress, pagination);
+	} catch (error) {
+		return [];
 	}
 }

@@ -1,9 +1,10 @@
+import axios from 'axios';
+
 import {
 	addTransactionHistory,
 	getTransactionHistoryById,
 	getTransactionHistoryCount,
 } from '@/lib/transaction_history';
-import axios from 'axios';
 
 interface TransactionHistoryResponse {
 	address: string;
@@ -59,6 +60,7 @@ export async function initTransactionHistory(address: string): Promise<void> {
 					fee: parseFloat(tx.fee),
 					timestamp: tx.time_stamp,
 					type: tx.tx_type,
+					balance_change: parseFloat(tx.balance_change),
 				};
 
 				await addTransactionHistory(history, address);
@@ -96,6 +98,7 @@ export async function syncTransactionHistory(address: string): Promise<void> {
 					fee: parseFloat(tx.fee),
 					timestamp: tx.time_stamp,
 					type: tx.tx_type,
+					balance_change: parseFloat(tx.balance_change),
 				};
 
 				await addTransactionHistory(history, address);

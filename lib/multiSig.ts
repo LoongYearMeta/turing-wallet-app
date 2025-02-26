@@ -9,14 +9,6 @@ export async function addMultiSig(multiSig: MultiSig, userAddress: string): Prom
 	}
 }
 
-export async function getMultiSigsByUser(userAddress: string): Promise<MultiSig[]> {
-	try {
-		return await database.getMultiSigsByUser(userAddress);
-	} catch (error) {
-		return [];
-	}
-}
-
 export async function softDeleteMultiSig(multiSigAddress: string): Promise<void> {
 	try {
 		await database.softDeleteMultiSig(multiSigAddress);
@@ -30,5 +22,21 @@ export async function getMultiSigPubKeys(multiSigAddress: string): Promise<strin
 		return await database.getMultiSigPubKeys(multiSigAddress);
 	} catch (error) {
 		return null;
+	}
+}
+
+export async function getActiveMultiSigs(userAddress: string): Promise<MultiSig[]> {
+	try {
+		return await database.getActiveMultiSigs(userAddress);
+	} catch (error) {
+		return [];
+	}
+}
+
+export async function getAllMultiSigs(userAddress: string): Promise<MultiSig[]> {
+	try {
+		return await database.getAllMultiSigs(userAddress);
+	} catch (error) {
+		return [];
 	}
 }

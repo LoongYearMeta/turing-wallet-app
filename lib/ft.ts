@@ -394,3 +394,22 @@ export async function getFTHistoryById(id: string): Promise<FTHistory | null> {
 		return null;
 	}
 }
+
+export async function removeFT(id: string, userAddress: string): Promise<void> {
+	try {
+		await database.removeFT(id, userAddress);
+	} catch (error) {
+		throw new Error('Failed to remove FT');
+	}
+}
+
+export async function getActiveFTs(
+	userAddress: string,
+	pagination?: { page: number; pageSize: number },
+): Promise<FT[]> {
+	try {
+		return await database.getActiveFTs(userAddress, pagination);
+	} catch (error) {
+		return [];
+	}
+}
