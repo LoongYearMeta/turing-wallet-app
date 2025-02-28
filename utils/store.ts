@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { Account, Balance, PubKeys, StorageObject, StoredUtxo } from '@/types';
+import { Account, AccountType, Balance, PubKey, StorageObject, StoredUtxo } from '@/types';
 
 const STORAGE_KEY = 'wallet_storage';
 
@@ -8,11 +8,12 @@ class Store {
 	private static instance: Store;
 	private storage: StorageObject = {
 		accounts: {},
-		lastActiveTime: 0,
 		passKey: '',
 		salt: '',
 		currentAccount: '',
 	};
+
+	private initialized: boolean = false;
 
 	private constructor() {}
 
@@ -24,26 +25,48 @@ class Store {
 	}
 
 	public async init(): Promise<void> {
+		if (this.initialized) {
+			return;
+		}
 		try {
 			const stored = await AsyncStorage.getItem(STORAGE_KEY);
 			if (stored) {
-				this.storage = JSON.parse(stored);
+				const parsedStorage = JSON.parse(stored);
+				if (
+					typeof parsedStorage === 'object' &&
+					parsedStorage !== null &&
+					'accounts' in parsedStorage &&
+					'passKey' in parsedStorage &&
+					'salt' in parsedStorage &&
+					'currentAccount' in parsedStorage
+				) {
+					this.storage = parsedStorage;
+				} else {
+					await this.clear();
+				}
 			}
+			this.initialized = true;
 		} catch (error) {
 			console.error('Failed to initialize storage:', error);
+			await this.clear();
+			this.initialized = true;
 		}
 	}
 
+	public isInitialized(): boolean {
+		return this.initialized;
+	}
+
 	private async saveStorage(): Promise<void> {
+		if (!this.initialized) {
+			throw new Error('Store is not initialized');
+		}
 		try {
 			await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(this.storage));
 		} catch (error) {
 			console.error('Failed to save storage:', error);
+			throw error;
 		}
-	}
-
-	public getAllAccounts(): Account[] {
-		return Object.values(this.storage.accounts);
 	}
 
 	public async setCurrentAccount(address: string): Promise<void> {
@@ -69,7 +92,7 @@ class Store {
 		return currentAccount?.balance || null;
 	}
 
-	public getCurrentAccountPubKeys(): PubKeys | null {
+	public getCurrentAccountPubKey(): PubKey | null {
 		const currentAccount = this.getCurrentAccount();
 		return currentAccount?.pubKeys || null;
 	}
@@ -111,23 +134,73 @@ class Store {
 		return this.storage.salt;
 	}
 
-	public async updateLastActiveTime(): Promise<void> {
-		this.storage.lastActiveTime = Date.now();
-		await this.saveStorage();
-	}
-
-	public getLastActiveTime(): number {
-		return this.storage.lastActiveTime;
-	}
-
 	public async clear(): Promise<void> {
 		this.storage = {
 			accounts: {},
-			lastActiveTime: 0,
 			passKey: '',
 			salt: '',
 			currentAccount: '',
 		};
+		await this.saveStorage();
+	}
+
+	public getCurrentAccountType(): AccountType {
+		const currentAccount = this.getCurrentAccount();
+		return currentAccount?.type || AccountType.TBC;
+	}
+
+	public getCurrentTaprootAddress(): string | null {
+		const currentAccount = this.getCurrentAccount();
+		return currentAccount?.type === AccountType.TAPROOT
+			? currentAccount.addresses.taprootAddress
+				? currentAccount.addresses.taprootAddress
+				: null
+			: null;
+	}
+
+	public isTaprootAccount(address: string): boolean {
+		const account = this.storage.accounts[address];
+		return account?.type === AccountType.TAPROOT;
+	}
+
+	public async switchToTaproot(): Promise<void> {
+		const account = this.getCurrentAccount();
+		if (!account || !account.addresses.taprootAddress || !account.addresses.taprootLegacyAddress) {
+			throw new Error('Account cannot be switched to Taproot');
+		}
+		const accountData = { ...account };
+		delete this.storage.accounts[this.storage.currentAccount];
+		accountData.type = AccountType.TAPROOT;
+		this.storage.accounts[account.addresses.taprootLegacyAddress] = accountData;
+		this.storage.currentAccount = account.addresses.taprootLegacyAddress;
+		await this.saveStorage();
+	}
+
+	public async switchToTBC(): Promise<void> {
+		const account = this.getCurrentAccount();
+		if (!account || !account.addresses.tbcAddress) {
+			throw new Error('Account cannot be switched to TBC');
+		}
+		const accountData = { ...account };
+		delete this.storage.accounts[this.storage.currentAccount];
+		accountData.type = AccountType.TBC;
+		this.storage.accounts[account.addresses.tbcAddress] = accountData;
+		this.storage.currentAccount = account.addresses.tbcAddress;
+		await this.saveStorage();
+	}
+
+	public canSwitchToTaproot(): boolean {
+		const account = this.storage.accounts[this.storage.currentAccount];
+		return (
+			account?.type === AccountType.TBC &&
+			!!account.addresses.taprootAddress &&
+			!!account.addresses.taprootLegacyAddress
+		);
+	}
+
+	public async setPassKeyAndSalt(passKey: string, salt: string): Promise<void> {
+		this.storage.passKey = passKey;
+		this.storage.salt = salt;
 		await this.saveStorage();
 	}
 }

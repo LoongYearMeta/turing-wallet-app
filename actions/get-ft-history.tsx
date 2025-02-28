@@ -26,7 +26,7 @@ export async function fetchFTHistory(
 	page: number,
 ): Promise<FTHistoryResponse> {
 	const response = await axios.get(
-		`https://turingwallet.xyz/v1/tbc/main/ft/history/address/${address}/contract/${contract_id}/page/${page}`,
+		`https://turingwallet.xyz/v1/tbc/main/ft/history/address/${address}/contract/${contract_id}/page/${page}/size/10`,
 	);
 	return response.data;
 }

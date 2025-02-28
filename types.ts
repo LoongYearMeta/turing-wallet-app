@@ -1,8 +1,10 @@
-export interface PubKeys {
+export interface PubKey {
 	tbcPubKey: string;
 }
 export interface Addresses {
 	tbcAddress: string;
+	taprootAddress?: string;
+	taprootLegacyAddress?: string;
 }
 export interface Balance {
 	tbc: number;
@@ -17,18 +19,23 @@ export interface StoredUtxo {
 	isSpented: boolean;
 }
 
+export enum AccountType {
+	TBC = 'tbc',
+	TAPROOT = 'taproot',
+}
+
 export interface Account {
 	accountName: string;
 	encryptedKeys: string;
 	addresses: Addresses;
 	balance: Balance;
-	pubKeys: PubKeys;
+	pubKeys: PubKey;
 	paymentUtxos: StoredUtxo[];
+	type: AccountType;
 }
 
 export interface StorageObject {
-	accounts: { [tbcAddress: string]: Account };
-	lastActiveTime: number;
+	accounts: { [address: string]: Account };
 	passKey: string;
 	salt: string;
 	currentAccount: string;

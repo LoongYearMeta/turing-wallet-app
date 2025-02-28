@@ -45,10 +45,6 @@ interface Database {
 
 const db = SQLite.openDatabaseSync('wallet.db') as unknown as Database;
 
-export interface User {
-	address: string;
-}
-
 export interface Collection {
 	id: string;
 	name: string;
@@ -115,6 +111,15 @@ export interface MultiSig {
 	isDeleted: boolean;
 }
 
+export interface FTPublic {
+	id: string;
+	name: string;
+	symbol: string;
+	decimal: number;
+	supply: number;
+	holds_count: number;
+}
+
 interface PaginationParams {
 	page: number;
 	pageSize: number;
@@ -136,12 +141,6 @@ class DatabaseManager {
 
 	private initDatabase(): void {
 		db.transaction((tx: SQLTransaction) => {
-			tx.executeSql(
-				`CREATE TABLE IF NOT EXISTS User (
-					address TEXT PRIMARY KEY
-				);`,
-			);
-
 			tx.executeSql(
 				`CREATE TABLE IF NOT EXISTS Collection (
 					id TEXT PRIMARY KEY,
@@ -234,162 +233,18 @@ class DatabaseManager {
 					FOREIGN KEY (user_address) REFERENCES User (address)
 				);`,
 			);
-		});
-	}
 
-	public async addUser(address: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'INSERT OR REPLACE INTO User (address) VALUES (?);',
-					[address],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
+			tx.executeSql(
+				`CREATE TABLE IF NOT EXISTS FT_Public (
+					id TEXT PRIMARY KEY,
+					name TEXT NOT NULL,
+					symbol TEXT NOT NULL,
+					decimal INTEGER NOT NULL,
+					supply REAL NOT NULL,
+					holds_count INTEGER NOT NULL
+				);`,
+			);
 		});
-	}
-
-	public async deleteUserData(address: string): Promise<void> {
-		return new Promise<void>((resolve, reject: (error: Error | SQLError) => void) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT id FROM NFT WHERE user_address = ?;',
-					[address],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						if (_array.length > 0) {
-							const nftIds = _array.map((nft: any) => nft.id);
-							tx.executeSql(
-								`DELETE FROM NFT_History 
-								WHERE contract_id IN (${nftIds.map(() => '?').join(',')});`,
-								nftIds,
-								() => {
-									tx.executeSql(
-										'SELECT id FROM FT WHERE user_address = ?;',
-										[address],
-										(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-											if (_array.length > 0) {
-												const ftIds = _array.map((ft: any) => ft.id);
-												tx.executeSql(
-													`DELETE FROM FT_History 
-													WHERE contract_id IN (${ftIds.map(() => '?').join(',')});`,
-													ftIds,
-													() => this.deleteUserRecords(tx, address, resolve, reject),
-													(_: SQLTransaction, error: SQLError) => {
-														reject(error);
-														return false;
-													},
-												);
-											} else {
-												this.deleteUserRecords(tx, address, resolve, reject);
-											}
-										},
-										(_: SQLTransaction, error: SQLError) => {
-											reject(error);
-											return false;
-										},
-									);
-								},
-								(_: SQLTransaction, error: SQLError) => {
-									reject(error);
-									return false;
-								},
-							);
-						} else {
-							tx.executeSql(
-								'SELECT id FROM FT WHERE user_address = ?;',
-								[address],
-								(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-									if (_array.length > 0) {
-										const ftIds = _array.map((ft: any) => ft.id);
-										tx.executeSql(
-											`DELETE FROM FT_History 
-											WHERE contract_id IN (${ftIds.map(() => '?').join(',')});`,
-											ftIds,
-											() => this.deleteUserRecords(tx, address, resolve, reject),
-											(_: SQLTransaction, error: SQLError) => {
-												reject(error);
-												return false;
-											},
-										);
-									} else {
-										this.deleteUserRecords(tx, address, resolve, reject);
-									}
-								},
-								(_: SQLTransaction, error: SQLError) => {
-									reject(error);
-									return false;
-								},
-							);
-						}
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	private deleteUserRecords(
-		tx: SQLTransaction,
-		address: string,
-		resolve: () => void,
-		reject: (error: Error | SQLError) => void,
-	): void {
-		tx.executeSql(
-			'DELETE FROM TransactionHistory WHERE user_address = ?;',
-			[address],
-			() => {
-				tx.executeSql(
-					'DELETE FROM NFT WHERE user_address = ?;',
-					[address],
-					() => {
-						tx.executeSql(
-							'DELETE FROM FT WHERE user_address = ?;',
-							[address],
-							() => {
-								tx.executeSql(
-									'DELETE FROM Collection WHERE user_address = ?;',
-									[address],
-									() => {
-										tx.executeSql(
-											'DELETE FROM User WHERE address = ?;',
-											[address],
-											() => resolve(),
-											(_: SQLTransaction, error: SQLError) => {
-												reject(error);
-												return false;
-											},
-										);
-									},
-									(_: SQLTransaction, error: SQLError) => {
-										reject(error);
-										return false;
-									},
-								);
-							},
-							(_: SQLTransaction, error: SQLError) => {
-								reject(error);
-								return false;
-							},
-						);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			},
-			(_: SQLTransaction, error: SQLError) => {
-				reject(error);
-				return false;
-			},
-		);
 	}
 
 	public async addCollection(collection: Collection, userAddress: string): Promise<void> {
@@ -1316,6 +1171,93 @@ class DatabaseManager {
 						return false;
 					},
 				);
+			});
+		});
+	}
+
+	public async addFTPublic(ftPublic: FTPublic): Promise<void> {
+		return new Promise((resolve, reject) => {
+			db.transaction((tx: SQLTransaction) => {
+				tx.executeSql(
+					`INSERT OR REPLACE INTO FT_Public (
+						id, name, symbol, decimal, supply, holds_count
+					) VALUES (?, ?, ?, ?, ?, ?);`,
+					[
+						ftPublic.id,
+						ftPublic.name,
+						ftPublic.symbol,
+						ftPublic.decimal,
+						ftPublic.supply,
+						ftPublic.holds_count,
+					],
+					() => resolve(),
+					(_: SQLTransaction, error: SQLError) => {
+						reject(error);
+						return false;
+					},
+				);
+			});
+		});
+	}
+
+	public async removeFTPublic(id: string): Promise<void> {
+		return new Promise((resolve, reject) => {
+			db.transaction((tx: SQLTransaction) => {
+				tx.executeSql(
+					'DELETE FROM FT_Public WHERE id = ?;',
+					[id],
+					() => resolve(),
+					(_: SQLTransaction, error: SQLError) => {
+						reject(error);
+						return false;
+					},
+				);
+			});
+		});
+	}
+
+	public async getAllFTPublics(): Promise<FTPublic[]> {
+		return new Promise((resolve, reject) => {
+			db.transaction((tx: SQLTransaction) => {
+				tx.executeSql(
+					'SELECT * FROM FT_Public;',
+					[],
+					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
+						resolve(_array as FTPublic[]);
+					},
+					(_: SQLTransaction, error: SQLError) => {
+						reject(error);
+						return false;
+					},
+				);
+			});
+		});
+	}
+
+	public async deleteAccountData(address: string): Promise<void> {
+		return new Promise<void>((resolve, reject) => {
+			db.transaction((tx: SQLTransaction) => {
+				const deleteQueries = [
+					'DELETE FROM TransactionHistory WHERE user_address = ?;',
+					'DELETE FROM NFT_History WHERE contract_id IN (SELECT id FROM NFT WHERE user_address = ?);',
+					'DELETE FROM FT_History WHERE contract_id IN (SELECT id FROM FT WHERE user_address = ?);',
+					'DELETE FROM NFT WHERE user_address = ?;',
+					'DELETE FROM FT WHERE user_address = ?;',
+					'DELETE FROM Collection WHERE user_address = ?;',
+					'DELETE FROM MultiSig WHERE user_address = ?;',
+				];
+
+				try {
+					for (const query of deleteQueries) {
+						tx.executeSql(query, [address], undefined, (_: SQLTransaction, error: SQLError) => {
+							reject(error);
+							return false;
+						});
+					}
+					resolve();
+				} catch (error) {
+					reject(error);
+				}
 			});
 		});
 	}

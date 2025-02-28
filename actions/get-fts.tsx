@@ -16,7 +16,9 @@ interface FTResponse {
 }
 
 export async function fetchFTs(address: string): Promise<FTResponse> {
-	const response = await axios.get(`https://turingwallet.xyz/v1/tbc/main/ft/address/${address}`);
+	const response = await axios.get(
+		`https://turingwallet.xyz/v1/tbc/main/ft/tokens/held/by/address/${address}`,
+	);
 	return response.data;
 }
 

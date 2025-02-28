@@ -7,7 +7,7 @@ import { sendTbc } from '@/lib/tbc';
 import { calculateFee } from '@/lib/util';
 import { Transaction } from '@/types';
 import { retrieveKeys } from '@/utils/key';
-import type { FT, FTHistory } from '@/utils/sqlite';
+import type { FT, FTHistory, FTPublic } from '@/utils/sqlite';
 import { database } from '@/utils/sqlite';
 import { store } from '@/utils/store';
 
@@ -409,6 +409,30 @@ export async function getActiveFTs(
 ): Promise<FT[]> {
 	try {
 		return await database.getActiveFTs(userAddress, pagination);
+	} catch (error) {
+		return [];
+	}
+}
+
+export async function addFTPublic(ftPublic: FTPublic): Promise<void> {
+	try {
+		await database.addFTPublic(ftPublic);
+	} catch (error) {
+		throw new Error('Failed to add FT public data');
+	}
+}
+
+export async function removeFTPublic(id: string): Promise<void> {
+	try {
+		await database.removeFTPublic(id);
+	} catch (error) {
+		throw new Error('Failed to remove FT public data');
+	}
+}
+
+export async function getAllFTPublics(): Promise<FTPublic[]> {
+	try {
+		return await database.getAllFTPublics();
 	} catch (error) {
 		return [];
 	}
