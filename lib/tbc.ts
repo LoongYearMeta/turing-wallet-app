@@ -3,9 +3,11 @@ import * as contract from 'tbc-contract';
 import * as tbc from 'tbc-lib-js';
 
 import { getUTXOs } from '@/actions/get-utxos';
+import { getTaprootTweakPrivateKey } from '@/lib/taproot';
 import { calculateFee } from '@/lib/util';
 import { Transaction } from '@/types';
 import { retrieveKeys } from '@/utils/key';
+import { store } from '@/utils/store';
 
 export const sendTbc = async (
 	address_from: string,
@@ -16,7 +18,12 @@ export const sendTbc = async (
 	try {
 		const satoshis_amount = Math.floor(tbc_amount * 1e6);
 		const { walletWif } = retrieveKeys(password);
-		const privateKey = tbc.PrivateKey.fromString(walletWif);
+		let privateKey: tbc.PrivateKey;
+		if (store.isTaprootAccount()) {
+			privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+		} else {
+			privateKey = tbc.PrivateKey.fromString(walletWif);
+		}
 		const tx = new tbc.Transaction();
 		const utxos = await getUTXOs(address_from, tbc_amount + 0.001);
 		if (receive_address.startsWith('1')) {
@@ -66,7 +73,7 @@ export const sendTbc = async (
 
 export const sendTbc_multiSig_create = async (
 	address_from: string,
-	receive_address: string,
+	address_to: string,
 	tbc_amount: number,
 	password: string,
 ) => {
@@ -77,7 +84,7 @@ export const sendTbc_multiSig_create = async (
 		const umtxos = await contract.API.getUMTXOs(script_asm, tbc_amount + 0.001, 'mainnet');
 		const multiTxraw = contract.MultiSig.buildMultiSigTransaction_sendTBC(
 			address_from,
-			receive_address,
+			address_to,
 			tbc_amount,
 			umtxos,
 		);

@@ -1,70 +1,50 @@
-import { store } from '@/utils/store';
-import { Stack, useRouter } from 'expo-router';
+import {
+	OpenSans_400Regular,
+	OpenSans_500Medium,
+	OpenSans_600SemiBold,
+	OpenSans_700Bold,
+	OpenSans_800ExtraBold,
+} from '@expo-google-fonts/open-sans';
+import { useFonts } from 'expo-font';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
-import { LogBox } from 'react-native';
-import { AuthProvider, useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
-import { getUserData } from '../services/userService';
 
-LogBox.ignoreLogs([
-	'Warning: TNodeChildrenRenderer',
-	'Warning: MemoizedTNodeRenderer',
-	'Warning: TRenderEngineProvider',
-]); // Ignore log notification by message
+SplashScreen.preventAutoHideAsync();
 
-const _layout = () => {
-	useEffect(() => {
-		const initStore = async () => {
-			await store.init();
-		};
-		initStore();
-	}, []);
-
-	return (
-		<AuthProvider>
-			<MainLayout />
-		</AuthProvider>
-	);
-};
-
-const MainLayout = () => {
-	const { setAuth, setUserData } = useAuth();
-	const router = useRouter();
+export default function RootLayout() {
+	const [fontsLoaded] = useFonts({
+		'OpenSans-Regular': OpenSans_400Regular,
+		'OpenSans-Medium': OpenSans_500Medium,
+		'OpenSans-SemiBold': OpenSans_600SemiBold,
+		'OpenSans-Bold': OpenSans_700Bold,
+		'OpenSans-ExtraBold': OpenSans_800ExtraBold,
+	});
 
 	useEffect(() => {
-		// triggers automatically when auth state changes
-		supabase.auth.onAuthStateChange((_event, session) => {
-			console.log('session: ', session?.user?.id);
-			if (session) {
-				setAuth(session?.user);
-				updateUserData(session?.user); // update user like image, phone, bio
-				router.replace('/home');
-			} else {
-				setAuth(null);
-				router.replace('/welcome');
-			}
-		});
-	}, []);
+		if (fontsLoaded) {
+			SplashScreen.hideAsync();
+		}
+	}, [fontsLoaded]);
 
-	const updateUserData = async (user) => {
-		let res = await getUserData(user.id);
-		if (res.success) setUserData(res.data);
-	};
+	if (!fontsLoaded) {
+		return null;
+	}
 
 	return (
-		<Stack
-			screenOptions={{
-				headerShown: false,
-			}}
-		>
-			<Stack.Screen
-				name="(main)/postDetails"
-				options={{
-					presentation: 'modal',
+		<>
+			<StatusBar style="dark" />
+			<Stack
+				screenOptions={{
+					headerShown: false,
+					animation: 'none',
+					contentStyle: {
+						flex: 1,
+						backgroundColor: 'white',
+					},
 				}}
 			/>
-		</Stack>
+		</>
 	);
-};
-
-export default _layout;
+}

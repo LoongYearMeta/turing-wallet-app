@@ -1,7 +1,9 @@
+import { StyleSheet } from 'react-native';
+
 export const theme = {
 	colors: {
-		primary: '#00C26F',
-		primaryDark: '#00AC62',
+		primary: '#000000',
+		primaryDark: '#000000',
 		dark: '#3E3E3E',
 		darkLight: '#E1E1E1',
 		gray: '#e3e3e3',
@@ -14,10 +16,11 @@ export const theme = {
 		roseLight: '#f87171',
 	},
 	fonts: {
-		medium: '500',
-		semibold: '600',
-		bold: '700',
-		extraBold: '800',
+		regular: 'OpenSans-Regular',
+		medium: 'OpenSans-Medium',
+		bold: 'OpenSans-Bold',
+		semibold: 'OpenSans-SemiBold',
+		extraBold: 'OpenSans-ExtraBold',
 	},
 	radius: {
 		xs: 10,
@@ -27,4 +30,14 @@ export const theme = {
 		xl: 18,
 		xxl: 22,
 	},
+	textStyles: StyleSheet.create({
+		body: {
+			fontFamily: 'OpenSans-Regular',
+			fontSize: 16,
+		},
+		heading: {
+			fontFamily: 'OpenSans-Bold',
+			fontSize: 24,
+		},
+	}),
 };

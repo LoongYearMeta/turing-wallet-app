@@ -1,50 +1,5 @@
 import * as SQLite from 'expo-sqlite';
 
-interface SQLiteCallback {
-	(error?: Error): void;
-}
-
-interface SQLResultSetRowList {
-	length: number;
-	item(index: number): any;
-	_array: any[];
-}
-
-interface SQLResultSet {
-	insertId?: number;
-	rowsAffected: number;
-	rows: SQLResultSetRowList;
-}
-
-interface SQLError {
-	code: number;
-	message: string;
-}
-
-interface SQLTransaction {
-	executeSql(
-		sqlStatement: string,
-		args?: any[],
-		callback?: (transaction: SQLTransaction, resultSet: SQLResultSet) => void,
-		errorCallback?: (transaction: SQLTransaction, error: SQLError) => boolean,
-	): void;
-}
-
-interface Database {
-	transaction(
-		callback: (transaction: SQLTransaction) => void,
-		errorCallback?: (error: SQLError) => void,
-		successCallback?: SQLiteCallback,
-	): void;
-	readTransaction(
-		callback: (transaction: SQLTransaction) => void,
-		errorCallback?: (error: SQLError) => void,
-		successCallback?: SQLiteCallback,
-	): void;
-}
-
-const db = SQLite.openDatabaseSync('wallet.db') as unknown as Database;
-
 export interface Collection {
 	id: string;
 	name: string;
@@ -120,1147 +75,558 @@ export interface FTPublic {
 	holds_count: number;
 }
 
-interface PaginationParams {
-	page: number;
-	pageSize: number;
+export async function initDatabase() {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.execAsync(`
+		PRAGMA journal_mode = WAL;
+		CREATE TABLE IF NOT EXISTS Collection (
+			id TEXT PRIMARY KEY,
+			name TEXT,
+			supply INTEGER,
+			creator TEXT,
+			icon TEXT,
+			isDeleted INTEGER DEFAULT 0,
+			user_address TEXT
+		);
+		CREATE TABLE IF NOT EXISTS NFT (
+			id TEXT PRIMARY KEY,
+			collection_id TEXT,
+			collection_index INTEGER,
+			name TEXT,
+			symbol TEXT,
+			description TEXT,
+			attributes TEXT,
+			transfer_times INTEGER DEFAULT 0,
+			icon TEXT,
+			collection_name TEXT,
+			isDeleted INTEGER DEFAULT 0,
+			user_address TEXT
+		);
+		CREATE TABLE IF NOT EXISTS FT (
+			id TEXT PRIMARY KEY,
+			name TEXT,
+			decimal INTEGER,
+			amount REAL,
+			symbol TEXT,
+			isDeleted INTEGER DEFAULT 0,
+			user_address TEXT
+		);
+		CREATE TABLE IF NOT EXISTS TransactionHistory (
+			id TEXT PRIMARY KEY,
+			send_address TEXT,
+			receive_address TEXT,
+			fee REAL,
+			timestamp INTEGER,
+			type TEXT,
+			balance_change REAL,
+			user_address TEXT
+		);
+		CREATE TABLE IF NOT EXISTS NFT_History (
+			id TEXT PRIMARY KEY,
+			send_address TEXT,
+			receive_address TEXT,
+			timestamp INTEGER,
+			contract_id TEXT
+		);
+		CREATE TABLE IF NOT EXISTS FT_History (
+			id TEXT PRIMARY KEY,
+			send_address TEXT,
+			receive_address TEXT,
+			fee REAL,
+			timestamp INTEGER,
+			contract_id TEXT,
+			balance_change REAL
+		);
+		CREATE TABLE IF NOT EXISTS MultiSig (
+			multiSig_address TEXT PRIMARY KEY,
+			pubKeys TEXT,
+			isDeleted INTEGER DEFAULT 0,
+			user_address TEXT
+		);
+		CREATE TABLE IF NOT EXISTS FT_Public (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL,
+			symbol TEXT NOT NULL,
+			decimal INTEGER NOT NULL,
+			supply REAL NOT NULL,
+			holds_count INTEGER NOT NULL
+		);
+	`);
 }
 
-class DatabaseManager {
-	private static instance: DatabaseManager;
+export async function addCollection(collection: Collection, userAddress: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync(
+		`INSERT OR REPLACE INTO Collection (id, name, supply, creator, icon, user_address, isDeleted)
+		 VALUES (?, ?, ?, ?, ?, ?, 0)`,
+		[
+			collection.id,
+			collection.name,
+			collection.supply,
+			collection.creator,
+			collection.icon,
+			userAddress,
+		],
+	);
+}
 
-	private constructor() {
-		this.initDatabase();
+export async function getCollection(id: string): Promise<Collection | null> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	const result = await db.getFirstAsync<Collection>('SELECT * FROM Collection WHERE id = ?', [id]);
+	if (!result) return null;
+	return {
+		id: result.id,
+		name: result.name,
+		supply: result.supply,
+		creator: result.creator,
+		icon: result.icon,
+		isDeleted: Boolean(result.isDeleted),
+	};
+}
+
+export async function getAllCollections(userAddress: string): Promise<Collection[]> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	const results = await db.getAllAsync<Collection>(
+		'SELECT * FROM Collection WHERE user_address = ? AND isDeleted = 0',
+		[userAddress],
+	);
+	return results.map((result) => ({
+		id: result.id,
+		name: result.name,
+		supply: result.supply,
+		creator: result.creator,
+		icon: result.icon,
+		isDeleted: Boolean(result.isDeleted),
+	}));
+}
+
+export async function addNFT(nft: NFT, userAddress: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync(
+		`INSERT OR REPLACE INTO NFT (
+			id, collection_id, collection_index, name, symbol,
+			description, attributes, transfer_times, icon,
+			collection_name, isDeleted, user_address
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+		[
+			nft.id,
+			nft.collection_id,
+			nft.collection_index,
+			nft.name,
+			nft.symbol,
+			nft.description,
+			nft.attributes,
+			nft.transfer_times,
+			nft.icon,
+			nft.collection_name,
+			userAddress,
+		],
+	);
+}
+
+export async function getNFTsByCollection(
+	collectionId: string,
+	userAddress: string,
+): Promise<NFT[]> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	return await db.getAllAsync(
+		'SELECT * FROM NFT WHERE collection_id = ? AND user_address = ? AND isDeleted = 0',
+		[collectionId, userAddress],
+	);
+}
+
+export async function getNFTWithCollection(
+	nftId: string,
+): Promise<{ nft: NFT; collection: Collection } | null> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	const result:
+		| (NFT & {
+				collection_name: string;
+				collection_supply: number;
+				collection_creator: string;
+				collection_icon: string;
+		  })
+		| null = await db.getFirstAsync(
+		`
+		SELECT 
+			NFT.*,
+			Collection.name as collection_name,
+			Collection.supply,
+			Collection.creator,
+			Collection.icon as collection_icon
+		FROM NFT 
+		JOIN Collection ON NFT.collection_id = Collection.id 
+		WHERE NFT.id = ? AND NFT.isDeleted = 0 AND Collection.isDeleted = 0
+	`,
+		[nftId],
+	);
+
+	if (!result) return null;
+
+	return {
+		nft: {
+			id: result.id,
+			collection_id: result.collection_id,
+			collection_index: result.collection_index,
+			name: result.name,
+			symbol: result.symbol,
+			description: result.description,
+			attributes: result.attributes,
+			transfer_times: result.transfer_times,
+			icon: result.icon,
+			collection_name: result.collection_name,
+			isDeleted: result.isDeleted,
+		},
+		collection: {
+			id: result.collection_id,
+			name: result.collection_name,
+			supply: result.collection_supply,
+			creator: result.collection_creator,
+			icon: result.collection_icon,
+			isDeleted: result.isDeleted,
+		},
+	};
+}
+
+export async function removeNFT(nftId: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync('DELETE FROM NFT WHERE id = ?;', [nftId]);
+}
+
+export async function updateNFTTransferTimes(nftId: string, transferTimes: number): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync('UPDATE NFT SET transfer_times = ? WHERE id = ?;', [transferTimes, nftId]);
+}
+
+export async function getNFT(id: string): Promise<NFT | null> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	const result = await db.getFirstAsync<NFT>('SELECT * FROM NFT WHERE id = ?', [id]);
+	if (!result) return null;
+	return {
+		id: result.id,
+		collection_id: result.collection_id,
+		collection_index: result.collection_index,
+		name: result.name,
+		symbol: result.symbol,
+		description: result.description,
+		attributes: result.attributes,
+		transfer_times: result.transfer_times,
+		icon: result.icon,
+		collection_name: result.collection_name,
+		isDeleted: Boolean(result.isDeleted),
+	};
+}
+
+export async function upsertFT(ft: FT, userAddress: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync(
+		`INSERT OR REPLACE INTO FT (id, name, decimal, amount, symbol, user_address, isDeleted)
+		 VALUES (?, ?, ?, ?, ?, ?, 0)`,
+		[ft.id, ft.name, ft.decimal, ft.amount, ft.symbol, userAddress],
+	);
+}
+
+export async function getFT(id: string, userAddress: string): Promise<FT | null> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	return await db.getFirstAsync('SELECT * FROM FT WHERE id = ? AND user_address = ?', [
+		id,
+		userAddress,
+	]);
+}
+
+export async function transferFT(id: string, amount: number, userAddress: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync('SELECT amount FROM FT WHERE id = ? AND user_address = ? AND isDeleted = 0;', [
+		id,
+		userAddress,
+	]);
+	await db.runAsync(
+		'UPDATE FT SET amount = ? WHERE id = ? AND user_address = ? AND isDeleted = 0;',
+		[amount, id, userAddress],
+	);
+}
+
+export async function softDeleteCollection(id: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync('UPDATE Collection SET isDeleted = 1 WHERE id = ?;', [id]);
+	await db.runAsync('UPDATE NFT SET isDeleted = 1 WHERE collection_id = ?;', [id]);
+}
+
+export async function softDeleteNFT(id: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync('UPDATE NFT SET isDeleted = 1 WHERE id = ?;', [id]);
+}
+
+export async function softDeleteFT(id: string, userAddress: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync('UPDATE FT SET isDeleted = 1 WHERE id = ? AND user_address = ?;', [
+		id,
+		userAddress,
+	]);
+}
+
+export async function addTransactionHistory(
+	history: TransactionHistory,
+	userAddress: string,
+): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync(
+		`INSERT OR REPLACE INTO TransactionHistory (
+			id, send_address, receive_address, fee, timestamp, type, balance_change, user_address
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+		[
+			history.id,
+			history.send_address,
+			history.receive_address,
+			history.fee,
+			history.timestamp,
+			history.type,
+			history.balance_change,
+			userAddress,
+		],
+	);
+}
+
+export async function getTransactionHistoryByType(
+	type: string,
+	userAddress: string,
+): Promise<TransactionHistory[]> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	return await db.getAllAsync(
+		'SELECT * FROM TransactionHistory WHERE type = ? AND user_address = ? ORDER BY timestamp DESC',
+		[type, userAddress],
+	);
+}
+
+export async function addNFTHistory(history: NFTHistory): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync(
+		`INSERT OR REPLACE INTO NFT_History (
+			id, send_address, receive_address, timestamp, contract_id
+		) VALUES (?, ?, ?, ?, ?);`,
+		[
+			history.id,
+			history.send_address,
+			history.receive_address,
+			history.timestamp,
+			history.contract_id,
+		],
+	);
+}
+
+export async function getNFTHistoryByContractId(contractId: string): Promise<NFTHistory[]> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	return await db.getAllAsync(
+		'SELECT * FROM NFT_History WHERE contract_id = ? ORDER BY timestamp DESC',
+		[contractId],
+	);
+}
+
+export async function addFTHistory(history: FTHistory): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync(
+		`INSERT OR REPLACE INTO FT_History (
+			id, send_address, receive_address, fee, timestamp, contract_id, balance_change
+		) VALUES (?, ?, ?, ?, ?, ?, ?);`,
+		[
+			history.id,
+			history.send_address,
+			history.receive_address,
+			history.fee,
+			history.timestamp,
+			history.contract_id,
+			history.balance_change,
+		],
+	);
+}
+
+export async function getFTHistoryByContractId(contractId: string): Promise<FTHistory[]> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	return await db.getAllAsync(
+		'SELECT * FROM FT_History WHERE contract_id = ? ORDER BY timestamp DESC',
+		[contractId],
+	);
+}
+
+export async function getTransactionHistoryById(id: string): Promise<TransactionHistory | null> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	return await db.getFirstAsync('SELECT * FROM TransactionHistory WHERE id = ?', [id]);
+}
+
+export async function getNFTHistoryById(id: string): Promise<NFTHistory | null> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	return await db.getFirstAsync('SELECT * FROM NFT_History WHERE id = ?', [id]);
+}
+
+export async function getFTHistoryById(id: string): Promise<FTHistory | null> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	return await db.getFirstAsync('SELECT * FROM FT_History WHERE id = ?', [id]);
+}
+
+export async function addMultiSig(multiSig: MultiSig, userAddress: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	if (multiSig.pubKeys.length < 3 || multiSig.pubKeys.length > 10) {
+		throw new Error('Public keys count must be between 3 and 10');
 	}
 
-	public static getInstance(): DatabaseManager {
-		if (!DatabaseManager.instance) {
-			DatabaseManager.instance = new DatabaseManager();
-		}
-		return DatabaseManager.instance;
+	await db.runAsync(
+		`INSERT OR REPLACE INTO MultiSig (
+			multiSig_address, pubKeys, isDeleted, user_address
+		) VALUES (?, ?, 0, ?);`,
+		[multiSig.multiSig_address, JSON.stringify(multiSig.pubKeys), userAddress],
+	);
+}
+
+export async function softDeleteMultiSig(multiSigAddress: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync('UPDATE MultiSig SET isDeleted = 1 WHERE multiSig_address = ?;', [
+		multiSigAddress,
+	]);
+}
+
+export async function getActiveMultiSigs(userAddress: string) {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	const multiSigs = await db.getAllAsync<{ multiSig_address: string; pubKeys: string }>(
+		'SELECT multiSig_address, pubKeys FROM MultiSig WHERE user_address = ? AND isDeleted = 0',
+		[userAddress],
+	);
+	return multiSigs.map((row) => ({
+		multiSig_address: row.multiSig_address,
+		pubKeys: JSON.parse(row.pubKeys) as string[],
+	}));
+}
+
+export async function getAllMultiSigs(userAddress: string) {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	const multiSigs = await db.getAllAsync<{ multiSig_address: string; pubKeys: string }>(
+		'SELECT multiSig_address, pubKeys FROM MultiSig WHERE user_address = ?',
+		[userAddress],
+	);
+	return multiSigs.map((row) => ({
+		multiSig_address: row.multiSig_address,
+		pubKeys: JSON.parse(row.pubKeys) as string[],
+	}));
+}
+
+export async function getMultiSigPubKeys(multiSigAddress: string): Promise<string[] | null> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	const result = await db.getFirstAsync<{ pubKeys: string }>(
+		'SELECT pubKeys FROM MultiSig WHERE multiSig_address = ?',
+		[multiSigAddress],
+	);
+	if (!result) {
+		return null;
 	}
-
-	private initDatabase(): void {
-		db.transaction((tx: SQLTransaction) => {
-			tx.executeSql(
-				`CREATE TABLE IF NOT EXISTS Collection (
-					id TEXT PRIMARY KEY,
-					name TEXT,
-					supply INTEGER,
-					creator TEXT,
-					icon TEXT,
-					isDeleted BOOLEAN DEFAULT 0,
-					user_address TEXT,
-					FOREIGN KEY (user_address) REFERENCES User (address)
-				);`,
-			);
-
-			tx.executeSql(
-				`CREATE TABLE IF NOT EXISTS NFT (
-					id TEXT PRIMARY KEY,
-					collection_id TEXT,
-					collection_index INTEGER,
-					name TEXT,
-					symbol TEXT,
-					description TEXT,
-					attributes TEXT,
-					transfer_times INTEGER DEFAULT 0,
-					icon TEXT,
-					collection_name TEXT,
-					isDeleted BOOLEAN DEFAULT 0,
-					user_address TEXT,
-					FOREIGN KEY (collection_id) REFERENCES Collection (id),
-					FOREIGN KEY (user_address) REFERENCES User (address)
-				);`,
-			);
-
-			tx.executeSql(
-				`CREATE TABLE IF NOT EXISTS FT (
-					id TEXT PRIMARY KEY,
-					name TEXT,
-					decimal INTEGER,
-					amount REAL,
-					symbol TEXT,
-					isDeleted BOOLEAN DEFAULT 0,
-					user_address TEXT,
-					FOREIGN KEY (user_address) REFERENCES User (address)
-				);`,
-			);
-
-			tx.executeSql(
-				`CREATE TABLE IF NOT EXISTS TransactionHistory (
-					id TEXT PRIMARY KEY,
-					send_address TEXT,
-					receive_address TEXT,
-					fee REAL,
-					timestamp INTEGER,
-					type TEXT,
-					balance_change REAL,
-					user_address TEXT,
-					FOREIGN KEY (user_address) REFERENCES User (address)
-				);`,
-			);
-
-			tx.executeSql(
-				`CREATE TABLE IF NOT EXISTS NFT_History (
-					id TEXT PRIMARY KEY,
-					send_address TEXT,
-					receive_address TEXT,
-					timestamp INTEGER,
-					contract_id TEXT,
-					FOREIGN KEY (contract_id) REFERENCES NFT (id)
-				);`,
-			);
-
-			tx.executeSql(
-				`CREATE TABLE IF NOT EXISTS FT_History (
-					id TEXT PRIMARY KEY,
-					send_address TEXT,
-					receive_address TEXT,
-					fee REAL,
-					timestamp INTEGER,
-					contract_id TEXT,
-					balance_change REAL,
-					FOREIGN KEY (contract_id) REFERENCES FT (id)
-				);`,
-			);
-
-			tx.executeSql(
-				`CREATE TABLE IF NOT EXISTS MultiSig (
-					multiSig_address TEXT PRIMARY KEY,
-					pubKeys TEXT,
-					isDeleted BOOLEAN DEFAULT 0,
-					user_address TEXT,
-					FOREIGN KEY (user_address) REFERENCES User (address)
-				);`,
-			);
-
-			tx.executeSql(
-				`CREATE TABLE IF NOT EXISTS FT_Public (
-					id TEXT PRIMARY KEY,
-					name TEXT NOT NULL,
-					symbol TEXT NOT NULL,
-					decimal INTEGER NOT NULL,
-					supply REAL NOT NULL,
-					holds_count INTEGER NOT NULL
-				);`,
-			);
-		});
-	}
-
-	public async addCollection(collection: Collection, userAddress: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					`INSERT OR REPLACE INTO Collection (
-						id, name, supply, creator, icon, user_address, isDeleted
-					) VALUES (?, ?, ?, ?, ?, ?, 0);`,
-					[
-						collection.id,
-						collection.name,
-						collection.supply,
-						collection.creator,
-						collection.icon,
-						userAddress,
-					],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getCollection(id: string): Promise<Collection | null> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT * FROM Collection WHERE id = ?;',
-					[id],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve((_array[0] as Collection) || null);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getAllCollections(
-		userAddress: string,
-		pagination?: PaginationParams,
-	): Promise<Collection[]> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				let query = 'SELECT * FROM Collection WHERE user_address = ? AND isDeleted = 0';
-				const params: any[] = [userAddress];
-
-				if (pagination) {
-					const offset = pagination.page * pagination.pageSize;
-					query += ' LIMIT ? OFFSET ?';
-					params.push(pagination.pageSize, offset);
-				}
-
-				tx.executeSql(
-					query,
-					params,
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve(_array as Collection[]);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async addNFT(nft: NFT, userAddress: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					`INSERT OR REPLACE INTO NFT (
-						id, collection_id, collection_index, name, symbol,
-						description, attributes, transfer_times, icon,
-						collection_name, isDeleted, user_address
-					) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?);`,
-					[
-						nft.id,
-						nft.collection_id,
-						nft.collection_index,
-						nft.name,
-						nft.symbol,
-						nft.description,
-						nft.attributes,
-						nft.transfer_times,
-						nft.icon,
-						nft.collection_name,
-						userAddress,
-					],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getNFTsByCollection(
-		collectionId: string,
-		userAddress: string,
-		pagination?: PaginationParams,
-	): Promise<NFT[]> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				let query =
-					'SELECT * FROM NFT WHERE collection_id = ? AND user_address = ? AND isDeleted = 0';
-				const params: any[] = [collectionId, userAddress];
-
-				if (pagination) {
-					const offset = pagination.page * pagination.pageSize;
-					query += ' LIMIT ? OFFSET ?';
-					params.push(pagination.pageSize, offset);
-				}
-
-				tx.executeSql(
-					query,
-					params,
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve(_array as NFT[]);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getNFTWithCollection(
-		nftId: string,
-	): Promise<{ nft: NFT; collection: Collection } | null> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					`SELECT 
-						NFT.*,
-						Collection.name as collection_name,
-						Collection.supply,
-						Collection.creator,
-						Collection.icon as collection_icon
-					FROM NFT 
-					JOIN Collection ON NFT.collection_id = Collection.id 
-					WHERE NFT.id = ? AND NFT.isDeleted = 0 AND Collection.isDeleted = 0;`,
-					[nftId],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						if (_array.length === 0) {
-							resolve(null);
-							return;
-						}
-						const row = _array[0];
-						resolve({
-							nft: {
-								id: row.id,
-								collection_id: row.collection_id,
-								collection_index: row.collection_index,
-								name: row.name,
-								symbol: row.symbol,
-								description: row.description,
-								attributes: row.attributes,
-								transfer_times: row.transfer_times,
-								icon: row.icon,
-								collection_name: row.collection_name,
-								isDeleted: row.isDeleted,
-							},
-							collection: {
-								id: row.collection_id,
-								name: row.collection_name,
-								supply: row.supply,
-								creator: row.creator,
-								icon: row.collection_icon,
-								isDeleted: row.isDeleted,
-							},
-						});
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async removeNFT(nftId: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'DELETE FROM NFT WHERE id = ?;',
-					[nftId],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async updateNFTTransferTimes(nftId: string, transferTimes: number): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'UPDATE NFT SET transfer_times = ? WHERE id = ?;',
-					[transferTimes, nftId],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getNFT(id: string): Promise<NFT | null> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT * FROM NFT WHERE id = ?;',
-					[id],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve((_array[0] as NFT) || null);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async upsertFT(ft: FT, userAddress: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT id FROM FT WHERE id = ? AND user_address = ?;',
-					[ft.id, userAddress],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						if (_array.length > 0) {
-							tx.executeSql(
-								`UPDATE FT SET 
-									name = ?, 
-									decimal = ?, 
-									amount = ?, 
-									symbol = ?
-									WHERE id = ? AND user_address = ?;`,
-								[ft.name, ft.decimal, ft.amount, ft.symbol, ft.id, userAddress],
-								() => resolve(),
-								(_: SQLTransaction, error: SQLError) => {
-									reject(error);
-									return false;
-								},
-							);
-						} else {
-							tx.executeSql(
-								`INSERT INTO FT (
-									id, name, decimal, amount, symbol, isDeleted, user_address
-								) VALUES (?, ?, ?, ?, ?, ?, ?);`,
-								[ft.id, ft.name, ft.decimal, ft.amount, ft.symbol, false, userAddress],
-								() => resolve(),
-								(_: SQLTransaction, error: SQLError) => {
-									reject(error);
-									return false;
-								},
-							);
-						}
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getFT(id: string, userAddress: string): Promise<FT | null> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT * FROM FT WHERE id = ? AND user_address = ?;',
-					[id, userAddress],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve((_array[0] as FT) || null);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async transferFT(id: string, amount: number, userAddress: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT amount FROM FT WHERE id = ? AND user_address = ? AND isDeleted = 0;',
-					[id, userAddress],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						if (_array.length === 0) {
-							reject(new Error('FT not found'));
-							return;
-						}
-
-						const currentAmount = _array[0].amount;
-						const newAmount = currentAmount + amount;
-
-						if (newAmount < 0) {
-							reject(new Error('Insufficient FT balance'));
-							return;
-						}
-
-						if (newAmount === 0) {
-							tx.executeSql(
-								'DELETE FROM FT WHERE id = ? AND user_address = ?;',
-								[id, userAddress],
-								() => resolve(),
-								(_: SQLTransaction, error: SQLError) => {
-									reject(error);
-									return false;
-								},
-							);
-						} else {
-							tx.executeSql(
-								'UPDATE FT SET amount = ? WHERE id = ? AND user_address = ? AND isDeleted = 0;',
-								[newAmount, id, userAddress],
-								() => resolve(),
-								(_: SQLTransaction, error: SQLError) => {
-									reject(error);
-									return false;
-								},
-							);
-						}
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async softDeleteCollection(id: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'UPDATE Collection SET isDeleted = 1 WHERE id = ?;',
-					[id],
-					() => {
-						tx.executeSql(
-							'UPDATE NFT SET isDeleted = 1 WHERE collection_id = ?;',
-							[id],
-							() => resolve(),
-							(_: SQLTransaction, error: SQLError) => {
-								reject(error);
-								return false;
-							},
-						);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async softDeleteNFT(id: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'UPDATE NFT SET isDeleted = 1 WHERE id = ?;',
-					[id],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async softDeleteFT(id: string, userAddress: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'UPDATE FT SET isDeleted = 1 WHERE id = ? AND user_address = ?;',
-					[id, userAddress],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async addTransactionHistory(
-		history: TransactionHistory,
-		userAddress: string,
-	): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					`INSERT OR REPLACE INTO TransactionHistory (
-						id, send_address, receive_address, fee, timestamp, type, balance_change, user_address
-					) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
-					[
-						history.id,
-						history.send_address,
-						history.receive_address,
-						history.fee,
-						history.timestamp,
-						history.type,
-						history.balance_change,
-						userAddress,
-					],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getTransactionHistoryByType(
-		type: string,
-		userAddress: string,
-		pagination?: PaginationParams,
-	): Promise<TransactionHistory[]> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				let query =
-					'SELECT * FROM TransactionHistory WHERE type = ? AND user_address = ? ORDER BY timestamp DESC';
-				const params: any[] = [type, userAddress];
-
-				if (pagination) {
-					const offset = pagination.page * pagination.pageSize;
-					query += ' LIMIT ? OFFSET ?';
-					params.push(pagination.pageSize, offset);
-				}
-
-				tx.executeSql(
-					query,
-					params,
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve(_array as TransactionHistory[]);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async addNFTHistory(history: NFTHistory): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					`INSERT OR REPLACE INTO NFT_History (
-						id, send_address, receive_address, timestamp, contract_id
-					) VALUES (?, ?, ?, ?, ?);`,
-					[
-						history.id,
-						history.send_address,
-						history.receive_address,
-						history.timestamp,
-						history.contract_id,
-					],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getNFTHistoryByContractId(contractId: string): Promise<NFTHistory[]> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT * FROM NFT_History WHERE contract_id = ? ORDER BY timestamp DESC;',
-					[contractId],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve(_array as NFTHistory[]);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async addFTHistory(history: FTHistory): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					`INSERT OR REPLACE INTO FT_History (
-						id, send_address, receive_address, fee, timestamp, contract_id, balance_change
-					) VALUES (?, ?, ?, ?, ?, ?, ?);`,
-					[
-						history.id,
-						history.send_address,
-						history.receive_address,
-						history.fee,
-						history.timestamp,
-						history.contract_id,
-						history.balance_change,
-					],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getFTHistoryByContractId(
-		contractId: string,
-		pagination?: PaginationParams,
-	): Promise<FTHistory[]> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				let query = 'SELECT * FROM FT_History WHERE contract_id = ? ORDER BY timestamp DESC';
-				const params: any[] = [contractId];
-
-				if (pagination) {
-					const offset = pagination.page * pagination.pageSize;
-					query += ' LIMIT ? OFFSET ?';
-					params.push(pagination.pageSize, offset);
-				}
-
-				tx.executeSql(
-					query,
-					params,
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve(_array as FTHistory[]);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getTransactionHistoryById(id: string): Promise<TransactionHistory | null> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT * FROM TransactionHistory WHERE id = ?;',
-					[id],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve((_array[0] as TransactionHistory) || null);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getNFTHistoryById(id: string): Promise<NFTHistory | null> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT * FROM NFT_History WHERE id = ?;',
-					[id],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve((_array[0] as NFTHistory) || null);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getFTHistoryById(id: string): Promise<FTHistory | null> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT * FROM FT_History WHERE id = ?;',
-					[id],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve((_array[0] as FTHistory) || null);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async addMultiSig(multiSig: MultiSig, userAddress: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			if (multiSig.pubKeys.length < 3 || multiSig.pubKeys.length > 10) {
-				reject(new Error('Public keys count must be between 3 and 10'));
-				return;
-			}
-
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					`INSERT OR REPLACE INTO MultiSig (
-						multiSig_address, pubKeys, isDeleted, user_address
-					) VALUES (?, ?, 0, ?);`,
-					[multiSig.multiSig_address, JSON.stringify(multiSig.pubKeys), userAddress],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async softDeleteMultiSig(multiSigAddress: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'UPDATE MultiSig SET isDeleted = 1 WHERE multiSig_address = ?;',
-					[multiSigAddress],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getActiveMultiSigs(userAddress: string): Promise<MultiSig[]> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT multiSig_address, pubKeys FROM MultiSig WHERE user_address = ? AND isDeleted = 0;',
-					[userAddress],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						const multiSigs = _array.map((row) => ({
-							...row,
-							pubKeys: JSON.parse(row.pubKeys),
-						}));
-						resolve(multiSigs as MultiSig[]);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getAllMultiSigs(userAddress: string): Promise<MultiSig[]> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT multiSig_address, pubKeys, isDeleted FROM MultiSig WHERE user_address = ?;',
-					[userAddress],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						const multiSigs = _array.map((row) => ({
-							...row,
-							pubKeys: JSON.parse(row.pubKeys),
-						}));
-						resolve(multiSigs as MultiSig[]);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getMultiSigPubKeys(multiSigAddress: string): Promise<string[] | null> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT pubKeys FROM MultiSig WHERE multiSig_address = ?;',
-					[multiSigAddress],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						if (_array.length === 0) {
-							resolve(null);
-							return;
-						}
-						try {
-							const pubKeys = JSON.parse(_array[0].pubKeys);
-							resolve(pubKeys);
-						} catch {
-							reject(new Error('Invalid pubKeys format'));
-						}
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getTransactionHistoryCount(userAddress: string): Promise<number> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT COUNT(*) as count FROM TransactionHistory WHERE user_address = ?;',
-					[userAddress],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve(_array[0].count);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getCollectionCount(userAddress: string): Promise<number> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT COUNT(*) as count FROM Collection WHERE user_address = ? AND isDeleted = 0;',
-					[userAddress],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve(_array[0].count);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getNFTCount(userAddress: string): Promise<number> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT COUNT(*) as count FROM NFT WHERE user_address = ? AND isDeleted = 0;',
-					[userAddress],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve(_array[0].count);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async removeFT(id: string, userAddress: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'DELETE FROM FT WHERE id = ? AND user_address = ?;',
-					[id, userAddress],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getActiveNFTs(
-		userAddress: string,
-		pagination?: { page: number; pageSize: number },
-	): Promise<NFT[]> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				let query = 'SELECT * FROM NFT WHERE user_address = ? AND isDeleted = 0';
-				const params: any[] = [userAddress];
-
-				if (pagination) {
-					const offset = pagination.page * pagination.pageSize;
-					query += ' LIMIT ? OFFSET ?';
-					params.push(pagination.pageSize, offset);
-				}
-
-				tx.executeSql(
-					query,
-					params,
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve(_array as NFT[]);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getAllNFTs(
-		userAddress: string,
-		pagination?: { page: number; pageSize: number },
-	): Promise<NFT[]> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				let query = 'SELECT * FROM NFT WHERE user_address = ?';
-				const params: any[] = [userAddress];
-
-				if (pagination) {
-					const offset = pagination.page * pagination.pageSize;
-					query += ' LIMIT ? OFFSET ?';
-					params.push(pagination.pageSize, offset);
-				}
-
-				tx.executeSql(
-					query,
-					params,
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve(_array as NFT[]);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getActiveFTs(
-		userAddress: string,
-		pagination?: { page: number; pageSize: number },
-	): Promise<FT[]> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				let query = 'SELECT * FROM FT WHERE user_address = ? AND isDeleted = 0';
-				const params: any[] = [userAddress];
-
-				if (pagination) {
-					const offset = pagination.page * pagination.pageSize;
-					query += ' LIMIT ? OFFSET ?';
-					params.push(pagination.pageSize, offset);
-				}
-
-				tx.executeSql(
-					query,
-					params,
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve(_array as FT[]);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getAllFTs(
-		userAddress: string,
-		pagination?: { page: number; pageSize: number },
-	): Promise<FT[]> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				let query = 'SELECT * FROM FT WHERE user_address = ?';
-				const params: any[] = [userAddress];
-
-				if (pagination) {
-					const offset = pagination.page * pagination.pageSize;
-					query += ' LIMIT ? OFFSET ?';
-					params.push(pagination.pageSize, offset);
-				}
-
-				tx.executeSql(
-					query,
-					params,
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve(_array as FT[]);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async addFTPublic(ftPublic: FTPublic): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					`INSERT OR REPLACE INTO FT_Public (
-						id, name, symbol, decimal, supply, holds_count
-					) VALUES (?, ?, ?, ?, ?, ?);`,
-					[
-						ftPublic.id,
-						ftPublic.name,
-						ftPublic.symbol,
-						ftPublic.decimal,
-						ftPublic.supply,
-						ftPublic.holds_count,
-					],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async removeFTPublic(id: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'DELETE FROM FT_Public WHERE id = ?;',
-					[id],
-					() => resolve(),
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async getAllFTPublics(): Promise<FTPublic[]> {
-		return new Promise((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				tx.executeSql(
-					'SELECT * FROM FT_Public;',
-					[],
-					(_: SQLTransaction, { rows: { _array } }: SQLResultSet) => {
-						resolve(_array as FTPublic[]);
-					},
-					(_: SQLTransaction, error: SQLError) => {
-						reject(error);
-						return false;
-					},
-				);
-			});
-		});
-	}
-
-	public async deleteAccountData(address: string): Promise<void> {
-		return new Promise<void>((resolve, reject) => {
-			db.transaction((tx: SQLTransaction) => {
-				const deleteQueries = [
-					'DELETE FROM TransactionHistory WHERE user_address = ?;',
-					'DELETE FROM NFT_History WHERE contract_id IN (SELECT id FROM NFT WHERE user_address = ?);',
-					'DELETE FROM FT_History WHERE contract_id IN (SELECT id FROM FT WHERE user_address = ?);',
-					'DELETE FROM NFT WHERE user_address = ?;',
-					'DELETE FROM FT WHERE user_address = ?;',
-					'DELETE FROM Collection WHERE user_address = ?;',
-					'DELETE FROM MultiSig WHERE user_address = ?;',
-				];
-
-				try {
-					for (const query of deleteQueries) {
-						tx.executeSql(query, [address], undefined, (_: SQLTransaction, error: SQLError) => {
-							reject(error);
-							return false;
-						});
-					}
-					resolve();
-				} catch (error) {
-					reject(error);
-				}
-			});
-		});
+	try {
+		return JSON.parse(result.pubKeys) as string[];
+	} catch {
+		throw new Error('Invalid pubKeys format');
 	}
 }
 
-export const database = DatabaseManager.getInstance();
+export async function getTransactionHistoryCount(userAddress: string): Promise<number> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	const result: any = await db.getFirstAsync(
+		'SELECT COUNT(*) as count FROM TransactionHistory WHERE user_address = ?',
+		[userAddress],
+	);
+	return result.rows[0]['COUNT(*)'];
+}
+
+export async function getCollectionCount(userAddress: string): Promise<number> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	const result: any = await db.getFirstAsync(
+		'SELECT COUNT(*) as count FROM Collection WHERE user_address = ? AND isDeleted = 0',
+		[userAddress],
+	);
+	return result.rows[0]['COUNT(*)'];
+}
+
+export async function getNFTCount(userAddress: string): Promise<number> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	const result: any = await db.getFirstAsync(
+		'SELECT COUNT(*) as count FROM NFT WHERE user_address = ? AND isDeleted = 0',
+		[userAddress],
+	);
+	return result.rows[0]['COUNT(*)'];
+}
+
+export async function removeFT(id: string, userAddress: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync('DELETE FROM FT WHERE id = ? AND user_address = ?;', [id, userAddress]);
+}
+
+export async function getActiveNFTs(userAddress: string): Promise<NFT[]> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	return await db.getAllAsync('SELECT * FROM NFT WHERE user_address = ? AND isDeleted = 0', [
+		userAddress,
+	]);
+}
+
+export async function getAllNFTs(userAddress: string): Promise<NFT[]> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	return await db.getAllAsync('SELECT * FROM NFT WHERE user_address = ?', [userAddress]);
+}
+
+export async function getActiveFTs(userAddress: string): Promise<FT[]> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	return await db.getAllAsync('SELECT * FROM FT WHERE user_address = ? AND isDeleted = 0', [
+		userAddress,
+	]);
+}
+
+export async function getAllFTs(userAddress: string): Promise<FT[]> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	return await db.getAllAsync('SELECT * FROM FT WHERE user_address = ? AND isDeleted = 0', [
+		userAddress,
+	]);
+}
+
+export async function addFTPublic(ftPublic: FTPublic): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync(
+		`INSERT OR REPLACE INTO FT_Public (
+			id, name, symbol, decimal, supply, holds_count
+		) VALUES (?, ?, ?, ?, ?, ?);`,
+		[
+			ftPublic.id,
+			ftPublic.name,
+			ftPublic.symbol,
+			ftPublic.decimal,
+			ftPublic.supply,
+			ftPublic.holds_count,
+		],
+	);
+}
+
+export async function removeFTPublic(id: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.runAsync('DELETE FROM FT_Public WHERE id = ?;', [id]);
+}
+
+export async function getAllFTPublics(): Promise<FTPublic[]> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	return await db.getAllAsync('SELECT * FROM FT_Public');
+}
+
+export async function deleteAccountData(address: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	await db.execAsync(`
+		DELETE FROM TransactionHistory WHERE user_address = '${address}';
+		DELETE FROM NFT_History WHERE contract_id IN (SELECT id FROM NFT WHERE user_address = '${address}');
+		DELETE FROM FT_History WHERE contract_id IN (SELECT id FROM FT WHERE user_address = '${address}');
+		DELETE FROM NFT WHERE user_address = '${address}';
+		DELETE FROM FT WHERE user_address = '${address}';
+		DELETE FROM Collection WHERE user_address = '${address}';
+		DELETE FROM MultiSig WHERE user_address = '${address}';
+	`);
+}
+
+export async function getAllMultiSigAddresses(userAddress: string): Promise<string[]> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	const multiSigs = await db.getAllAsync<MultiSig>(
+		'SELECT multiSig_address FROM MultiSig WHERE user_address = ? AND isDeleted = 0',
+		[userAddress],
+	);
+	return multiSigs.map((row) => row.multiSig_address);
+}

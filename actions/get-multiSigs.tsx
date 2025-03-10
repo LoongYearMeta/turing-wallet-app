@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-import { addMultiSig, getAllMultiSigs } from '@/lib/multiSig';
-import type { MultiSig } from '@/utils/sqlite';
+import { addMultiSig, getAllMultiSigs, type MultiSig } from '@/utils/sqlite';
 
 interface MultiSigResponse {
 	multi_wallet_list: {

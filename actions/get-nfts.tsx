@@ -1,7 +1,13 @@
 import axios from 'axios';
 
-import { addNFT, getAllNFTs, getNFT, removeNFT, updateNFTTransferTimes } from '@/lib/nft';
-import type { NFT } from '@/utils/sqlite';
+import {
+	addNFT,
+	getAllNFTs,
+	getNFT,
+	removeNFT,
+	updateNFTTransferTimes,
+	type NFT,
+} from '@/utils/sqlite';
 
 interface NFTResponse {
 	nftTotalCount: number;

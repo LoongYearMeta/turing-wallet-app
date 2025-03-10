@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-import { addFTHistory, getFTHistoryById } from '@/lib/ft';
-import type { FTHistory } from '@/utils/sqlite';
+import { addFTHistory, getFTHistoryById, type FTHistory } from '@/utils/sqlite';
 
 interface FTHistoryResponse {
 	address: string;

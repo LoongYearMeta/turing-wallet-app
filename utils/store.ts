@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { Account, AccountType, Balance, PubKey, StorageObject, StoredUtxo } from '@/types';
+import { Account, AccountType, Balance, StorageObject, StoredUtxo } from '@/types';
 
 const STORAGE_KEY = 'wallet_storage';
 
@@ -13,8 +13,6 @@ class Store {
 		currentAccount: '',
 	};
 
-	private initialized: boolean = false;
-
 	private constructor() {}
 
 	public static getInstance(): Store {
@@ -24,43 +22,7 @@ class Store {
 		return Store.instance;
 	}
 
-	public async init(): Promise<void> {
-		if (this.initialized) {
-			return;
-		}
-		try {
-			const stored = await AsyncStorage.getItem(STORAGE_KEY);
-			if (stored) {
-				const parsedStorage = JSON.parse(stored);
-				if (
-					typeof parsedStorage === 'object' &&
-					parsedStorage !== null &&
-					'accounts' in parsedStorage &&
-					'passKey' in parsedStorage &&
-					'salt' in parsedStorage &&
-					'currentAccount' in parsedStorage
-				) {
-					this.storage = parsedStorage;
-				} else {
-					await this.clear();
-				}
-			}
-			this.initialized = true;
-		} catch (error) {
-			console.error('Failed to initialize storage:', error);
-			await this.clear();
-			this.initialized = true;
-		}
-	}
-
-	public isInitialized(): boolean {
-		return this.initialized;
-	}
-
 	private async saveStorage(): Promise<void> {
-		if (!this.initialized) {
-			throw new Error('Store is not initialized');
-		}
 		try {
 			await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(this.storage));
 		} catch (error) {
@@ -92,9 +54,9 @@ class Store {
 		return currentAccount?.balance || null;
 	}
 
-	public getCurrentAccountPubKey(): PubKey | null {
+	public getCurrentAccountTbcPubKey(): string | null {
 		const currentAccount = this.getCurrentAccount();
-		return currentAccount?.pubKeys || null;
+		return currentAccount?.pubKey.tbcPubKey || null;
 	}
 
 	public getCurrentAccountUtxos(): StoredUtxo[] | null {
@@ -158,8 +120,8 @@ class Store {
 			: null;
 	}
 
-	public isTaprootAccount(address: string): boolean {
-		const account = this.storage.accounts[address];
+	public isTaprootAccount(): boolean {
+		const account = this.storage.accounts[this.storage.currentAccount];
 		return account?.type === AccountType.TAPROOT;
 	}
 

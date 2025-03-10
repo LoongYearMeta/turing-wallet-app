@@ -29,7 +29,7 @@ export interface Account {
 	encryptedKeys: string;
 	addresses: Addresses;
 	balance: Balance;
-	pubKeys: PubKey;
+	pubKey: PubKey;
 	paymentUtxos: StoredUtxo[];
 	type: AccountType;
 }

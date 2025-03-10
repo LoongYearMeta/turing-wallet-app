@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-import { addFTPublic } from '@/lib/ft';
-import type { FTPublic } from '@/utils/sqlite';
+import { addFTPublic, type FTPublic } from '@/utils/sqlite';
 
 interface FTInfoResponse {
 	ftContractId: string;

@@ -4,7 +4,7 @@ import {
 	addTransactionHistory,
 	getTransactionHistoryById,
 	getTransactionHistoryCount,
-} from '@/lib/transaction_history';
+} from '@/utils/sqlite';
 
 interface TransactionHistoryResponse {
 	address: string;

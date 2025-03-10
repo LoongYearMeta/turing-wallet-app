@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-import { addNFTHistory, getNFTHistoryById } from '@/lib/nft';
-import type { NFTHistory } from '@/utils/sqlite';
+import { addNFTHistory, getNFTHistoryById, type NFTHistory } from '@/utils/sqlite';
 
 interface NFTHistoryResponse {
 	address: string;

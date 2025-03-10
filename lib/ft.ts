@@ -3,12 +3,11 @@ import * as contract from 'tbc-contract';
 import * as tbc from 'tbc-lib-js';
 
 import { fetchUTXOs } from '@/actions/get-utxos';
+import { getTaprootTweakPrivateKey } from '@/lib/taproot';
 import { sendTbc } from '@/lib/tbc';
 import { calculateFee } from '@/lib/util';
 import { Transaction } from '@/types';
 import { retrieveKeys } from '@/utils/key';
-import type { FT, FTHistory, FTPublic } from '@/utils/sqlite';
-import { database } from '@/utils/sqlite';
 import { store } from '@/utils/store';
 
 export const sendFT = async (
@@ -20,7 +19,12 @@ export const sendFT = async (
 ): Promise<Transaction> => {
 	try {
 		const { walletWif } = retrieveKeys(password);
-		const privateKey = tbc.PrivateKey.fromString(walletWif);
+		let privateKey: tbc.PrivateKey;
+		if (store.isTaprootAccount()) {
+			privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+		} else {
+			privateKey = tbc.PrivateKey.fromString(walletWif);
+		}
 		const Token = new contract.FT(contractId);
 		const TokenInfo = await contract.API.fetchFtInfo(Token.contractTxid);
 		Token.initialize(TokenInfo);
@@ -319,121 +323,5 @@ export async function getUTXO(
 		}
 	} catch (error: any) {
 		throw new Error(error.message);
-	}
-}
-
-export async function getAllFTs(
-	userAddress: string,
-	pagination?: { page: number; pageSize: number },
-): Promise<FT[]> {
-	try {
-		return await database.getAllFTs(userAddress, pagination);
-	} catch (error) {
-		return [];
-	}
-}
-
-export async function getFT(id: string, userAddress: string): Promise<FT | null> {
-	try {
-		return await database.getFT(id, userAddress);
-	} catch (error) {
-		return null;
-	}
-}
-
-export async function transferFT(id: string, amount: number, userAddress: string): Promise<void> {
-	try {
-		await database.transferFT(id, amount, userAddress);
-	} catch (error) {
-		if (error instanceof Error) {
-			throw error;
-		}
-		throw new Error('Failed to transfer FT');
-	}
-}
-
-export async function softDeleteFT(id: string, userAddress: string): Promise<void> {
-	try {
-		await database.softDeleteFT(id, userAddress);
-	} catch (error) {
-		throw new Error('Failed to delete FT');
-	}
-}
-
-export async function upsertFT(ft: FT, accountAddress: string): Promise<void> {
-	try {
-		await database.upsertFT(ft, accountAddress);
-	} catch (error) {
-		throw new Error('Failed to save FT data');
-	}
-}
-
-export async function addFTHistory(history: FTHistory): Promise<void> {
-	try {
-		await database.addFTHistory(history);
-	} catch (error) {
-		throw new Error('Failed to add FT history');
-	}
-}
-
-export async function getFTHistoryByContractId(
-	contractId: string,
-	pagination?: { page: number; pageSize: number },
-): Promise<FTHistory[]> {
-	try {
-		return await database.getFTHistoryByContractId(contractId, pagination);
-	} catch (error) {
-		return [];
-	}
-}
-
-export async function getFTHistoryById(id: string): Promise<FTHistory | null> {
-	try {
-		return await database.getFTHistoryById(id);
-	} catch (error) {
-		return null;
-	}
-}
-
-export async function removeFT(id: string, userAddress: string): Promise<void> {
-	try {
-		await database.removeFT(id, userAddress);
-	} catch (error) {
-		throw new Error('Failed to remove FT');
-	}
-}
-
-export async function getActiveFTs(
-	userAddress: string,
-	pagination?: { page: number; pageSize: number },
-): Promise<FT[]> {
-	try {
-		return await database.getActiveFTs(userAddress, pagination);
-	} catch (error) {
-		return [];
-	}
-}
-
-export async function addFTPublic(ftPublic: FTPublic): Promise<void> {
-	try {
-		await database.addFTPublic(ftPublic);
-	} catch (error) {
-		throw new Error('Failed to add FT public data');
-	}
-}
-
-export async function removeFTPublic(id: string): Promise<void> {
-	try {
-		await database.removeFTPublic(id);
-	} catch (error) {
-		throw new Error('Failed to remove FT public data');
-	}
-}
-
-export async function getAllFTPublics(): Promise<FTPublic[]> {
-	try {
-		return await database.getAllFTPublics();
-	} catch (error) {
-		return [];
 	}
 }

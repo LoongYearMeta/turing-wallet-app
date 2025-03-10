@@ -3,11 +3,11 @@ import * as contract from 'tbc-contract';
 import * as tbc from 'tbc-lib-js';
 
 import { getUTXOs } from '@/actions/get-utxos';
+import { getTaprootTweakPrivateKey } from '@/lib/taproot';
 import { calculateFee } from '@/lib/util';
 import { Transaction } from '@/types';
 import { retrieveKeys } from '@/utils/key';
-import type { Collection, NFT, NFTHistory } from '@/utils/sqlite';
-import { database } from '@/utils/sqlite';
+import { store } from '@/utils/store';
 
 export const createCollection = async (
 	collection_data: contract.CollectionData,
@@ -16,7 +16,12 @@ export const createCollection = async (
 ): Promise<Transaction> => {
 	try {
 		const { walletWif } = retrieveKeys(password);
-		const privateKey = tbc.PrivateKey.fromString(walletWif);
+		let privateKey: tbc.PrivateKey;
+		if (store.isTaprootAccount()) {
+			privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+		} else {
+			privateKey = tbc.PrivateKey.fromString(walletWif);
+		}
 		const utxos = await getUTXOs(address_from, 0.05);
 		const txraw = contract.NFT.createCollection(address_from, privateKey, collection_data, utxos);
 		return {
@@ -41,7 +46,12 @@ export const createNFT = async (
 ) => {
 	try {
 		const { walletWif } = retrieveKeys(password);
-		const privateKey = tbc.PrivateKey.fromString(walletWif);
+		let privateKey: tbc.PrivateKey;
+		if (store.isTaprootAccount()) {
+			privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+		} else {
+			privateKey = tbc.PrivateKey.fromString(walletWif);
+		}
 		const utxos = await getUTXOs(address_from, 0.05);
 		const nfttxo = await contract.API.fetchNFTTXO({
 			script: contract.NFT.buildMintScript(address_from).toBuffer().toString('hex'),
@@ -79,7 +89,12 @@ export const transferNFT = async (
 ): Promise<Transaction> => {
 	try {
 		const { walletWif } = retrieveKeys(password);
-		const privateKey = tbc.PrivateKey.fromString(walletWif);
+		let privateKey: tbc.PrivateKey;
+		if (store.isTaprootAccount()) {
+			privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+		} else {
+			privateKey = tbc.PrivateKey.fromString(walletWif);
+		}
 
 		const nft = new contract.NFT(contract_id);
 		const nftInfo = await contract.API.fetchNFTInfo(contract_id, 'mainnet');
@@ -116,166 +131,3 @@ export const transferNFT = async (
 		throw new Error(error.message);
 	}
 };
-
-export async function addCollection(collection: Collection, accountAddress: string): Promise<void> {
-	try {
-		await database.addCollection(collection, accountAddress);
-	} catch (error) {
-		throw new Error('Failed to add collection');
-	}
-}
-
-export async function addNFT(nft: NFT, userAddress: string): Promise<void> {
-	try {
-		const collection = await getCollection(nft.collection_id);
-		if (!collection || collection.isDeleted) {
-			nft.isDeleted = true;
-		}
-		await database.addNFT(nft, userAddress);
-	} catch (error) {
-		throw new Error('Failed to add NFT');
-	}
-}
-
-export async function getNFTsByCollection(
-	collectionId: string,
-	userAddress: string,
-	pagination?: { page: number; pageSize: number },
-): Promise<NFT[]> {
-	try {
-		return await database.getNFTsByCollection(collectionId, userAddress, pagination);
-	} catch (error) {
-		return [];
-	}
-}
-
-export async function getNFTWithCollection(
-	nftId: string,
-): Promise<{ nft: NFT; collection: Collection } | null> {
-	try {
-		return await database.getNFTWithCollection(nftId);
-	} catch (error) {
-		return null;
-	}
-}
-
-export async function removeNFT(nftId: string): Promise<void> {
-	try {
-		await database.removeNFT(nftId);
-	} catch (error) {
-		throw new Error('Failed to remove NFT');
-	}
-}
-
-export async function softDeleteCollection(collectionId: string): Promise<void> {
-	try {
-		await database.softDeleteCollection(collectionId);
-	} catch (error) {
-		throw new Error('Failed to delete collection');
-	}
-}
-
-export async function softDeleteNFT(nftId: string): Promise<void> {
-	try {
-		await database.softDeleteNFT(nftId);
-	} catch (error) {
-		throw new Error('Failed to delete NFT');
-	}
-}
-
-export async function updateNFTTransferTimes(nftId: string, transferTimes: number): Promise<void> {
-	try {
-		await database.updateNFTTransferTimes(nftId, transferTimes);
-	} catch (error) {
-		throw new Error('Failed to update NFT transfer times');
-	}
-}
-
-export async function getCollection(id: string): Promise<Collection | null> {
-	try {
-		return await database.getCollection(id);
-	} catch (error) {
-		return null;
-	}
-}
-
-export async function getNFT(id: string): Promise<NFT | null> {
-	try {
-		return await database.getNFT(id);
-	} catch (error) {
-		return null;
-	}
-}
-
-export async function getAllCollections(
-	userAddress: string,
-	pagination?: { page: number; pageSize: number },
-): Promise<Collection[]> {
-	try {
-		return await database.getAllCollections(userAddress, pagination);
-	} catch (error) {
-		return [];
-	}
-}
-
-export async function addNFTHistory(history: NFTHistory): Promise<void> {
-	try {
-		await database.addNFTHistory(history);
-	} catch (error) {
-		throw new Error('Failed to add NFT history');
-	}
-}
-
-export async function getNFTHistoryByContractId(contractId: string): Promise<NFTHistory[]> {
-	try {
-		return await database.getNFTHistoryByContractId(contractId);
-	} catch (error) {
-		return [];
-	}
-}
-
-export async function getNFTHistoryById(id: string): Promise<NFTHistory | null> {
-	try {
-		return await database.getNFTHistoryById(id);
-	} catch (error) {
-		return null;
-	}
-}
-
-export async function getCollectionCount(userAddress: string): Promise<number> {
-	try {
-		return await database.getCollectionCount(userAddress);
-	} catch (error) {
-		return 0;
-	}
-}
-
-export async function getNFTCount(userAddress: string): Promise<number> {
-	try {
-		return await database.getNFTCount(userAddress);
-	} catch (error) {
-		return 0;
-	}
-}
-
-export async function getAllNFTs(
-	userAddress: string,
-	pagination?: { page: number; pageSize: number },
-): Promise<NFT[]> {
-	try {
-		return await database.getAllNFTs(userAddress, pagination);
-	} catch (error) {
-		return [];
-	}
-}
-
-export async function getActiveNFTs(
-	userAddress: string,
-	pagination?: { page: number; pageSize: number },
-): Promise<NFT[]> {
-	try {
-		return await database.getActiveNFTs(userAddress, pagination);
-	} catch (error) {
-		return [];
-	}
-}

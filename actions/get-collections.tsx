@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-import { addCollection, getCollection, getCollectionCount } from '@/lib/nft';
-import type { Collection } from '@/utils/sqlite';
+import { addCollection, getCollection, getCollectionCount, type Collection } from '@/utils/sqlite';
 
 interface CollectionResponse {
 	collectionCount: number;

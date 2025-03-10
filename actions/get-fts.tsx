@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-import { getAllFTs, getFT, removeFT, upsertFT } from '@/lib/ft';
-import type { FT } from '@/utils/sqlite';
+import { getAllFTs, getFT, removeFT, upsertFT, type FT } from '@/utils/sqlite';
 
 interface FTResponse {
 	address: string;
