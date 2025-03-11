@@ -3,11 +3,13 @@ import * as contract from 'tbc-contract';
 import * as tbc from 'tbc-lib-js';
 
 import { getUTXOs } from '@/actions/get-utxos';
+import { useAccount } from '@/hooks/useAccount';
 import { getTaprootTweakPrivateKey } from '@/lib/taproot';
 import { calculateFee } from '@/lib/util';
 import { Transaction } from '@/types';
 import { retrieveKeys } from '@/utils/key';
-import { store } from '@/utils/store';
+
+const { isTaprootAccount } = useAccount();
 
 export const createCollection = async (
 	collection_data: contract.CollectionData,
@@ -17,7 +19,7 @@ export const createCollection = async (
 	try {
 		const { walletWif } = retrieveKeys(password);
 		let privateKey: tbc.PrivateKey;
-		if (store.isTaprootAccount()) {
+		if (isTaprootAccount()) {
 			privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
 		} else {
 			privateKey = tbc.PrivateKey.fromString(walletWif);
@@ -47,7 +49,7 @@ export const createNFT = async (
 	try {
 		const { walletWif } = retrieveKeys(password);
 		let privateKey: tbc.PrivateKey;
-		if (store.isTaprootAccount()) {
+		if (isTaprootAccount()) {
 			privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
 		} else {
 			privateKey = tbc.PrivateKey.fromString(walletWif);
@@ -90,7 +92,7 @@ export const transferNFT = async (
 	try {
 		const { walletWif } = retrieveKeys(password);
 		let privateKey: tbc.PrivateKey;
-		if (store.isTaprootAccount()) {
+		if (isTaprootAccount()) {
 			privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
 		} else {
 			privateKey = tbc.PrivateKey.fromString(walletWif);

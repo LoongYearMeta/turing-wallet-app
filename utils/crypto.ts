@@ -1,39 +1,45 @@
-import crypto from 'crypto';
-
-export const deriveKey = (password: string, salt: string): string => {
-	const saltBuffer = Buffer.from(salt, 'hex');
-	const key = crypto.pbkdf2Sync(password, saltBuffer, 100000, 32, 'sha256');
-	return key.toString('hex');
-};
+import CryptoJS from 'crypto-js';
 
 export const generateRandomSalt = (length = 16): string => {
-	const salt = crypto.randomBytes(length);
-	return salt.toString('hex');
+	const timestamp = new Date().getTime().toString();
+	const randomPart = Math.random().toString().substring(2);
+	const extraEntropy = (Math.random() * 1000000).toString();
+	const combinedString = timestamp + randomPart + extraEntropy;
+	const hash = CryptoJS.SHA256(combinedString);
+	return hash.toString(CryptoJS.enc.Hex).substring(0, length * 2);
 };
 
-export const encrypt = (textToEncrypt: string, password: string): string => {
-	const salt = crypto.randomBytes(16);
-	const key256Bits = crypto.pbkdf2Sync(password, salt, 1000, 32, 'sha256');
-	const iv = crypto.randomBytes(16);
+export const deriveKey = (password: string, salt: string): string => {
+	const key = CryptoJS.PBKDF2(password, salt, {
+		keySize: 256 / 32,
+		iterations: 1000,
+	});
 
-	const cipher = crypto.createCipheriv('aes-256-cbc', key256Bits, iv);
-	let ciphertext = cipher.update(textToEncrypt, 'utf8', 'hex');
-	ciphertext += cipher.final('hex');
-
-	const saltedCiphertext = salt.toString('hex') + iv.toString('hex') + ciphertext;
-	return saltedCiphertext;
+	return key.toString(CryptoJS.enc.Hex);
 };
 
-export const decrypt = (saltedCiphertext: string, password: string): string => {
-	const salt = Buffer.from(saltedCiphertext.slice(0, 32), 'hex');
-	const iv = Buffer.from(saltedCiphertext.slice(32, 64), 'hex');
-	const ciphertext = saltedCiphertext.slice(64);
+export const encrypt = (textToEncrypt: string, key: string): string => {
+	const iv = generateRandomSalt(8);
 
-	const key256Bits = crypto.pbkdf2Sync(password, salt, 1000, 32, 'sha256');
+	const encrypted = CryptoJS.AES.encrypt(textToEncrypt, CryptoJS.enc.Hex.parse(key), {
+		iv: CryptoJS.enc.Hex.parse(iv),
+		padding: CryptoJS.pad.Pkcs7,
+		mode: CryptoJS.mode.CBC,
+	});
 
-	const decipher = crypto.createDecipheriv('aes-256-cbc', key256Bits, iv);
-	let decrypted = decipher.update(ciphertext, 'hex', 'utf8');
-	decrypted += decipher.final('utf8');
+	return iv + encrypted.toString();
+};
 
-	return decrypted;
+export const decrypt = (ciphertext: string, password: string, salt: string): string => {
+	const key = deriveKey(password, salt);
+	const iv = ciphertext.substring(0, 16);
+	const actualCiphertext = ciphertext.substring(16);
+
+	const decrypted = CryptoJS.AES.decrypt(actualCiphertext, CryptoJS.enc.Hex.parse(key), {
+		iv: CryptoJS.enc.Hex.parse(iv),
+		padding: CryptoJS.pad.Pkcs7,
+		mode: CryptoJS.mode.CBC,
+	});
+
+	return decrypted.toString(CryptoJS.enc.Utf8);
 };

@@ -1,8 +1,10 @@
 import '@/shim';
 import * as contract from 'tbc-contract';
 
+import { useAccount } from '@/hooks/useAccount';
 import { StoredUtxo } from '@/types';
-import { store } from '@/utils/store';
+
+const { getCurrentAccountUtxos, updateCurrentAccountUtxos } = useAccount();
 
 export function getTxHexByteLength(txHex: string) {
 	return txHex.length / 2;
@@ -19,7 +21,7 @@ export function calculateFee(txHex: string) {
 export async function finish_transaction(txHex: string, utxos: StoredUtxo[]) {
 	const txId = await contract.API.broadcastTXraw(txHex);
 	if (txId) {
-		let currentUtxos = store.getCurrentAccountUtxos();
+		let currentUtxos = getCurrentAccountUtxos();
 		const updatedUtxos = currentUtxos!.map((utxo) => {
 			const isSpent = utxos!.some(
 				(spentUtxo) => spentUtxo.txId === utxo.txId && spentUtxo.outputIndex === utxo.outputIndex,
@@ -27,7 +29,7 @@ export async function finish_transaction(txHex: string, utxos: StoredUtxo[]) {
 			return isSpent ? { ...utxo, isSpented: true } : utxo;
 		});
 
-		await store.updateCurrentAccountUtxos(updatedUtxos);
+		await updateCurrentAccountUtxos(updatedUtxos);
 		return txId;
 	} else {
 		throw new Error('Failed to broadcast transaction.');

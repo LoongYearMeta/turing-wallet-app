@@ -1,14 +1,16 @@
 import '@/shim';
+import axios from 'axios';
 import * as contract from 'tbc-contract';
 import * as tbc from 'tbc-lib-js';
 
+import { useAccount } from '@/hooks/useAccount';
 import { getUTXO, mergeFT, sendFT } from '@/lib/ft';
 import { createCollection, createNFT, transferNFT } from '@/lib/nft';
 import { sendTbc } from '@/lib/tbc';
 import { finish_transaction } from '@/lib/util';
 import { retrieveKeys } from '@/utils/key';
-import { store } from '@/utils/store';
-import axios from 'axios';
+
+const { getCurrentAccountAddress } = useAccount();
 
 export interface SendTransactionResponse {
 	txid?: string;
@@ -57,7 +59,7 @@ interface FTData {
 
 export const sendTbcResponse = async (address_to: string, amount: number, password: string) => {
 	try {
-		const address_from = store.getCurrentAccountAddress();
+		const address_from = getCurrentAccountAddress();
 		const { txHex, utxos } = await sendTbc(address_from, address_to, amount, password);
 		const txid = await finish_transaction(txHex, utxos!);
 		if (!txid) {
@@ -74,7 +76,7 @@ export const createCollectionResponse = async (
 	password: string,
 ) => {
 	try {
-		const address_from = store.getCurrentAccountAddress();
+		const address_from = getCurrentAccountAddress();
 		const { txHex, utxos } = await createCollection(collection_data, address_from, password);
 		const txid = await finish_transaction(txHex, utxos!);
 		if (!txid) {
@@ -92,7 +94,7 @@ export const createNFTResponse = async (
 	password: string,
 ) => {
 	try {
-		const address_from = store.getCurrentAccountAddress();
+		const address_from = getCurrentAccountAddress();
 		const { txHex, utxos } = await createNFT(collection_id, nft_data, address_from, password);
 		const txid = await finish_transaction(txHex, utxos!);
 		if (!txid) {
@@ -111,7 +113,7 @@ export const transferNFTResponse = async (
 	password: string,
 ) => {
 	try {
-		const address_from = store.getCurrentAccountAddress();
+		const address_from = getCurrentAccountAddress();
 		const { txHex, utxos } = await transferNFT(
 			contract_id,
 			address_from,
@@ -133,7 +135,7 @@ export const mintFTResponse = async (ft_data: FTData, password: string) => {
 	try {
 		const { walletWif } = retrieveKeys(password);
 		const privateKey = tbc.PrivateKey.fromString(walletWif);
-		const address_from = store.getCurrentAccountAddress();
+		const address_from = getCurrentAccountAddress();
 		const utxo = await getUTXO(address_from, 0.01, password);
 		const newToken = new contract.FT({
 			name: ft_data.name,
@@ -166,7 +168,7 @@ export const transferFTResponse = async (
 	password: string,
 ) => {
 	try {
-		const address_from = store.getCurrentAccountAddress();
+		const address_from = getCurrentAccountAddress();
 		const { txHex, utxos } = await sendFT(contract_id, address_from, address_to, amount, password);
 		const txid = await finish_transaction(txHex, utxos!);
 		if (!txid) {
@@ -187,7 +189,7 @@ export const mintPoolNFTResponse = async (
 	password: string,
 ) => {
 	try {
-		const address_from = store.getCurrentAccountAddress();
+		const address_from = getCurrentAccountAddress();
 		const { walletWif } = retrieveKeys(password);
 		const privateKey = tbc.PrivateKey.fromString(walletWif);
 		const utxo = await getUTXO(address_from, 0.01, password);
@@ -252,7 +254,7 @@ export const initPoolNFTResponse = async (
 	password: string,
 ) => {
 	try {
-		const address_from = store.getCurrentAccountAddress();
+		const address_from = getCurrentAccountAddress();
 		const { walletWif } = retrieveKeys(password);
 		const privateKey = tbc.PrivateKey.fromString(walletWif);
 		const utxo = await getUTXO(address_from, 0.01, password);
@@ -297,7 +299,7 @@ export const increaseLPResponse = async (
 ) => {
 	const tbcAmount: number = tbc_amount;
 	try {
-		const address_from = store.getCurrentAccountAddress();
+		const address_from = getCurrentAccountAddress();
 		const { walletWif } = retrieveKeys(password);
 		const privateKey = tbc.PrivateKey.fromString(walletWif);
 		let poolUse;
@@ -348,7 +350,7 @@ export const consumeLPResponse = async (
 	password: string,
 ) => {
 	try {
-		const address_from = store.getCurrentAccountAddress();
+		const address_from = getCurrentAccountAddress();
 		const { walletWif } = retrieveKeys(password);
 		const privateKey = tbc.PrivateKey.fromString(walletWif);
 		let poolUse;
@@ -447,7 +449,7 @@ export const swapToTokenResponse = async (
 	password: string,
 ) => {
 	try {
-		const address_from = store.getCurrentAccountAddress();
+		const address_from = getCurrentAccountAddress();
 		const { walletWif } = retrieveKeys(password);
 		const privateKey = tbc.PrivateKey.fromString(walletWif);
 
@@ -503,7 +505,7 @@ export const swapToTbcResponse = async (
 	password: string,
 ) => {
 	try {
-		const address_from = store.getCurrentAccountAddress();
+		const address_from = getCurrentAccountAddress();
 		const { walletWif } = retrieveKeys(password);
 		const privateKey = tbc.PrivateKey.fromString(walletWif);
 
@@ -569,7 +571,7 @@ export const poolNFTMergeResponse = async (
 	password: string,
 ) => {
 	try {
-		const address_from = store.getCurrentAccountAddress();
+		const address_from = getCurrentAccountAddress();
 		const { walletWif } = retrieveKeys(password);
 		const privateKey = tbc.PrivateKey.fromString(walletWif);
 		let poolUse;
@@ -615,7 +617,7 @@ export const mergeFTLPResponse = async (
 	password: string,
 ) => {
 	try {
-		const address_from = store.getCurrentAccountAddress();
+		const address_from = getCurrentAccountAddress();
 		const { walletWif } = retrieveKeys(password);
 		const privateKey = tbc.PrivateKey.fromString(walletWif);
 		let poolUse;

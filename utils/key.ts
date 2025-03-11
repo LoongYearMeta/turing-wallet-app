@@ -1,9 +1,10 @@
 import '@/shim';
+import * as bip39 from 'bip39';
 import * as tbc from 'tbc-lib-js';
 
+import { useAccount } from '@/hooks/useAccount';
 import { Keys } from '@/types';
 import { decrypt, deriveKey, encrypt, generateRandomSalt } from '@/utils/crypto';
-import { store } from '@/utils/store';
 
 enum Tag {
 	Turing = 'turing',
@@ -12,16 +13,16 @@ enum Tag {
 	Nabox = 'nabox',
 }
 
-export const generateKeysEncrypted_mnemonic = async (
-	password: string,
-	mnemonic?: string,
-	tag?: Tag,
-) => {
-	if (mnemonic) {
-		if (!tbc.Mnemonic.isValid(mnemonic)) return null;
+export const generateKeysEncrypted_mnemonic = (password: string, mnemonic?: string, tag?: Tag) => {
+	if (!mnemonic) {
+		const entropy = generateRandomSalt(16);
+		mnemonic = bip39.entropyToMnemonic(entropy);
 	} else {
-		mnemonic = tbc.Mnemonic.fromRandom().toString();
+		if (!tbc.Mnemonic.isValid(mnemonic)) {
+			throw new Error('Invalid mnemonic');
+		}
 	}
+
 	let walletDerivation: string;
 	if (tag) {
 		switch (tag) {
@@ -42,17 +43,25 @@ export const generateKeysEncrypted_mnemonic = async (
 		walletDerivation = "m/44'/236'/0'/1/0";
 	}
 	const keys = getKeys_mnemonic(mnemonic, walletDerivation);
+	console.log('mnemonic', mnemonic);
+
+	console.log('keys', keys.walletWif);
+
 	const salt = generateRandomSalt();
 	const passKey = deriveKey(password, salt);
 	const encryptedKeys = encrypt(JSON.stringify(keys), passKey);
+	const pubKey = tbc.PrivateKey.fromWIF(keys.walletWif).toPublicKey().toString();
+	const tbcAddress = tbc.PrivateKey.fromWIF(keys.walletWif).toAddress().toString();
 	return {
 		salt,
 		passKey,
 		encryptedKeys,
+		tbcAddress,
+		pubKey,
 	};
 };
 
-export const generateKeysEncrypted_wif = async (password: string, wif: string) => {
+export const generateKeysEncrypted_wif = (password: string, wif: string) => {
 	if (!tbc.PrivateKey.isValid(wif)) return null;
 	const keys = getKeys_wif(wif);
 	const salt = generateRandomSalt();
@@ -83,16 +92,20 @@ export const getKeys_wif = (wif: string): Keys => {
 };
 
 export const verifyPassword = (password: string): boolean => {
-	const salt = store.getSalt();
-	const passKey = store.getPassKey();
+	const salt = useAccount.getState().getSalt();
+	const passKey = useAccount.getState().getPassKey();
 	const derivedKey = deriveKey(password, salt);
 	return derivedKey === passKey;
 };
 
 export const retrieveKeys = (password: string): Keys => {
-	const currentAccount = store.getCurrentAccount();
-	const encryptedKeys = currentAccount!.encryptedKeys;
-	const passKey = deriveKey(password, store.getSalt());
-	const keys = decrypt(encryptedKeys, passKey);
-	return JSON.parse(keys);
+	const currentAccount = useAccount.getState().getCurrentAccount();
+	if (!currentAccount) {
+		throw new Error('No current account found');
+	}
+
+	const encryptedKeys = currentAccount.encryptedKeys;
+	const salt = useAccount.getState().getSalt();
+
+	return JSON.parse(decrypt(encryptedKeys, password, salt));
 };

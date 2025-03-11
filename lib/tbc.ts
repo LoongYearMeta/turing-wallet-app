@@ -3,11 +3,13 @@ import * as contract from 'tbc-contract';
 import * as tbc from 'tbc-lib-js';
 
 import { getUTXOs } from '@/actions/get-utxos';
+import { useAccount } from '@/hooks/useAccount';
 import { getTaprootTweakPrivateKey } from '@/lib/taproot';
 import { calculateFee } from '@/lib/util';
 import { Transaction } from '@/types';
 import { retrieveKeys } from '@/utils/key';
-import { store } from '@/utils/store';
+
+const { isTaprootAccount } = useAccount();
 
 export const sendTbc = async (
 	address_from: string,
@@ -19,7 +21,7 @@ export const sendTbc = async (
 		const satoshis_amount = Math.floor(tbc_amount * 1e6);
 		const { walletWif } = retrieveKeys(password);
 		let privateKey: tbc.PrivateKey;
-		if (store.isTaprootAccount()) {
+		if (isTaprootAccount()) {
 			privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
 		} else {
 			privateKey = tbc.PrivateKey.fromString(walletWif);

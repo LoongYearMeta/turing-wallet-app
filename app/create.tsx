@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 import Icon from '@/assets/icons';
 import { BackButton } from '@/components/ui/back-button';
@@ -10,15 +11,109 @@ import { Input } from '@/components/ui/input';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { theme } from '@/constants/theme';
 import { hp, wp } from '@/helpers/common';
+import { useAccount } from '@/hooks/useAccount';
+import { AccountType } from '@/types';
+import { decrypt } from '@/utils/crypto';
+import { generateKeysEncrypted_mnemonic, retrieveKeys } from '@/utils/key';
 
 const CreatePage = () => {
-	const passwordRef = useRef('');
-	const confirmPasswordRef = useRef('');
+	const [password, setPassword] = useState('');
+	const [confirmPassword, setConfirmPassword] = useState('');
 	const [loading, setLoading] = useState(false);
-
+	const { addAccount, setCurrentAccount, setPassKeyAndSalt, getAccountsCount } = useAccount();
 	const router = useRouter();
 
-	const onSubmit = async () => {};
+	const validatePassword = (password: string) => {
+		const passwordRegex = /^[a-zA-Z0-9]{6,15}$/;
+		return passwordRegex.test(password);
+	};
+
+	const showToast = (type: 'success' | 'error' | 'info', message: string) => {
+		Toast.show({
+			type,
+			text1: type.charAt(0).toUpperCase() + type.slice(1),
+			text2: message,
+			position: 'top',
+			topOffset: 60,
+			visibilityTime: 3000,
+		});
+	};
+
+	const onSubmit = async () => {
+		try {
+			if (!password || !confirmPassword) {
+				return showToast('error', 'Please fill in all fields');
+			}
+
+			if (!validatePassword(password)) {
+				return showToast(
+					'error',
+					'Password must be 6-15 characters and contain only letters and numbers',
+				);
+			}
+
+			if (password !== confirmPassword) {
+				return showToast('error', 'Passwords do not match');
+			}
+
+			setLoading(true);
+
+			const result = generateKeysEncrypted_mnemonic(password);
+			if (!result) {
+				throw new Error('Failed to generate keys');
+			}
+
+			const { salt, passKey, encryptedKeys, tbcAddress, pubKey } = result;
+
+			await setPassKeyAndSalt(passKey, salt);
+
+			const accountsCount = getAccountsCount();
+			const newAccount = {
+				accountName: `Turing ${accountsCount + 1}`,
+				addresses: {
+					tbcAddress,
+				},
+				encryptedKeys,
+				balance: {
+					tbc: 0,
+					satoshis: 0,
+				},
+				pubKey: {
+					tbcPubKey: pubKey,
+				},
+				paymentUtxos: [],
+				type: AccountType.TBC,
+			};
+
+			await addAccount(newAccount);
+
+			await setCurrentAccount(tbcAddress);
+
+			await new Promise((resolve) => setTimeout(resolve, 100));
+
+			try {
+				const decryptedKeys = retrieveKeys(password);
+				console.log('解密后的助记词:', decryptedKeys.mnemonic);
+				console.log('解密后的私钥:', decryptedKeys.walletWif);
+			} catch (error) {
+				console.error('Error retrieving keys:', error);
+				const decryptedKeys = JSON.parse(decrypt(encryptedKeys, password, salt));
+				console.log('直接解密 - 助记词:', decryptedKeys.mnemonic);
+				console.log('直接解密 - 私钥:', decryptedKeys.walletWif);
+			}
+
+			showToast('success', 'Wallet created successfully!');
+
+			setTimeout(() => {
+				router.replace('/(tabs)/home');
+			}, 1500);
+		} catch (error) {
+			console.error('Error creating wallet:', error);
+			showToast('error', 'Failed to create wallet. Please try again.');
+		} finally {
+			setLoading(false);
+		}
+	};
 
 	return (
 		<ScreenWrapper bg={'white'}>
@@ -49,7 +144,8 @@ const CreatePage = () => {
 								secureTextEntry
 								placeholder="Enter your password"
 								placeholderTextColor={theme.colors.textLight}
-								onChangeText={(value: string) => (passwordRef.current = value)}
+								value={password}
+								onChangeText={setPassword}
 							/>
 						</View>
 
@@ -60,7 +156,8 @@ const CreatePage = () => {
 								secureTextEntry
 								placeholder="Confirm your password"
 								placeholderTextColor={theme.colors.textLight}
-								onChangeText={(value: string) => (confirmPasswordRef.current = value)}
+								value={confirmPassword}
+								onChangeText={setConfirmPassword}
 							/>
 						</View>
 					</View>

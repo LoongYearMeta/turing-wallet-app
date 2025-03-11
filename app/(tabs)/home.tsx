@@ -1,17 +1,15 @@
 import '@/shim';
 import { Image, Platform, StyleSheet } from 'react-native';
-import * as tbc from 'tbc-lib-js';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { useAccount } from '@/hooks/useAccount';
 
 export default function HomeScreen() {
-	const privateKey = tbc.PrivateKey.fromString(
-		'L2mgQVNBSJWvTfLToGN5g4j1ygYmj5bDRCAzonLR41DxteThWgeA',
-	);
-	const address = privateKey.toAddress().toString();
+	const { getCurrentAccountAddress } = useAccount();
+	const address = getCurrentAccountAddress();
 	return (
 		<ParallaxScrollView
 			headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}

@@ -3,12 +3,14 @@ import * as contract from 'tbc-contract';
 import * as tbc from 'tbc-lib-js';
 
 import { fetchUTXOs } from '@/actions/get-utxos';
+import { useAccount } from '@/hooks/useAccount';
 import { getTaprootTweakPrivateKey } from '@/lib/taproot';
 import { sendTbc } from '@/lib/tbc';
 import { calculateFee } from '@/lib/util';
 import { Transaction } from '@/types';
 import { retrieveKeys } from '@/utils/key';
-import { store } from '@/utils/store';
+
+const { isTaprootAccount, getCurrentAccountUtxos, updateCurrentAccountUtxos } = useAccount();
 
 export const sendFT = async (
 	contractId: string,
@@ -20,7 +22,7 @@ export const sendFT = async (
 	try {
 		const { walletWif } = retrieveKeys(password);
 		let privateKey: tbc.PrivateKey;
-		if (store.isTaprootAccount()) {
+		if (isTaprootAccount()) {
 			privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
 		} else {
 			privateKey = tbc.PrivateKey.fromString(walletWif);
@@ -261,7 +263,7 @@ export async function getUTXO(
 ): Promise<tbc.Transaction.IUnspentOutput> {
 	try {
 		const satoshis_amount = Math.floor(tbc_amount * 1e6);
-		let utxos = store.getCurrentAccountUtxos();
+		let utxos = getCurrentAccountUtxos();
 		if (!utxos || utxos.length === 0) {
 			throw new Error('The balance in the account is zero.');
 		}
@@ -271,7 +273,7 @@ export async function getUTXO(
 			if (!utxos || utxos.length === 0) {
 				throw new Error('The balance in the account is zero.');
 			}
-			await store.updateCurrentAccountUtxos(utxos);
+			await updateCurrentAccountUtxos(utxos);
 			utxo_amount = utxos.reduce((acc, utxo) => acc + utxo.satoshis, 0);
 			if (utxo_amount < satoshis_amount) {
 				throw new Error('Insufficient balance.');
@@ -291,7 +293,7 @@ export async function getUTXO(
 			const { txHex, utxos, satoshis } = await sendTbc(address, address, tbc_amount, password);
 			const txId = await contract.API.broadcastTXraw(txHex);
 			if (txId) {
-				let currentUtxos = store.getCurrentAccountUtxos();
+				let currentUtxos = getCurrentAccountUtxos();
 				const updatedUtxos = currentUtxos!.map((utxo) => {
 					const isSpent = utxos!.some(
 						(spentUtxo) =>
@@ -300,7 +302,7 @@ export async function getUTXO(
 					return isSpent ? { ...utxo, isSpented: true } : utxo;
 				});
 
-				await store.updateCurrentAccountUtxos(updatedUtxos);
+				await updateCurrentAccountUtxos(updatedUtxos);
 
 				const newUtxo = {
 					txId,
@@ -314,7 +316,7 @@ export async function getUTXO(
 					isSpented: false,
 				};
 
-				await store.updateCurrentAccountUtxos([...updatedUtxos, storedUtxo]);
+				await updateCurrentAccountUtxos([...updatedUtxos, storedUtxo]);
 
 				return newUtxo;
 			} else {

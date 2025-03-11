@@ -6,7 +6,7 @@ import { Animated, Dimensions, Easing, StyleSheet, View } from 'react-native';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { theme } from '@/constants/theme';
 import { hp, wp } from '@/helpers/common';
-import { store } from '@/utils/store';
+import { useAccount } from '@/hooks/useAccount';
 
 const { width } = Dimensions.get('window');
 const ANIMATION_DURATION = 1200;
@@ -19,6 +19,8 @@ const WelcomePage = () => {
 	const imageScale = new Animated.Value(0.9);
 	const textOpacity = new Animated.Value(0);
 	const textTranslateY = new Animated.Value(15);
+
+	const { getCurrentAccountAddress } = useAccount();
 
 	useEffect(() => {
 		Animated.parallel([
@@ -54,8 +56,8 @@ const WelcomePage = () => {
 		}, TEXT_ANIMATION_DELAY);
 
 		const timer = setTimeout(() => {
-			const currentAccount = store.getCurrentAccount();
-			if (currentAccount) {
+			const address = getCurrentAccountAddress();
+			if (address) {
 				router.replace('/(tabs)/home');
 			} else {
 				router.replace('/login');

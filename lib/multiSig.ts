@@ -1,15 +1,17 @@
 import '@/shim';
+import axios from 'axios';
 import * as contract from 'tbc-contract';
 import * as tbc from 'tbc-lib-js';
 
 import { getUTXOs } from '@/actions/get-utxos';
+import { useAccount } from '@/hooks/useAccount';
 import { transferFT_multiSig_create } from '@/lib/ft';
 import { sendTbc_multiSig_create } from '@/lib/tbc';
 import { finish_transaction } from '@/lib/util';
 import { retrieveKeys } from '@/utils/key';
 import { getMultiSigPubKeys } from '@/utils/sqlite';
-import { store } from '@/utils/store';
-import axios from 'axios';
+
+const { getCurrentAccountTbcPubKey } = useAccount();
 
 export async function createMultiSigWallet(
 	pubKeys: string[],
@@ -53,7 +55,7 @@ export async function createMultiSigTransaction(
 ) {
 	try {
 		const url = 'https://turingwallet.xyz/multy/sig/create/history';
-		const pubKey = store.getCurrentAccountTbcPubKey();
+		const pubKey = getCurrentAccountTbcPubKey();
 		if (!pubKey) {
 			throw new Error('No public Key found');
 		}
