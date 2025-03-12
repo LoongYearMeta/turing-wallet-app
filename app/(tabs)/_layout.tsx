@@ -1,49 +1,56 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
 
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { theme } from '@/constants/theme';
+import { hp } from '@/helpers/common';
 
 export default function TabLayout() {
-	const colorScheme = useColorScheme();
-
 	return (
 		<Tabs
 			screenOptions={{
-				tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
 				headerShown: false,
-				tabBarButton: HapticTab,
-				tabBarBackground: TabBarBackground,
 				tabBarStyle: {
-					...Platform.select({
-						ios: {
-							position: 'absolute',
-							height: 60,
-							bottom: 0,
-						},
-						default: {
-							height: 60,
-						},
-					}),
+					height: Platform.OS === 'ios' ? hp(10) : hp(8),
+					paddingTop: hp(1),
+					backgroundColor: '#F5F5F5',
+					borderTopWidth: 1,
+					borderTopColor: '#E0E0E0',
+				},
+				tabBarActiveTintColor: theme.colors.primary,
+				tabBarInactiveTintColor: 'rgba(0,0,0,0.4)',
+				tabBarLabelStyle: {
+					fontSize: hp(1.4),
+					fontFamily: theme.fonts.medium,
 				},
 			}}
 		>
 			<Tabs.Screen
-				name="index"
+				name="home"
 				options={{
 					title: 'Home',
-					tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name="wallet-outline" size={size} color={color} />
+					),
 				}}
 			/>
 			<Tabs.Screen
-				name="explore"
+				name="token"
 				options={{
-					title: 'Explore',
-					tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+					title: 'Token',
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name="diamond-outline" size={size} color={color} />
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name="dapp"
+				options={{
+					title: 'DApp',
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons name="grid-outline" size={size} color={color} />
+					),
 				}}
 			/>
 		</Tabs>

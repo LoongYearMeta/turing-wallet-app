@@ -2,7 +2,6 @@ import '@/shim';
 import * as bip39 from 'bip39';
 import * as tbc from 'tbc-lib-js';
 
-import { useAccount } from '@/hooks/useAccount';
 import { Keys } from '@/types';
 import { decrypt, deriveKey, encrypt, generateRandomSalt } from '@/utils/crypto';
 
@@ -43,10 +42,6 @@ export const generateKeysEncrypted_mnemonic = (password: string, mnemonic?: stri
 		walletDerivation = "m/44'/236'/0'/1/0";
 	}
 	const keys = getKeys_mnemonic(mnemonic, walletDerivation);
-	console.log('mnemonic', mnemonic);
-
-	console.log('keys', keys.walletWif);
-
 	const salt = generateRandomSalt();
 	const passKey = deriveKey(password, salt);
 	const encryptedKeys = encrypt(JSON.stringify(keys), passKey);
@@ -91,21 +86,11 @@ export const getKeys_wif = (wif: string): Keys => {
 	};
 };
 
-export const verifyPassword = (password: string): boolean => {
-	const salt = useAccount.getState().getSalt();
-	const passKey = useAccount.getState().getPassKey();
+export const verifyPassword = (password: string, passKey: string, salt: string): boolean => {
 	const derivedKey = deriveKey(password, salt);
 	return derivedKey === passKey;
 };
 
-export const retrieveKeys = (password: string): Keys => {
-	const currentAccount = useAccount.getState().getCurrentAccount();
-	if (!currentAccount) {
-		throw new Error('No current account found');
-	}
-
-	const encryptedKeys = currentAccount.encryptedKeys;
-	const salt = useAccount.getState().getSalt();
-
+export const retrieveKeys = (password: string, encryptedKeys: string, salt: string): Keys => {
 	return JSON.parse(decrypt(encryptedKeys, password, salt));
 };

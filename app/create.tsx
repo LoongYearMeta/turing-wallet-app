@@ -12,9 +12,8 @@ import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { theme } from '@/constants/theme';
 import { hp, wp } from '@/helpers/common';
 import { useAccount } from '@/hooks/useAccount';
-import { AccountType } from '@/types';
-import { decrypt } from '@/utils/crypto';
-import { generateKeysEncrypted_mnemonic, retrieveKeys } from '@/utils/key';
+import { Account, AccountType } from '@/types';
+import { generateKeysEncrypted_mnemonic } from '@/utils/key';
 
 const CreatePage = () => {
 	const [password, setPassword] = useState('');
@@ -68,7 +67,7 @@ const CreatePage = () => {
 			await setPassKeyAndSalt(passKey, salt);
 
 			const accountsCount = getAccountsCount();
-			const newAccount = {
+			const newAccount: Account = {
 				accountName: `Turing ${accountsCount + 1}`,
 				addresses: {
 					tbcAddress,
@@ -90,17 +89,6 @@ const CreatePage = () => {
 			await setCurrentAccount(tbcAddress);
 
 			await new Promise((resolve) => setTimeout(resolve, 100));
-
-			try {
-				const decryptedKeys = retrieveKeys(password);
-				console.log('解密后的助记词:', decryptedKeys.mnemonic);
-				console.log('解密后的私钥:', decryptedKeys.walletWif);
-			} catch (error) {
-				console.error('Error retrieving keys:', error);
-				const decryptedKeys = JSON.parse(decrypt(encryptedKeys, password, salt));
-				console.log('直接解密 - 助记词:', decryptedKeys.mnemonic);
-				console.log('直接解密 - 私钥:', decryptedKeys.walletWif);
-			}
 
 			showToast('success', 'Wallet created successfully!');
 

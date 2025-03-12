@@ -43,6 +43,7 @@ interface AccountStore extends AccountState {
 	setPassKeyAndSalt: (passKey: string, salt: string) => Promise<void>;
 	getSalt: () => string;
 	getPassKey: () => string;
+	getEncryptedKeys: () => string | null;
 
 	clear: () => Promise<void>;
 }
@@ -248,6 +249,11 @@ export const useAccount = create(
 			getSalt: () => get().salt,
 
 			getPassKey: () => get().passKey,
+
+			getEncryptedKeys: () => {
+				const currentAccount = get().getCurrentAccount();
+				return currentAccount?.encryptedKeys || null;
+			},
 
 			clear: async () => {
 				set({
