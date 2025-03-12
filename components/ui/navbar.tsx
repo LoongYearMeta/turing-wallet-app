@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-between',
 		height: hp(6),
 		paddingHorizontal: wp(5),
-		backgroundColor: 'white',
+		backgroundColor: '#f5f5f5',
 		borderBottomWidth: 1,
 		borderBottomColor: '#E0E0E0',
 		paddingTop: hp(0.5),

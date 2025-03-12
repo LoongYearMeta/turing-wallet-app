@@ -8,7 +8,7 @@ import { wp } from '@/helpers/common';
 const TokenPage = () => {
 	return (
 		<ScreenWrapper bg="white">
-			<Navbar title="Token" />
+			<Navbar title="NFT" />
 			<View style={styles.container}>{/* Add your token page content here */}</View>
 		</ScreenWrapper>
 	);

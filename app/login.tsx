@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { LoginCard } from '@/components/ui/login-card';
+import { LoginCard } from '@/components/login-card';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { theme } from '@/constants/theme';
 import { hp, wp } from '@/helpers/common';

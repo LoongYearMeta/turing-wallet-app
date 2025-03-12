@@ -1,58 +1,52 @@
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { theme } from '@/constants/theme';
-import { hp } from '@/helpers/common';
 
 export default function TabLayout() {
 	return (
 		<Tabs
 			screenOptions={{
-				headerShown: false,
-				tabBarStyle: {
-					height: Platform.OS === 'ios' ? hp(10) : hp(8),
-					paddingTop: hp(1),
-					backgroundColor: '#F5F5F5',
-					borderTopWidth: 1,
-					borderTopColor: '#E0E0E0',
-				},
+				tabBarStyle: styles.tabBar,
 				tabBarActiveTintColor: theme.colors.primary,
-				tabBarInactiveTintColor: 'rgba(0,0,0,0.4)',
-				tabBarLabelStyle: {
-					fontSize: hp(1.4),
-					fontFamily: theme.fonts.medium,
-				},
+				tabBarInactiveTintColor: theme.colors.textLight,
+				headerShown: false,
 			}}
 		>
 			<Tabs.Screen
-				name="home"
+				name="home/index"
 				options={{
 					title: 'Home',
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name="wallet-outline" size={size} color={color} />
-					),
+					tabBarIcon: ({ color, size }) => <MaterialIcons name="home" size={size} color={color} />,
 				}}
 			/>
 			<Tabs.Screen
-				name="token"
+				name="nft/index"
 				options={{
-					title: 'Token',
+					title: 'NFT',
 					tabBarIcon: ({ color, size }) => (
-						<Ionicons name="diamond-outline" size={size} color={color} />
+						<MaterialIcons name="diamond" size={size} color={color} />
 					),
 				}}
 			/>
 			<Tabs.Screen
-				name="dapp"
+				name="dapp/index"
 				options={{
 					title: 'DApp',
-					tabBarIcon: ({ color, size }) => (
-						<Ionicons name="grid-outline" size={size} color={color} />
-					),
+					tabBarIcon: ({ color, size }) => <MaterialIcons name="apps" size={size} color={color} />,
 				}}
 			/>
 		</Tabs>
 	);
 }
+
+const styles = StyleSheet.create({
+	tabBar: {
+		backgroundColor: '#fff',
+		borderTopWidth: 1,
+		borderTopColor: '#f0f0f0',
+		height: 60,
+		paddingBottom: 5,
+	},
+});

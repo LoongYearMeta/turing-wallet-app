@@ -30,28 +30,31 @@ interface FTBalanceResponse {
 }
 
 export async function getTbcBalance(address: string): Promise<Balance> {
-	try {
-		const response = await axios.get<BalanceResponse>(
-			`https://turingwallet.xyz/v1/tbc/main/address/${address}/get/balance`,
-		);
+	const response = await axios.get<BalanceResponse>(
+		`https://turingwallet.xyz/v1/tbc/main/address/${address}/get/balance`,
+	);
 
-		if (response.data.status !== 0) {
-			throw new Error('Failed to get balance');
-		}
-
-		const balance: Balance = {
-			satoshis: response.data.data.balance,
-			tbc: response.data.data.balance * 1e-6,
-		};
-
-		return balance;
-	} catch (error) {
-		if (error instanceof Error) {
-			throw error;
-		}
-		throw new Error('Failed to get TBC balance');
+	if (response.data.status !== 0) {
+		throw new Error('Failed to get balance');
 	}
+
+	const balance: Balance = {
+		satoshis: response.data.data.balance,
+		tbc: response.data.data.balance * 1e-6,
+	};
+
+	return balance;
 }
+
+export const getExchangeRate = async () => {
+	const res = await axios.get(`https://turingwallet.xyz/v1/tbc/main/exchangerate/`);
+	if (!res.data) {
+		throw new Error('Could not fetch exchange rate ');
+	}
+	const changePercent = res.data.change_percent;
+	const rate = Number(res.data.rate.toFixed(3));
+	return { rate, changePercent };
+};
 
 export async function getTbcBalance_byMultiSigAddress(address: string): Promise<number> {
 	const asmString = contract.MultiSig.getMultiSigLockScript(address);

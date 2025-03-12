@@ -10,7 +10,11 @@ export function calculateFee(txHex: string) {
 	return totalFee;
 }
 
-export const formatLongString = (str: string, showLength: number = 7): string => {
+export const formatLongString = (str: string, showLength: number = 8): string => {
 	if (!str || str.length <= 15) return str;
 	return `${str.slice(0, showLength)}...${str.slice(-showLength)}`;
+};
+
+export const formatBalance = (value: number): string => {
+	return value.toFixed(6);
 };

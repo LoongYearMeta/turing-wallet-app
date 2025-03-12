@@ -39,3 +39,6 @@ app-example
 
 #android
 android/
+
+#vscode
+.vscode/
