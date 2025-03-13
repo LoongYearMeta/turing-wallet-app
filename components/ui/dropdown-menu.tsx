@@ -93,7 +93,7 @@ export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuP
 const getIconName = (label: string): any => {
 	switch (label) {
 		case 'Scan QR Code':
-			return 'scan-outline';
+			return 'qr-code-outline';
 		case 'Information Management':
 			return 'information-circle-outline';
 		case 'Account Management':
@@ -159,11 +159,11 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'flex-start',
 		paddingVertical: hp(1.2),
-		paddingHorizontal: wp(4),
+		paddingHorizontal: wp(2),
 		height: hp(5),
 	},
 	iconContainer: {
-		width: wp(6),
+		width: wp(5),
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
 	menuText: {
 		fontSize: hp(1.4),
 		color: 'white',
-		marginLeft: wp(3),
+		marginLeft: wp(1.5),
 		textAlignVertical: 'center',
 	},
 });

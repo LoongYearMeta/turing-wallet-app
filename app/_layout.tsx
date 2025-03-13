@@ -13,6 +13,8 @@ import React, { useEffect } from 'react';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 
 import { theme } from '@/constants/theme';
+import { initDatabase } from '@/utils/sqlite';
+import { SQLiteProvider } from 'expo-sqlite';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -125,7 +127,7 @@ export default function RootLayout() {
 	}
 
 	return (
-		<>
+		<SQLiteProvider databaseName="wallet.db" onInit={initDatabase}>
 			<StatusBar style="dark" />
 			<Stack
 				screenOptions={{
@@ -138,6 +140,6 @@ export default function RootLayout() {
 				}}
 			/>
 			<Toast config={toastConfig} position="top" topOffset={60} visibilityTime={3000} />
-		</>
+		</SQLiteProvider>
 	);
 }

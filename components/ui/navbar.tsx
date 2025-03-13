@@ -1,17 +1,13 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { hp, wp } from '@/helpers/common';
 import { useAccount } from '@/hooks/useAccount';
 import { Avatar } from './avatar';
 import { DropdownMenu } from './dropdown-menu';
 
-interface NavbarProps {
-	title: string;
-}
-
-export const Navbar = ({ title }: NavbarProps) => {
+export const Navbar = () => {
 	const [menuVisible, setMenuVisible] = useState(false);
 	const router = useRouter();
 	const { getCurrentAccountAddress } = useAccount();
@@ -46,17 +42,18 @@ export const Navbar = ({ title }: NavbarProps) => {
 
 	return (
 		<View style={styles.container}>
-			<Text style={styles.title}>{title}</Text>
-			<Avatar address={address} onPress={() => setMenuVisible(true)} />
-			<DropdownMenu
-				visible={menuVisible}
-				onClose={() => setMenuVisible(false)}
-				items={menuItems.map((item) => ({
-					...item,
-					icon: null,
-				}))}
-				address={address}
-			/>
+			<View style={styles.avatarContainer}>
+				<Avatar address={address} onPress={() => setMenuVisible(true)} />
+				<DropdownMenu
+					visible={menuVisible}
+					onClose={() => setMenuVisible(false)}
+					items={menuItems.map((item) => ({
+						...item,
+						icon: null,
+					}))}
+					address={address}
+				/>
+			</View>
 		</View>
 	);
 };
@@ -65,7 +62,7 @@ const styles = StyleSheet.create({
 	container: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		justifyContent: 'space-between',
+		justifyContent: 'flex-end',
 		height: hp(6),
 		paddingHorizontal: wp(5),
 		backgroundColor: '#f5f5f5',
@@ -73,11 +70,7 @@ const styles = StyleSheet.create({
 		borderBottomColor: '#E0E0E0',
 		paddingTop: hp(0.5),
 	},
-	title: {
-		fontSize: hp(2.6),
-		fontWeight: '600',
-		color: '#333333',
-		includeFontPadding: false,
-		textAlignVertical: 'center',
+	avatarContainer: {
+		position: 'relative',
 	},
 });

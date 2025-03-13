@@ -76,7 +76,7 @@ export interface FTPublic {
 }
 
 export async function initDatabase() {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.execAsync(`
 		PRAGMA journal_mode = WAL;
 		CREATE TABLE IF NOT EXISTS Collection (
@@ -629,4 +629,22 @@ export async function getAllMultiSigAddresses(userAddress: string): Promise<stri
 		[userAddress],
 	);
 	return multiSigs.map((row) => row.multiSig_address);
+}
+
+export async function getFTByName(name: string, userAddress: string): Promise<FT> {
+	const db = await SQLite.openDatabaseAsync('wallet');
+	const result = await db.getAllAsync<FT>(
+		'SELECT * FROM FT WHERE name = ? AND user_address = ? AND isDeleted = 0',
+		[name, userAddress],
+	);
+
+	if (result.length > 1) {
+		throw new Error('Multiple FTs found with the same name');
+	}
+
+	if (result.length === 0) {
+		throw new Error('No FT found with the given name');
+	}
+
+	return result[0];
 }

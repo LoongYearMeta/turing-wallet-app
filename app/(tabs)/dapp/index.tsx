@@ -8,7 +8,7 @@ import { wp } from '@/helpers/common';
 const DAppPage = () => {
 	return (
 		<ScreenWrapper bg="white">
-			<Navbar title="DApp" />
+			<Navbar />
 			<View style={styles.container}>{/* Add your dapp page content here */}</View>
 		</ScreenWrapper>
 	);
