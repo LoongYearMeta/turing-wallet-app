@@ -7,6 +7,7 @@ import Toast from 'react-native-toast-message';
 
 import { getExchangeRate, getTbcBalance } from '@/actions/get-balance';
 import { RoundButton } from '@/components/ui/round-button';
+import { hp, wp } from '@/helpers/common';
 import { useAccount } from '@/hooks/useAccount';
 import { formatBalance } from '@/lib/util';
 
@@ -18,7 +19,6 @@ export const BalanceCard = () => {
 	const [rate, setRate] = useState(0);
 	const [changePercent, setChangePercent] = useState(0);
 
-	// 计算总资产
 	const totalAssets = (balance?.tbc ?? 0) * rate;
 
 	const handleCopyAddress = async () => {
@@ -84,16 +84,13 @@ export const BalanceCard = () => {
 					</View>
 				</View>
 			</View>
-			<View style={styles.addressContainer}>
-				<Text style={styles.addressText}>{address}</Text>
-				<View style={styles.actionButtons}>
-					<TouchableOpacity onPress={handleCopyAddress} style={styles.iconButton}>
-						<MaterialIcons name="content-copy" size={18} color="#666" />
-					</TouchableOpacity>
-					<TouchableOpacity onPress={() => {}} style={styles.iconButton}>
-						<MaterialIcons name="qr-code" size={22} color="#666" />
-					</TouchableOpacity>
-				</View>
+			<View style={styles.addressRow}>
+				<Text style={styles.address} numberOfLines={1} ellipsizeMode="middle">
+					{address}
+				</Text>
+				<TouchableOpacity onPress={handleCopyAddress} style={styles.iconButton}>
+					<MaterialIcons name="content-copy" size={16} color="#666" />
+				</TouchableOpacity>
 			</View>
 			<View style={styles.buttonGroup}>
 				<Link href="/(tabs)/home/send" asChild>
@@ -123,7 +120,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'flex-start',
-		marginBottom: 16,
+		marginBottom: 8,
 	},
 	leftContent: {
 		flex: 1,
@@ -161,7 +158,7 @@ const styles = StyleSheet.create({
 	totalAssetsContainer: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		marginBottom: 8,
+		marginBottom: 4,
 		gap: 8,
 	},
 	totalAssetsLabel: {
@@ -173,27 +170,21 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 		color: '#000',
 	},
-	addressContainer: {
+	addressRow: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
-		marginBottom: 20,
-		flexShrink: 1,
+		marginBottom: hp(1),
 	},
-	addressText: {
-		fontSize: 14,
+	address: {
+		flex: 1,
+		fontSize: hp(1.4),
 		color: '#666',
-		flexShrink: 1,
-		paddingRight: 12,
-	},
-	actionButtons: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 8,
-		flexShrink: 0,
+		marginRight: wp(2),
 	},
 	iconButton: {
 		padding: 4,
+		flexShrink: 0,
 	},
 	buttonGroup: {
 		flexDirection: 'row',

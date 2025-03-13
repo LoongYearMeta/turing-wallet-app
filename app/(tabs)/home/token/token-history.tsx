@@ -1,0 +1,282 @@
+import { MaterialIcons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Menu, MenuItem } from 'react-native-material-menu';
+import Toast from 'react-native-toast-message';
+
+import { syncFTHistory } from '@/actions/get-ft-history';
+import { HistoryCard } from '@/components/token-cards/history-card';
+import { theme } from '@/constants/theme';
+import { hp, wp } from '@/helpers/common';
+import { useAccount } from '@/hooks/useAccount';
+import type { FTHistory } from '@/utils/sqlite';
+import { getFTHistoryByContractId } from '@/utils/sqlite';
+
+type SortOption = 'timeAsc' | 'timeDesc' | 'changeAsc' | 'changeDesc' | 'feeAsc' | 'feeDesc';
+type FilterType = 'all' | 'positive' | 'negative';
+
+const TokenHistoryPage = () => {
+	const { contractId } = useLocalSearchParams<{
+		contractId: string;
+	}>();
+
+	const [histories, setHistories] = useState<FTHistory[]>([]);
+	const [searchText, setSearchText] = useState('');
+	const [menuVisible, setMenuVisible] = useState(false);
+	const { getCurrentAccountAddress } = useAccount();
+	const [filterType, setFilterType] = useState<FilterType>('all');
+	const [filterMenuVisible, setFilterMenuVisible] = useState(false);
+
+	useEffect(() => {
+		loadHistories();
+	}, [contractId]);
+
+	const loadHistories = async () => {
+		try {
+			const data = await getFTHistoryByContractId(contractId);
+			setHistories(data);
+		} catch (error) {
+			console.error('Failed to load histories:', error);
+		}
+	};
+
+	const handleRefresh = async () => {
+		try {
+			const address = getCurrentAccountAddress();
+			await syncFTHistory(address, contractId);
+			await loadHistories();
+			Toast.show({
+				type: 'success',
+				text1: 'Success',
+				text2: 'History refreshed successfully',
+			});
+		} catch (error) {
+			console.error('Failed to refresh history:', error);
+			Toast.show({
+				type: 'error',
+				text1: 'Error',
+				text2: 'Failed to refresh history',
+			});
+		}
+	};
+
+	const handleSort = (option: SortOption) => {
+		const sorted = [...histories].sort((a, b) => {
+			switch (option) {
+				case 'timeAsc':
+					return a.timestamp - b.timestamp;
+				case 'timeDesc':
+					return b.timestamp - a.timestamp;
+				case 'changeAsc':
+					return Math.abs(a.balance_change) - Math.abs(b.balance_change);
+				case 'changeDesc':
+					return Math.abs(b.balance_change) - Math.abs(a.balance_change);
+				case 'feeAsc':
+					return a.fee - b.fee;
+				case 'feeDesc':
+					return b.fee - a.fee;
+				default:
+					return 0;
+			}
+		});
+		setHistories(sorted);
+		setMenuVisible(false);
+	};
+
+	const handleFilter = (type: FilterType) => {
+		setFilterType(type);
+		setFilterMenuVisible(false);
+	};
+
+	const filteredHistories = React.useMemo(() => {
+		let filtered = histories;
+
+		// 先按搜索过滤
+		filtered = filtered.filter((history) =>
+			history.id.toLowerCase().startsWith(searchText.toLowerCase()),
+		);
+
+		// 再按正负值过滤
+		switch (filterType) {
+			case 'positive':
+				filtered = filtered.filter((history) => history.balance_change > 0);
+				break;
+			case 'negative':
+				filtered = filtered.filter((history) => history.balance_change < 0);
+				break;
+		}
+
+		return filtered;
+	}, [histories, searchText, filterType]);
+
+	return (
+		<View style={styles.container}>
+			<View style={styles.searchContainer}>
+				<View style={styles.searchWrapper}>
+					<MaterialIcons name="search" size={24} color="#666" style={styles.searchIcon} />
+					<TextInput
+						style={styles.searchInput}
+						placeholder="Search by ID..."
+						value={searchText}
+						onChangeText={setSearchText}
+						autoCapitalize="none"
+						autoCorrect={false}
+						contextMenuHidden={false}
+						textContentType="none"
+						editable={true}
+					/>
+					{searchText.length > 0 && (
+						<TouchableOpacity style={styles.clearButton} onPress={() => setSearchText('')}>
+							<MaterialIcons name="close" size={20} color="#666" />
+						</TouchableOpacity>
+					)}
+				</View>
+				<View style={styles.actions}>
+					<Menu
+						visible={filterMenuVisible}
+						anchor={
+							<TouchableOpacity
+								onPress={() => setFilterMenuVisible(true)}
+								style={styles.actionButton}
+							>
+								<MaterialIcons
+									name="filter-list"
+									size={24}
+									color={filterType !== 'all' ? theme.colors.primary : '#666'}
+								/>
+							</TouchableOpacity>
+						}
+						onRequestClose={() => setFilterMenuVisible(false)}
+						style={styles.menu}
+					>
+						<MenuItem onPress={() => handleFilter('all')} textStyle={styles.menuItemText}>
+							<Text>All</Text>
+						</MenuItem>
+						<MenuItem onPress={() => handleFilter('positive')} textStyle={styles.menuItemText}>
+							<Text style={styles.positive}>Positive</Text>
+						</MenuItem>
+						<MenuItem onPress={() => handleFilter('negative')} textStyle={styles.menuItemText}>
+							<Text style={styles.negative}>Negative</Text>
+						</MenuItem>
+					</Menu>
+					<TouchableOpacity onPress={handleRefresh} style={styles.actionButton}>
+						<MaterialIcons name="refresh" size={24} color="#666" />
+					</TouchableOpacity>
+					<Menu
+						visible={menuVisible}
+						anchor={
+							<TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.actionButton}>
+								<MaterialIcons name="sort" size={24} color="#666" />
+							</TouchableOpacity>
+						}
+						onRequestClose={() => setMenuVisible(false)}
+						style={styles.menu}
+					>
+						<MenuItem onPress={() => handleSort('timeDesc')} textStyle={styles.menuItemText}>
+							<Text>Time ↓</Text>
+						</MenuItem>
+						<MenuItem onPress={() => handleSort('timeAsc')} textStyle={styles.menuItemText}>
+							<Text>Time ↑</Text>
+						</MenuItem>
+						<MenuItem onPress={() => handleSort('changeDesc')} textStyle={styles.menuItemText}>
+							<Text>Change ↓</Text>
+						</MenuItem>
+						<MenuItem onPress={() => handleSort('changeAsc')} textStyle={styles.menuItemText}>
+							<Text>Change ↑</Text>
+						</MenuItem>
+						<MenuItem onPress={() => handleSort('feeDesc')} textStyle={styles.menuItemText}>
+							<Text>Fee ↓</Text>
+						</MenuItem>
+						<MenuItem onPress={() => handleSort('feeAsc')} textStyle={styles.menuItemText}>
+							<Text>Fee ↑</Text>
+						</MenuItem>
+					</Menu>
+				</View>
+			</View>
+
+			<ScrollView
+				style={styles.scrollView}
+				showsVerticalScrollIndicator={false}
+				bounces={true}
+				decelerationRate="normal"
+				overScrollMode="never"
+				contentContainerStyle={styles.scrollContent}
+			>
+				{filteredHistories.map((history) => (
+					<HistoryCard key={history.id} history={history} />
+				))}
+			</ScrollView>
+		</View>
+	);
+};
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+		backgroundColor: '#f5f5f5',
+	},
+	searchContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		paddingHorizontal: wp(4),
+		marginBottom: hp(2),
+		marginTop: hp(2),
+	},
+	searchWrapper: {
+		flex: 1,
+		flexDirection: 'row',
+		alignItems: 'center',
+		backgroundColor: '#e8e8e8',
+		borderRadius: 8,
+		paddingHorizontal: wp(2),
+		height: hp(4),
+		marginRight: wp(2),
+	},
+	searchIcon: {
+		marginRight: wp(2),
+	},
+	searchInput: {
+		flex: 1,
+		height: hp(4),
+		fontSize: hp(1.6),
+		paddingRight: wp(8),
+	},
+	actions: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: wp(2),
+	},
+	actionButton: {
+		padding: 4,
+	},
+	scrollView: {
+		flex: 1,
+	},
+	scrollContent: {
+		padding: wp(2),
+		paddingTop: hp(1),
+	},
+	menu: {
+		backgroundColor: '#fff',
+	},
+	menuItemText: {
+		fontSize: hp(1.6),
+	},
+	positive: {
+		color: '#4CAF50',
+	},
+	negative: {
+		color: '#F44336',
+	},
+	clearButton: {
+		position: 'absolute',
+		right: wp(2),
+		height: '100%',
+		justifyContent: 'center',
+		padding: wp(1),
+	},
+});
+
+export default TokenHistoryPage;

@@ -8,13 +8,13 @@ import {
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { SQLiteProvider } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 
 import { theme } from '@/constants/theme';
 import { initDatabase } from '@/utils/sqlite';
-import { SQLiteProvider } from 'expo-sqlite';
 
 SplashScreen.preventAutoHideAsync();
 

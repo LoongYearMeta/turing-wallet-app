@@ -18,3 +18,8 @@ export const formatLongString = (str: string, showLength: number = 8): string =>
 export const formatBalance = (value: number): string => {
 	return value.toFixed(6);
 };
+
+export const formatContractId = (id: string, showLength: number = 10): string => {
+	if (!id || id.length <= 20) return id;
+	return `${id.slice(0, showLength)}...${id.slice(-showLength)}`;
+};

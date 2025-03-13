@@ -12,19 +12,21 @@ import Toast from 'react-native-toast-message';
 
 import { syncFTInfo } from '@/actions/get-ft';
 import { hp, wp } from '@/helpers/common';
+import { useAccount } from '@/hooks/useAccount';
 import { formatLongString } from '@/lib/util';
 import { Modal } from './ui/modal';
+
+import { getFT, restoreFT } from '@/utils/sqlite';
 
 interface AddContractModalProps {
 	visible: boolean;
 	onClose: () => void;
-	onSubmit: (contractId: string) => void;
 }
 
-export const AddContractModal = ({ visible, onClose, onSubmit }: AddContractModalProps) => {
+export const AddContractModal = ({ visible, onClose }: AddContractModalProps) => {
 	const [contractId, setContractId] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
-
+	const { getCurrentAccountAddress } = useAccount();
 	const formattedId = formatLongString(contractId.trim());
 
 	const handleClose = () => {
@@ -46,14 +48,26 @@ export const AddContractModal = ({ visible, onClose, onSubmit }: AddContractModa
 
 		setIsLoading(true);
 		try {
-			await syncFTInfo(trimmedId);
-			onSubmit(trimmedId);
+			const userAddress = getCurrentAccountAddress();
+			const existingFT = await getFT(trimmedId, userAddress);
+
+			if (existingFT?.isDeleted) {
+				await restoreFT(trimmedId, userAddress);
+				await syncFTInfo(trimmedId);
+				Toast.show({
+					type: 'success',
+					text1: 'Success',
+					text2: 'Token restored and added successfully',
+				});
+			} else {
+				await syncFTInfo(trimmedId);
+				Toast.show({
+					type: 'success',
+					text1: 'Success',
+					text2: 'Token added successfully',
+				});
+			}
 			setContractId('');
-			Toast.show({
-				type: 'success',
-				text1: 'Success',
-				text2: 'Token added successfully',
-			});
 			onClose();
 		} catch (error) {
 			Toast.show({

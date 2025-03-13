@@ -155,7 +155,7 @@ export async function initDatabase() {
 }
 
 export async function addCollection(collection: Collection, userAddress: string): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
 		`INSERT OR REPLACE INTO Collection (id, name, supply, creator, icon, user_address, isDeleted)
 		 VALUES (?, ?, ?, ?, ?, ?, 0)`,
@@ -171,7 +171,7 @@ export async function addCollection(collection: Collection, userAddress: string)
 }
 
 export async function getCollection(id: string): Promise<Collection | null> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	const result = await db.getFirstAsync<Collection>('SELECT * FROM Collection WHERE id = ?', [id]);
 	if (!result) return null;
 	return {
@@ -185,7 +185,7 @@ export async function getCollection(id: string): Promise<Collection | null> {
 }
 
 export async function getAllCollections(userAddress: string): Promise<Collection[]> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	const results = await db.getAllAsync<Collection>(
 		'SELECT * FROM Collection WHERE user_address = ? AND isDeleted = 0',
 		[userAddress],
@@ -201,7 +201,7 @@ export async function getAllCollections(userAddress: string): Promise<Collection
 }
 
 export async function addNFT(nft: NFT, userAddress: string): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
 		`INSERT OR REPLACE INTO NFT (
 			id, collection_id, collection_index, name, symbol,
@@ -228,7 +228,7 @@ export async function getNFTsByCollection(
 	collectionId: string,
 	userAddress: string,
 ): Promise<NFT[]> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getAllAsync(
 		'SELECT * FROM NFT WHERE collection_id = ? AND user_address = ? AND isDeleted = 0',
 		[collectionId, userAddress],
@@ -238,7 +238,7 @@ export async function getNFTsByCollection(
 export async function getNFTWithCollection(
 	nftId: string,
 ): Promise<{ nft: NFT; collection: Collection } | null> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	const result:
 		| (NFT & {
 				collection_name: string;
@@ -289,17 +289,17 @@ export async function getNFTWithCollection(
 }
 
 export async function removeNFT(nftId: string): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync('DELETE FROM NFT WHERE id = ?;', [nftId]);
 }
 
 export async function updateNFTTransferTimes(nftId: string, transferTimes: number): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync('UPDATE NFT SET transfer_times = ? WHERE id = ?;', [transferTimes, nftId]);
 }
 
 export async function getNFT(id: string): Promise<NFT | null> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	const result = await db.getFirstAsync<NFT>('SELECT * FROM NFT WHERE id = ?', [id]);
 	if (!result) return null;
 	return {
@@ -318,7 +318,7 @@ export async function getNFT(id: string): Promise<NFT | null> {
 }
 
 export async function upsertFT(ft: FT, userAddress: string): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
 		`INSERT OR REPLACE INTO FT (id, name, decimal, amount, symbol, user_address, isDeleted)
 		 VALUES (?, ?, ?, ?, ?, ?, 0)`,
@@ -327,7 +327,7 @@ export async function upsertFT(ft: FT, userAddress: string): Promise<void> {
 }
 
 export async function getFT(id: string, userAddress: string): Promise<FT | null> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getFirstAsync('SELECT * FROM FT WHERE id = ? AND user_address = ?', [
 		id,
 		userAddress,
@@ -335,7 +335,7 @@ export async function getFT(id: string, userAddress: string): Promise<FT | null>
 }
 
 export async function transferFT(id: string, amount: number, userAddress: string): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync('SELECT amount FROM FT WHERE id = ? AND user_address = ? AND isDeleted = 0;', [
 		id,
 		userAddress,
@@ -347,18 +347,18 @@ export async function transferFT(id: string, amount: number, userAddress: string
 }
 
 export async function softDeleteCollection(id: string): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync('UPDATE Collection SET isDeleted = 1 WHERE id = ?;', [id]);
 	await db.runAsync('UPDATE NFT SET isDeleted = 1 WHERE collection_id = ?;', [id]);
 }
 
 export async function softDeleteNFT(id: string): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync('UPDATE NFT SET isDeleted = 1 WHERE id = ?;', [id]);
 }
 
 export async function softDeleteFT(id: string, userAddress: string): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync('UPDATE FT SET isDeleted = 1 WHERE id = ? AND user_address = ?;', [
 		id,
 		userAddress,
@@ -369,7 +369,7 @@ export async function addTransactionHistory(
 	history: TransactionHistory,
 	userAddress: string,
 ): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
 		`INSERT OR REPLACE INTO TransactionHistory (
 			id, send_address, receive_address, fee, timestamp, type, balance_change, user_address
@@ -391,7 +391,7 @@ export async function getTransactionHistoryByType(
 	type: string,
 	userAddress: string,
 ): Promise<TransactionHistory[]> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getAllAsync(
 		'SELECT * FROM TransactionHistory WHERE type = ? AND user_address = ? ORDER BY timestamp DESC',
 		[type, userAddress],
@@ -399,7 +399,7 @@ export async function getTransactionHistoryByType(
 }
 
 export async function addNFTHistory(history: NFTHistory): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
 		`INSERT OR REPLACE INTO NFT_History (
 			id, send_address, receive_address, timestamp, contract_id
@@ -415,7 +415,7 @@ export async function addNFTHistory(history: NFTHistory): Promise<void> {
 }
 
 export async function getNFTHistoryByContractId(contractId: string): Promise<NFTHistory[]> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getAllAsync(
 		'SELECT * FROM NFT_History WHERE contract_id = ? ORDER BY timestamp DESC',
 		[contractId],
@@ -423,7 +423,7 @@ export async function getNFTHistoryByContractId(contractId: string): Promise<NFT
 }
 
 export async function addFTHistory(history: FTHistory): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
 		`INSERT OR REPLACE INTO FT_History (
 			id, send_address, receive_address, fee, timestamp, contract_id, balance_change
@@ -441,7 +441,7 @@ export async function addFTHistory(history: FTHistory): Promise<void> {
 }
 
 export async function getFTHistoryByContractId(contractId: string): Promise<FTHistory[]> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getAllAsync(
 		'SELECT * FROM FT_History WHERE contract_id = ? ORDER BY timestamp DESC',
 		[contractId],
@@ -449,22 +449,22 @@ export async function getFTHistoryByContractId(contractId: string): Promise<FTHi
 }
 
 export async function getTransactionHistoryById(id: string): Promise<TransactionHistory | null> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getFirstAsync('SELECT * FROM TransactionHistory WHERE id = ?', [id]);
 }
 
 export async function getNFTHistoryById(id: string): Promise<NFTHistory | null> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getFirstAsync('SELECT * FROM NFT_History WHERE id = ?', [id]);
 }
 
 export async function getFTHistoryById(id: string): Promise<FTHistory | null> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getFirstAsync('SELECT * FROM FT_History WHERE id = ?', [id]);
 }
 
 export async function addMultiSig(multiSig: MultiSig, userAddress: string): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	if (multiSig.pubKeys.length < 3 || multiSig.pubKeys.length > 10) {
 		throw new Error('Public keys count must be between 3 and 10');
 	}
@@ -478,14 +478,14 @@ export async function addMultiSig(multiSig: MultiSig, userAddress: string): Prom
 }
 
 export async function softDeleteMultiSig(multiSigAddress: string): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync('UPDATE MultiSig SET isDeleted = 1 WHERE multiSig_address = ?;', [
 		multiSigAddress,
 	]);
 }
 
 export async function getActiveMultiSigs(userAddress: string) {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	const multiSigs = await db.getAllAsync<{ multiSig_address: string; pubKeys: string }>(
 		'SELECT multiSig_address, pubKeys FROM MultiSig WHERE user_address = ? AND isDeleted = 0',
 		[userAddress],
@@ -497,7 +497,7 @@ export async function getActiveMultiSigs(userAddress: string) {
 }
 
 export async function getAllMultiSigs(userAddress: string) {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	const multiSigs = await db.getAllAsync<{ multiSig_address: string; pubKeys: string }>(
 		'SELECT multiSig_address, pubKeys FROM MultiSig WHERE user_address = ?',
 		[userAddress],
@@ -509,7 +509,7 @@ export async function getAllMultiSigs(userAddress: string) {
 }
 
 export async function getMultiSigPubKeys(multiSigAddress: string): Promise<string[] | null> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	const result = await db.getFirstAsync<{ pubKeys: string }>(
 		'SELECT pubKeys FROM MultiSig WHERE multiSig_address = ?',
 		[multiSigAddress],
@@ -525,7 +525,7 @@ export async function getMultiSigPubKeys(multiSigAddress: string): Promise<strin
 }
 
 export async function getTransactionHistoryCount(userAddress: string): Promise<number> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	const result: any = await db.getFirstAsync(
 		'SELECT COUNT(*) as count FROM TransactionHistory WHERE user_address = ?',
 		[userAddress],
@@ -534,7 +534,7 @@ export async function getTransactionHistoryCount(userAddress: string): Promise<n
 }
 
 export async function getCollectionCount(userAddress: string): Promise<number> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	const result: any = await db.getFirstAsync(
 		'SELECT COUNT(*) as count FROM Collection WHERE user_address = ? AND isDeleted = 0',
 		[userAddress],
@@ -543,7 +543,7 @@ export async function getCollectionCount(userAddress: string): Promise<number> {
 }
 
 export async function getNFTCount(userAddress: string): Promise<number> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	const result: any = await db.getFirstAsync(
 		'SELECT COUNT(*) as count FROM NFT WHERE user_address = ? AND isDeleted = 0',
 		[userAddress],
@@ -552,38 +552,38 @@ export async function getNFTCount(userAddress: string): Promise<number> {
 }
 
 export async function removeFT(id: string, userAddress: string): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync('DELETE FROM FT WHERE id = ? AND user_address = ?;', [id, userAddress]);
 }
 
 export async function getActiveNFTs(userAddress: string): Promise<NFT[]> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getAllAsync('SELECT * FROM NFT WHERE user_address = ? AND isDeleted = 0', [
 		userAddress,
 	]);
 }
 
 export async function getAllNFTs(userAddress: string): Promise<NFT[]> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getAllAsync('SELECT * FROM NFT WHERE user_address = ?', [userAddress]);
 }
 
 export async function getActiveFTs(userAddress: string): Promise<FT[]> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getAllAsync('SELECT * FROM FT WHERE user_address = ? AND isDeleted = 0', [
 		userAddress,
 	]);
 }
 
 export async function getAllFTs(userAddress: string): Promise<FT[]> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getAllAsync('SELECT * FROM FT WHERE user_address = ? AND isDeleted = 0', [
 		userAddress,
 	]);
 }
 
 export async function addFTPublic(ftPublic: FTPublic): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
 		`INSERT OR REPLACE INTO FT_Public (
 			id, name, symbol, decimal, supply, holds_count
@@ -600,17 +600,17 @@ export async function addFTPublic(ftPublic: FTPublic): Promise<void> {
 }
 
 export async function removeFTPublic(id: string): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync('DELETE FROM FT_Public WHERE id = ?;', [id]);
 }
 
 export async function getAllFTPublics(): Promise<FTPublic[]> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getAllAsync('SELECT * FROM FT_Public');
 }
 
 export async function deleteAccountData(address: string): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.execAsync(`
 		DELETE FROM TransactionHistory WHERE user_address = '${address}';
 		DELETE FROM NFT_History WHERE contract_id IN (SELECT id FROM NFT WHERE user_address = '${address}');
@@ -623,7 +623,7 @@ export async function deleteAccountData(address: string): Promise<void> {
 }
 
 export async function getAllMultiSigAddresses(userAddress: string): Promise<string[]> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	const multiSigs = await db.getAllAsync<MultiSig>(
 		'SELECT multiSig_address FROM MultiSig WHERE user_address = ? AND isDeleted = 0',
 		[userAddress],
@@ -632,7 +632,7 @@ export async function getAllMultiSigAddresses(userAddress: string): Promise<stri
 }
 
 export async function getFTByName(name: string, userAddress: string): Promise<FT> {
-	const db = await SQLite.openDatabaseAsync('wallet');
+	const db = await SQLite.openDatabaseAsync('wallet.db');
 	const result = await db.getAllAsync<FT>(
 		'SELECT * FROM FT WHERE name = ? AND user_address = ? AND isDeleted = 0',
 		[name, userAddress],
@@ -647,4 +647,12 @@ export async function getFTByName(name: string, userAddress: string): Promise<FT
 	}
 
 	return result[0];
+}
+
+export async function restoreFT(id: string, userAddress: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.runAsync('UPDATE FT SET isDeleted = 0 WHERE id = ? AND user_address = ?;', [
+		id,
+		userAddress,
+	]);
 }

@@ -6,16 +6,24 @@ import { Menu, MenuItem } from 'react-native-material-menu';
 import { AddContractModal } from '@/components/add-token-modal';
 import { hp, wp } from '@/helpers/common';
 
-type SortOption = 'priceHighToLow' | 'priceLowToHigh' | 'amountHighToLow' | 'amountLowToHigh';
+type SortOption = 'amountHighToLow' | 'amountLowToHigh';
 type TabType = 'owned' | 'added';
 
 interface SearchFilterBarProps {
-	onTabChange?: (tab: TabType) => void;
-	onSearch?: (text: string) => void;
+	onTabChange: (tab: 'owned' | 'added') => void;
+	onSearch: (text: string) => void;
 	onSort?: (option: SortOption) => void;
+	onRefresh?: () => void;
+	onAddToken?: () => void;
 }
 
-export const SearchFilterBar = ({ onTabChange, onSearch, onSort }: SearchFilterBarProps) => {
+export const SearchFilterBar = ({
+	onTabChange,
+	onSearch,
+	onSort,
+	onRefresh,
+	onAddToken,
+}: SearchFilterBarProps) => {
 	const [searchText, setSearchText] = useState('');
 	const [menuVisible, setMenuVisible] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabType>('owned');
@@ -36,8 +44,9 @@ export const SearchFilterBar = ({ onTabChange, onSearch, onSort }: SearchFilterB
 		onTabChange?.(tab);
 	};
 
-	const handleAddContract = (contractId: string) => {
-		console.log('Adding contract:', contractId);
+	const handleAddModalClose = () => {
+		setAddModalVisible(false);
+		onAddToken?.();
 	};
 
 	return (
@@ -65,7 +74,7 @@ export const SearchFilterBar = ({ onTabChange, onSearch, onSort }: SearchFilterB
 					<TouchableOpacity onPress={() => setAddModalVisible(true)} style={styles.actionButton}>
 						<MaterialIcons name="add" size={24} color="#666" />
 					</TouchableOpacity>
-					<TouchableOpacity onPress={() => console.log('refresh')} style={styles.actionButton}>
+					<TouchableOpacity onPress={onRefresh} style={styles.actionButton}>
 						<MaterialIcons name="refresh" size={24} color="#666" />
 					</TouchableOpacity>
 					<Menu
@@ -78,51 +87,43 @@ export const SearchFilterBar = ({ onTabChange, onSearch, onSort }: SearchFilterB
 						onRequestClose={() => setMenuVisible(false)}
 						style={styles.menu}
 					>
-						<MenuItem onPress={() => handleSort('priceHighToLow')} textStyle={styles.menuItemText}>
+						<MenuItem onPress={() => handleSort('amountLowToHigh')} textStyle={styles.menuItemText}>
 							<View style={styles.menuItem}>
-								<Text style={styles.menuItemText}>Price</Text>
-								<MaterialIcons name="arrow-downward" size={16} color="#fff" />
-							</View>
-						</MenuItem>
-						<MenuItem onPress={() => handleSort('priceLowToHigh')} textStyle={styles.menuItemText}>
-							<View style={styles.menuItem}>
-								<Text style={styles.menuItemText}>Price</Text>
-								<MaterialIcons name="arrow-upward" size={16} color="#fff" />
+								<Text style={styles.menuItemText}>Amount</Text>
+								<MaterialIcons name="arrow-upward" size={16} color="#333" />
 							</View>
 						</MenuItem>
 						<MenuItem onPress={() => handleSort('amountHighToLow')} textStyle={styles.menuItemText}>
 							<View style={styles.menuItem}>
 								<Text style={styles.menuItemText}>Amount</Text>
-								<MaterialIcons name="arrow-downward" size={16} color="#fff" />
-							</View>
-						</MenuItem>
-						<MenuItem onPress={() => handleSort('amountLowToHigh')} textStyle={styles.menuItemText}>
-							<View style={styles.menuItem}>
-								<Text style={styles.menuItemText}>Amount</Text>
-								<MaterialIcons name="arrow-upward" size={16} color="#fff" />
+								<MaterialIcons name="arrow-downward" size={16} color="#333" />
 							</View>
 						</MenuItem>
 					</Menu>
 				</View>
 			</View>
 			<View style={styles.searchContainer}>
-				<MaterialIcons name="search" size={20} color="#666" />
-				<TextInput
-					style={styles.searchInput}
-					placeholder="Search token by ID or name..."
-					placeholderTextColor="#999"
-					value={searchText}
-					onChangeText={handleSearch}
-					editable={true}
-					autoCapitalize="none"
-					autoCorrect={false}
-				/>
+				<View style={styles.searchWrapper}>
+					<MaterialIcons name="search" size={24} color="#666" style={styles.searchIcon} />
+					<TextInput
+						style={styles.searchInput}
+						placeholder="Search by name or ID..."
+						value={searchText}
+						onChangeText={handleSearch}
+						autoCapitalize="none"
+						autoCorrect={false}
+						contextMenuHidden={false}
+						textContentType="none"
+						editable={true}
+					/>
+					{searchText.length > 0 && (
+						<TouchableOpacity style={styles.clearButton} onPress={() => handleSearch('')}>
+							<MaterialIcons name="close" size={20} color="#666" />
+						</TouchableOpacity>
+					)}
+				</View>
 			</View>
-			<AddContractModal
-				visible={addModalVisible}
-				onClose={() => setAddModalVisible(false)}
-				onSubmit={handleAddContract}
-			/>
+			<AddContractModal visible={addModalVisible} onClose={handleAddModalClose} />
 		</View>
 	);
 };
@@ -132,6 +133,7 @@ const styles = StyleSheet.create({
 		backgroundColor: '#f5f5f5',
 		paddingVertical: hp(1),
 		width: '100%',
+		marginBottom: hp(2),
 	},
 	topRow: {
 		flexDirection: 'row',
@@ -172,11 +174,27 @@ const styles = StyleSheet.create({
 		marginHorizontal: wp(4),
 		width: wp(75),
 	},
+	searchWrapper: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		flex: 1,
+	},
+	searchIcon: {
+		marginRight: wp(2),
+	},
 	searchInput: {
 		flex: 1,
 		marginLeft: wp(2),
 		fontSize: hp(1.6),
 		color: '#333',
+		paddingRight: wp(8),
+	},
+	clearButton: {
+		position: 'absolute',
+		right: wp(2),
+		height: '100%',
+		justifyContent: 'center',
+		padding: wp(1),
 	},
 	actions: {
 		flexDirection: 'row',
@@ -187,7 +205,7 @@ const styles = StyleSheet.create({
 		padding: 4,
 	},
 	menu: {
-		backgroundColor: '#1A1A1A',
+		backgroundColor: '#fff',
 	},
 	menuItem: {
 		flexDirection: 'row',
@@ -195,7 +213,7 @@ const styles = StyleSheet.create({
 		gap: wp(2),
 	},
 	menuItemText: {
-		color: '#fff',
+		color: '#333',
 		fontSize: hp(1.6),
 	},
 });
