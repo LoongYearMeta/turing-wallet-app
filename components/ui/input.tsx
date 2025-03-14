@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleProp, StyleSheet, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
 
-import { theme } from '@/constants/theme';
-import { hp } from '@/helpers/common';
+import { hp } from '@/lib/common';
+import { theme } from '@/lib/theme';
 
 interface InputProps extends TextInputProps {
 	icon?: React.ReactNode;

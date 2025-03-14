@@ -13,6 +13,14 @@ export default function HomeLayout() {
 					headerShown: true,
 				}}
 			/>
+			<Stack.Screen
+				name="token/token-transfer"
+				options={{
+					headerTitle: 'Transfer Token',
+					presentation: 'card',
+					headerShown: true,
+				}}
+			/>
 		</Stack>
 	);
 }

@@ -8,7 +8,7 @@ import { useAccount } from '@/hooks/useAccount';
 import { useFtTransaction } from '@/hooks/useFtTransaction';
 import { useNftTransaction } from '@/hooks/useNftTransaction';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
-import { retrieveKeys } from '@/utils/key';
+import { retrieveKeys } from '@/lib/key';
 
 export interface SendTransactionResponse {
 	txid?: string;

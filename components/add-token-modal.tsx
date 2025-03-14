@@ -11,19 +11,20 @@ import {
 import Toast from 'react-native-toast-message';
 
 import { syncFTInfo } from '@/actions/get-ft';
-import { hp, wp } from '@/helpers/common';
+import { Modal } from '@/components/ui/modal';
 import { useAccount } from '@/hooks/useAccount';
+import { hp, wp } from '@/lib/common';
 import { formatLongString } from '@/lib/util';
-import { Modal } from './ui/modal';
 
-import { getFT, restoreFT } from '@/utils/sqlite';
+import { getFT, getFTPublic, restoreFT } from '@/utils/sqlite';
 
 interface AddContractModalProps {
 	visible: boolean;
 	onClose: () => void;
+	onRefreshLists: () => void;
 }
 
-export const AddContractModal = ({ visible, onClose }: AddContractModalProps) => {
+export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContractModalProps) => {
 	const [contractId, setContractId] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 	const { getCurrentAccountAddress } = useAccount();
@@ -36,6 +37,7 @@ export const AddContractModal = ({ visible, onClose }: AddContractModalProps) =>
 
 	const handleSubmit = async () => {
 		const trimmedId = contractId.trim();
+		const userAddress = getCurrentAccountAddress();
 
 		if (!trimmedId || trimmedId.length !== 64 || !/^[0-9a-fA-F]{64}$/.test(trimmedId)) {
 			Toast.show({
@@ -47,19 +49,44 @@ export const AddContractModal = ({ visible, onClose }: AddContractModalProps) =>
 		}
 
 		setIsLoading(true);
+
 		try {
-			const userAddress = getCurrentAccountAddress();
-			const existingFT = await getFT(trimmedId, userAddress);
+			// 检查是否同时存在于 owned 和 added 列表中
+			const [existingFT, existingPublic] = await Promise.all([
+				getFT(trimmedId, userAddress),
+				getFTPublic(trimmedId),
+			]);
+
+			if (existingFT && !existingFT.isDeleted && existingPublic) {
+				// 如果同时存在于两个列表中（且 owned 未删除），报错
+				Toast.show({
+					type: 'error',
+					text1: 'Error',
+					text2: 'Token already exists in both lists',
+				});
+				return;
+			}
 
 			if (existingFT?.isDeleted) {
+				// 如果在 owned 中是软删除状态
 				await restoreFT(trimmedId, userAddress);
-				await syncFTInfo(trimmedId);
-				Toast.show({
-					type: 'success',
-					text1: 'Success',
-					text2: 'Token restored and added successfully',
-				});
-			} else {
+				if (!existingPublic) {
+					// 如果还不在 added 列表中，同时添加到 added 列表
+					await syncFTInfo(trimmedId);
+					Toast.show({
+						type: 'success',
+						text1: 'Success',
+						text2: 'Token restored and added successfully',
+					});
+				} else {
+					Toast.show({
+						type: 'success',
+						text1: 'Success',
+						text2: 'Token restored successfully',
+					});
+				}
+			} else if (!existingPublic) {
+				// 如果不在 added 列表中，添加它
 				await syncFTInfo(trimmedId);
 				Toast.show({
 					type: 'success',
@@ -67,7 +94,8 @@ export const AddContractModal = ({ visible, onClose }: AddContractModalProps) =>
 					text2: 'Token added successfully',
 				});
 			}
-			setContractId('');
+
+			onRefreshLists();
 			onClose();
 		} catch (error) {
 			Toast.show({

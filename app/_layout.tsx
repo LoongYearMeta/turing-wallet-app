@@ -13,7 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 
-import { theme } from '@/constants/theme';
+import { theme } from '@/lib/theme';
 import { initDatabase } from '@/utils/sqlite';
 
 SplashScreen.preventAutoHideAsync();

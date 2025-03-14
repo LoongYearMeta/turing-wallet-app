@@ -4,7 +4,7 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-nativ
 import { Menu, MenuItem } from 'react-native-material-menu';
 
 import { AddContractModal } from '@/components/add-token-modal';
-import { hp, wp } from '@/helpers/common';
+import { hp, wp } from '@/lib/common';
 
 type SortOption = 'amountHighToLow' | 'amountLowToHigh';
 type TabType = 'owned' | 'added';
@@ -13,7 +13,7 @@ interface SearchFilterBarProps {
 	onTabChange: (tab: 'owned' | 'added') => void;
 	onSearch: (text: string) => void;
 	onSort?: (option: SortOption) => void;
-	onRefresh?: () => void;
+	onRefresh: () => void;
 	onAddToken?: () => void;
 }
 
@@ -123,7 +123,11 @@ export const SearchFilterBar = ({
 					)}
 				</View>
 			</View>
-			<AddContractModal visible={addModalVisible} onClose={handleAddModalClose} />
+			<AddContractModal
+				visible={addModalVisible}
+				onClose={handleAddModalClose}
+				onRefreshLists={onRefresh}
+			/>
 		</View>
 	);
 };
@@ -171,8 +175,8 @@ const styles = StyleSheet.create({
 		borderRadius: 8,
 		paddingHorizontal: wp(2),
 		height: hp(4),
-		marginHorizontal: wp(4),
-		width: wp(75),
+		marginHorizontal: wp(2.5),
+		width: wp(80),
 	},
 	searchWrapper: {
 		flexDirection: 'row',

@@ -4,7 +4,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
-import { hp, wp } from '@/helpers/common';
+import { hp, wp } from '@/lib/common';
 import { formatBalance, formatContractId } from '@/lib/util';
 import type { FT } from '@/utils/sqlite';
 
@@ -83,7 +83,9 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.1,
 		shadowRadius: 4,
 		elevation: 3,
-		marginHorizontal: wp(6),
+		marginHorizontal: wp(2.5),
+		width: '95%',
+		alignSelf: 'center',
 	},
 	header: {
 		flexDirection: 'row',

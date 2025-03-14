@@ -2,8 +2,8 @@ import React from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 
 import { Loading } from '@/components/ui/loading';
-import { theme } from '@/constants/theme';
-import { hp } from '@/helpers/common';
+import { hp } from '@/lib/common';
+import { theme } from '@/lib/theme';
 
 interface ButtonProps {
 	buttonStyle?: StyleProp<ViewStyle>;

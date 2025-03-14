@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { addFTPublic, type FTPublic } from '@/utils/sqlite';
+import { addFTPublic, type FTPublic, getFTPublic, updateFTPublicHoldsCount } from '@/utils/sqlite';
 
 interface FTInfoResponse {
 	ftContractId: string;
@@ -29,6 +29,7 @@ export async function fetchFTInfo(contract_id: string): Promise<FTInfoResponse> 
 export async function syncFTInfo(contractId: string): Promise<void> {
 	try {
 		const response = await fetchFTInfo(contractId);
+		const existingFTPublic = await getFTPublic(contractId);
 
 		const ftPublicData: FTPublic = {
 			id: response.ftContractId,
@@ -39,7 +40,11 @@ export async function syncFTInfo(contractId: string): Promise<void> {
 			holds_count: response.ftHoldersCount,
 		};
 
-		await addFTPublic(ftPublicData);
+		if (existingFTPublic) {
+			await updateFTPublicHoldsCount(contractId, response.ftHoldersCount);
+		} else {
+			await addFTPublic(ftPublicData);
+		}
 	} catch (error) {
 		throw new Error('Failed to sync FT info');
 	}

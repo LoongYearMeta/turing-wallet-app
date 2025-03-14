@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
 import { syncFTs } from '@/actions/get-fts';
+import { AddContractModal } from '@/components/add-token-modal';
 import { BalanceCard } from '@/components/balance-card';
 import { SearchFilterBar } from '@/components/search-filter-bar';
 import { AddedTokenCard } from '@/components/token-cards/added-token-card';
@@ -12,8 +13,8 @@ import { OwnedTokenCard } from '@/components/token-cards/owned-token-card';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { Navbar } from '@/components/ui/navbar';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
-import { hp } from '@/helpers/common';
 import { useAccount } from '@/hooks/useAccount';
+import { hp } from '@/lib/common';
 import {
 	getActiveFTs,
 	getAllFTPublics,
@@ -33,6 +34,7 @@ const HomePage = () => {
 	const { getCurrentAccountAddress } = useAccount();
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [tokenToDelete, setTokenToDelete] = useState<FT | FTPublic | null>(null);
+	const [addModalVisible, setAddModalVisible] = useState(false);
 
 	useEffect(() => {
 		loadOwnedTokens();
@@ -108,7 +110,10 @@ const HomePage = () => {
 	};
 
 	const handleTransferPress = (token: FT | FTPublic) => {
-		console.log('Transfer pressed for token:', token.id);
+		router.push({
+			pathname: '/(tabs)/home/token/token-transfer',
+			params: { contractId: token.id },
+		});
 	};
 
 	const handleAddToken = () => {
@@ -178,6 +183,18 @@ const HomePage = () => {
 		[addedTokens, searchText],
 	);
 
+	const handleRefreshLists = async () => {
+		if (activeTab === 'owned') {
+			await loadOwnedTokens();
+		} else {
+			await loadAddedTokens();
+		}
+	};
+
+	const handleAddModalClose = () => {
+		setAddModalVisible(false);
+	};
+
 	return (
 		<ScreenWrapper bg="white">
 			<Navbar />
@@ -212,8 +229,8 @@ const HomePage = () => {
 								<AddedTokenCard
 									key={token.id}
 									token={token}
-									onTransferPress={handleTransferPress}
 									onDeletePress={handleAddedTokenDelete}
+									onRefresh={loadAddedTokens}
 								/>
 							))}
 				</View>
@@ -229,6 +246,11 @@ const HomePage = () => {
 					setDeleteModalVisible(false);
 					setTokenToDelete(null);
 				}}
+			/>
+			<AddContractModal
+				visible={addModalVisible}
+				onClose={handleAddModalClose}
+				onRefreshLists={handleRefreshLists}
 			/>
 		</ScreenWrapper>
 	);

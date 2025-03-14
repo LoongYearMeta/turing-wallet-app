@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { theme } from '@/constants/theme';
-import { hp } from '@/helpers/common';
+import { hp } from '@/lib/common';
+import { theme } from '@/lib/theme';
 
 interface AvatarProps {
 	address: string;

@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Navbar } from '@/components/ui/navbar';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
-import { wp } from '@/helpers/common';
+import { wp } from '@/lib/common';
 
 const TokenPage = () => {
 	return (

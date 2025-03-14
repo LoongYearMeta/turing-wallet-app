@@ -5,10 +5,10 @@ import * as tbc from 'tbc-lib-js';
 
 import { useAccount } from '@/hooks/useAccount';
 import { useUtxo } from '@/hooks/useUtxo';
+import { retrieveKeys } from '@/lib/key';
 import { getTaprootTweakPrivateKey } from '@/lib/taproot';
 import { calculateFee } from '@/lib/util';
 import { StoredUtxo, Transaction } from '@/types';
-import { retrieveKeys } from '@/utils/key';
 
 export const useTbcTransaction = () => {
 	const { isTaprootAccount, getCurrentAccountUtxos, updateCurrentAccountUtxos } = useAccount();

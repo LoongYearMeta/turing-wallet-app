@@ -6,10 +6,10 @@ import * as tbc from 'tbc-lib-js';
 import { fetchUTXOs } from '@/actions/get-utxos';
 import { useAccount } from '@/hooks/useAccount';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
+import { retrieveKeys } from '@/lib/key';
 import { getTaprootTweakPrivateKey } from '@/lib/taproot';
 import { calculateFee } from '@/lib/util';
 import { Transaction } from '@/types';
-import { retrieveKeys } from '@/utils/key';
 import { getMultiSigPubKeys } from '@/utils/sqlite';
 import axios from 'axios';
 
@@ -84,12 +84,17 @@ export const useFtTransaction = () => {
 				let preTXs: tbc.Transaction[] = [];
 				let prepreTxDatas: string[] = [];
 				for (let i = 0; i < ftutxos.length; i++) {
-					preTXs.push(await contract.API.fetchTXraw(ftutxos[i].txId));
+					console.log(ftutxos[i]);
+
+					preTXs.push(await contract.API.fetchTXraw(ftutxos[i].txId, 'mainnet'));
 					prepreTxDatas.push(
-						await contract.API.fetchFtPrePreTxData(preTXs[i], ftutxos[i].outputIndex),
+						await contract.API.fetchFtPrePreTxData(preTXs[i], ftutxos[i].outputIndex, 'mainnet'),
 					);
 				}
+				console.log('debug1');
+
 				const utxo = await getUTXO(address_from, 0.01, password);
+				console.log('debug2');
 				let txHex = '';
 				if (address_to.startsWith('1')) {
 					txHex = Token.transfer(
@@ -411,9 +416,12 @@ export const useFtTransaction = () => {
 			try {
 				const satoshis_amount = Math.floor(tbc_amount * 1e6);
 				let utxos = getCurrentAccountUtxos();
-				if (!utxos || utxos.length === 0) {
-					throw new Error('The balance in the account is zero.');
-				}
+				utxos = await fetchUTXOs(address);
+				console.log(utxos);
+
+				// if (!utxos || utxos.length === 0) {
+				// 	throw new Error('The balance in the account is zero.');
+				// }
 				let utxo_amount = utxos.reduce((acc, utxo) => acc + utxo.satoshis, 0);
 				if (utxo_amount < satoshis_amount) {
 					utxos = await fetchUTXOs(address);

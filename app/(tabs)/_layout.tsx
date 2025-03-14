@@ -3,7 +3,7 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { StyleSheet } from 'react-native';
 
-import { theme } from '@/constants/theme';
+import { theme } from '@/lib/theme';
 
 export default function TabLayout() {
 	return (

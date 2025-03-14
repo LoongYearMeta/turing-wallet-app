@@ -9,11 +9,11 @@ import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
-import { theme } from '@/constants/theme';
-import { hp, wp } from '@/helpers/common';
 import { useAccount } from '@/hooks/useAccount';
+import { hp, wp } from '@/lib/common';
+import { generateKeysEncrypted_mnemonic } from '@/lib/key';
+import { theme } from '@/lib/theme';
 import { Account, AccountType } from '@/types';
-import { generateKeysEncrypted_mnemonic } from '@/utils/key';
 
 const CreatePage = () => {
 	const [password, setPassword] = useState('');

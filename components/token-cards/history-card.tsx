@@ -4,7 +4,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
-import { hp, wp } from '@/helpers/common';
+import { hp, wp } from '@/lib/common';
 import { formatBalance, formatContractId } from '@/lib/util';
 import type { FTHistory } from '@/utils/sqlite';
 

@@ -1,4 +1,4 @@
-import { theme } from '@/constants/theme';
+import { theme } from '@/lib/theme';
 import Lock from './lock';
 import User from './user';
 

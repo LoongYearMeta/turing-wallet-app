@@ -2,8 +2,8 @@ import '@/shim';
 import * as bip39 from 'bip39';
 import * as tbc from 'tbc-lib-js';
 
+import { decrypt, deriveKey, encrypt, generateRandomSalt } from '@/lib/crypto';
 import { Keys } from '@/types';
-import { decrypt, deriveKey, encrypt, generateRandomSalt } from '@/utils/crypto';
 
 enum Tag {
 	Turing = 'turing',

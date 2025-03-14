@@ -656,3 +656,13 @@ export async function restoreFT(id: string, userAddress: string): Promise<void> 
 		userAddress,
 	]);
 }
+
+export async function getFTPublic(id: string): Promise<FTPublic | null> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	return await db.getFirstAsync('SELECT * FROM FT_Public WHERE id = ?', [id]);
+}
+
+export async function updateFTPublicHoldsCount(id: string, holdsCount: number): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.runAsync('UPDATE FT_Public SET holds_count = ? WHERE id = ?', [holdsCount, id]);
+}

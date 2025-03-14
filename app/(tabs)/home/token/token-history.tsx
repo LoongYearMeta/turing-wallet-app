@@ -7,9 +7,9 @@ import Toast from 'react-native-toast-message';
 
 import { syncFTHistory } from '@/actions/get-ft-history';
 import { HistoryCard } from '@/components/token-cards/history-card';
-import { theme } from '@/constants/theme';
-import { hp, wp } from '@/helpers/common';
 import { useAccount } from '@/hooks/useAccount';
+import { hp, wp } from '@/lib/common';
+import { theme } from '@/lib/theme';
 import type { FTHistory } from '@/utils/sqlite';
 import { getFTHistoryByContractId } from '@/utils/sqlite';
 

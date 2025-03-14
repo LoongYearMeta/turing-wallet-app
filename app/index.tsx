@@ -4,9 +4,9 @@ import React, { useEffect } from 'react';
 import { Animated, Dimensions, Easing, StyleSheet, View } from 'react-native';
 
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
-import { theme } from '@/constants/theme';
-import { hp, wp } from '@/helpers/common';
 import { useAccount } from '@/hooks/useAccount';
+import { hp, wp } from '@/lib/common';
+import { theme } from '@/lib/theme';
 
 const { width } = Dimensions.get('window');
 const ANIMATION_DURATION = 1200;

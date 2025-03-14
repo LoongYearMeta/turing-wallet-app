@@ -7,8 +7,8 @@ import Toast from 'react-native-toast-message';
 
 import { getExchangeRate, getTbcBalance } from '@/actions/get-balance';
 import { RoundButton } from '@/components/ui/round-button';
-import { hp, wp } from '@/helpers/common';
 import { useAccount } from '@/hooks/useAccount';
+import { hp, wp } from '@/lib/common';
 import { formatBalance } from '@/lib/util';
 
 export const BalanceCard = () => {
@@ -110,11 +110,16 @@ export const BalanceCard = () => {
 const styles = StyleSheet.create({
 	container: {
 		backgroundColor: '#e8e8e8',
-		borderRadius: 12,
-		padding: 20,
-		marginHorizontal: 20,
+		borderRadius: 16,
+		padding: wp(4),
+		elevation: 4,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
 		marginBottom: 30,
-		width: '90%',
+		width: '95%',
+		alignSelf: 'center',
 	},
 	header: {
 		flexDirection: 'row',

@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { hp, wp } from '@/helpers/common';
+import { hp, wp } from '@/lib/common';
 import { Modal } from './modal';
 
 interface ConfirmModalProps {

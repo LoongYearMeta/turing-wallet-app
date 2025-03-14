@@ -4,17 +4,18 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
-import { hp, wp } from '@/helpers/common';
+import { syncFTInfo } from '@/actions/get-ft';
+import { hp, wp } from '@/lib/common';
 import { formatBalance, formatContractId } from '@/lib/util';
 import type { FTPublic } from '@/utils/sqlite';
 
 interface AddedTokenCardProps {
 	token: FTPublic;
-	onTransferPress: (token: FTPublic) => void;
 	onDeletePress: (token: FTPublic) => void;
+	onRefresh: () => void;
 }
 
-export const AddedTokenCard = ({ token, onTransferPress, onDeletePress }: AddedTokenCardProps) => {
+export const AddedTokenCard = ({ token, onDeletePress, onRefresh }: AddedTokenCardProps) => {
 	const handleCopyId = async () => {
 		await Clipboard.setStringAsync(token.id);
 		Toast.show({
@@ -23,13 +24,29 @@ export const AddedTokenCard = ({ token, onTransferPress, onDeletePress }: AddedT
 		});
 	};
 
+	const handleRefresh = async () => {
+		try {
+			await syncFTInfo(token.id);
+			onRefresh();
+			Toast.show({
+				type: 'success',
+				text1: 'Token info refreshed',
+			});
+		} catch (error) {
+			Toast.show({
+				type: 'error',
+				text1: 'Failed to refresh token info',
+			});
+		}
+	};
+
 	return (
 		<View style={styles.card}>
 			<View style={styles.header}>
 				<Text style={styles.title}>{token.name}</Text>
 				<View style={styles.actions}>
-					<TouchableOpacity style={styles.actionButton} onPress={() => onTransferPress(token)}>
-						<MaterialIcons name="send" size={20} color="#666" />
+					<TouchableOpacity style={styles.actionButton} onPress={handleRefresh}>
+						<MaterialIcons name="refresh" size={20} color="#666" />
 					</TouchableOpacity>
 					<TouchableOpacity style={styles.actionButton} onPress={() => onDeletePress(token)}>
 						<MaterialIcons name="delete" size={20} color="#666" />
@@ -78,7 +95,9 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.1,
 		shadowRadius: 4,
 		elevation: 3,
-		marginHorizontal: wp(6),
+		marginHorizontal: wp(2.5),
+		width: '95%',
+		alignSelf: 'center',
 	},
 	header: {
 		flexDirection: 'row',

@@ -4,8 +4,8 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { LoginCard } from '@/components/login-card';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
-import { theme } from '@/constants/theme';
-import { hp, wp } from '@/helpers/common';
+import { hp, wp } from '@/lib/common';
+import { theme } from '@/lib/theme';
 
 const LoginPage = () => {
 	const router = useRouter();

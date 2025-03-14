@@ -2,8 +2,8 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { hp, wp } from '@/helpers/common';
 import { useAccount } from '@/hooks/useAccount';
+import { hp, wp } from '@/lib/common';
 import { Avatar } from './avatar';
 import { DropdownMenu } from './dropdown-menu';
 
@@ -14,10 +14,6 @@ export const Navbar = () => {
 	const address = getCurrentAccountAddress();
 
 	const menuItems = [
-		{
-			label: 'Scan QR Code',
-			onPress: () => console.log('Scan'),
-		},
 		{
 			label: 'Information Management',
 			onPress: () => console.log('Info'),

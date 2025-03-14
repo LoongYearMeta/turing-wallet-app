@@ -4,8 +4,8 @@ import React, { useCallback } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
-import { theme } from '@/constants/theme';
-import { hp, wp } from '@/helpers/common';
+import { hp, wp } from '@/lib/common';
+import { theme } from '@/lib/theme';
 import { formatLongString } from '@/lib/util';
 
 interface MenuItem {

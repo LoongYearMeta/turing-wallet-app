@@ -1,4 +1,4 @@
-import { theme } from '@/constants/theme';
+import { theme } from '@/lib/theme';
 import { AntDesign } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet } from 'react-native';
