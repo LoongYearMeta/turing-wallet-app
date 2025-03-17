@@ -10,9 +10,7 @@ interface AvatarProps {
 }
 
 export const Avatar = ({ address, onPress }: AvatarProps) => {
-	// 使用 useMemo 来保证同一个地址总是得到相同的随机字母
 	const initial = useMemo(() => {
-		// 使用地址作为种子来生成固定的随机字母
 		const charCode = address.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
 		const letterIndex = charCode % 26; // 0-25
 		return String.fromCharCode(65 + letterIndex); // 65 是 'A' 的 ASCII 码

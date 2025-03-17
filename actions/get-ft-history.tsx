@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { addFTHistory, getFTHistoryById, type FTHistory } from '@/utils/sqlite';
+import { addFTHistory, getFTHistoryById, updateFTHistory, type FTHistory } from '@/utils/sqlite';
 
 interface FTHistoryResponse {
 	address: string;
@@ -73,15 +73,30 @@ export async function initFTHistory(address: string, contract_id: string): Promi
 export async function syncFTHistory(address: string, contract_id: string): Promise<void> {
 	try {
 		let page = 0;
+		const currentTimestamp = Math.floor(Date.now() / 1000);
+
 		while (true) {
 			const response = await fetchFTHistory(address, contract_id, page);
-			let foundExisting = false;
+			let foundExistingWithSameTimestamp = false;
 
 			for (const tx of response.result) {
 				const existingHistory = await getFTHistoryById(tx.txid);
-				if (existingHistory) {
-					foundExisting = true;
+
+				if (
+					existingHistory &&
+					existingHistory.timestamp &&
+					existingHistory.timestamp === tx.time_stamp
+				) {
+					foundExistingWithSameTimestamp = true;
 					break;
+				}
+
+				if (existingHistory) {
+					await updateFTHistory({
+						...existingHistory,
+						timestamp: tx.time_stamp || currentTimestamp,
+					});
+					continue;
 				}
 
 				const history: FTHistory = {
@@ -89,7 +104,7 @@ export async function syncFTHistory(address: string, contract_id: string): Promi
 					send_address: tx.sender_combine_script[0] || '',
 					receive_address: tx.recipient_combine_script[0] || '',
 					fee: tx.tx_fee,
-					timestamp: tx.time_stamp,
+					timestamp: tx.time_stamp || currentTimestamp,
 					contract_id: tx.ft_contract_id,
 					balance_change: tx.ft_balance_change,
 				};
@@ -97,7 +112,7 @@ export async function syncFTHistory(address: string, contract_id: string): Promi
 				await addFTHistory(history);
 			}
 
-			if (foundExisting || response.result.length < 10) {
+			if (foundExistingWithSameTimestamp || response.result.length < 10) {
 				break;
 			}
 

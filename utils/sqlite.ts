@@ -75,7 +75,7 @@ export interface FTPublic {
 	holds_count: number;
 }
 
-export async function initDatabase() {
+export async function initDatabase(): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.execAsync(`
 		PRAGMA journal_mode = WAL;
@@ -150,6 +150,9 @@ export async function initDatabase() {
 			decimal INTEGER NOT NULL,
 			supply REAL NOT NULL,
 			holds_count INTEGER NOT NULL
+		);
+		CREATE TABLE IF NOT EXISTS AddressBook (
+			address TEXT PRIMARY KEY
 		);
 	`);
 }
@@ -336,14 +339,26 @@ export async function getFT(id: string, userAddress: string): Promise<FT | null>
 
 export async function transferFT(id: string, amount: number, userAddress: string): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	await db.runAsync('SELECT amount FROM FT WHERE id = ? AND user_address = ? AND isDeleted = 0;', [
+
+	const currentFT = await db.getFirstAsync<{ amount: number }>(
+		'SELECT amount FROM FT WHERE id = ? AND user_address = ?',
+		[id, userAddress],
+	);
+
+	if (!currentFT) {
+		throw new Error('FT not found');
+	}
+
+	const newAmount = currentFT.amount - amount;
+
+	if (newAmount < 0) {
+		throw new Error('Insufficient balance');
+	}
+	await db.runAsync('UPDATE FT SET amount = ? WHERE id = ? AND user_address = ?', [
+		newAmount,
 		id,
 		userAddress,
 	]);
-	await db.runAsync(
-		'UPDATE FT SET amount = ? WHERE id = ? AND user_address = ? AND isDeleted = 0;',
-		[amount, id, userAddress],
-	);
 }
 
 export async function softDeleteCollection(id: string): Promise<void> {
@@ -665,4 +680,64 @@ export async function getFTPublic(id: string): Promise<FTPublic | null> {
 export async function updateFTPublicHoldsCount(id: string, holdsCount: number): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync('UPDATE FT_Public SET holds_count = ? WHERE id = ?', [holdsCount, id]);
+}
+
+export async function updateFTHistory(history: FTHistory): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.runAsync(
+		`UPDATE ft_history SET 
+		 send_address = ?, 
+		 receive_address = ?, 
+		 fee = ?, 
+		 timestamp = ?, 
+		 balance_change = ? 
+		 WHERE id = ?`,
+		[
+			history.send_address,
+			history.receive_address,
+			history.fee,
+			history.timestamp,
+			history.balance_change,
+			history.id,
+		],
+	);
+}
+
+export async function updateTransactionHistory(history: TransactionHistory): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.runAsync(
+		`UPDATE transaction_history SET 
+		 send_address = ?, 
+		 receive_address = ?, 
+		 fee = ?, 
+		 timestamp = ?, 
+		 type = ?,
+		 balance_change = ? 
+		 WHERE id = ?`,
+		[
+			history.send_address,
+			history.receive_address,
+			history.fee,
+			history.timestamp,
+			history.type,
+			history.balance_change,
+			history.id,
+		],
+	);
+}
+
+export async function addAddressToBook(address: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.runAsync('INSERT OR REPLACE INTO AddressBook (address) VALUES (?)', [address]);
+}
+
+export async function getAllAddressesFromBook(): Promise<string[]> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	const results = await db.getAllAsync<{ address: string }>('SELECT address FROM AddressBook');
+	return results.map((item) => item.address);
+}
+
+export async function removeAddressFromBook(address: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.runAsync('DELETE FROM AddressBook WHERE address = ?', [address]);
 }

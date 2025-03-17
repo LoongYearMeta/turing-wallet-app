@@ -2,6 +2,11 @@ export function getTxHexByteLength(txHex: string) {
 	return txHex.length / 2;
 }
 
+export const formatFee = (satoshis: number): string => {
+	const tbc = satoshis * 1e-6;
+	return tbc.toFixed(6);
+};
+
 export function calculateFee(txHex: string) {
 	const byteLength = getTxHexByteLength(txHex);
 	const fullChunks = Math.floor(byteLength / 1000);

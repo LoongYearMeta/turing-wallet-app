@@ -10,12 +10,15 @@ export const generateRandomSalt = (length = 16): string => {
 };
 
 export const deriveKey = (password: string, salt: string): string => {
-	const key = CryptoJS.PBKDF2(password, salt, {
-		keySize: 256 / 32,
-		iterations: 1000,
-	});
-
-	return key.toString(CryptoJS.enc.Hex);
+	try {
+		const key = CryptoJS.PBKDF2(password, salt, {
+			keySize: 256 / 32,
+			iterations: 1000,
+		});
+		return key.toString();
+	} catch (error) {
+		return '';
+	}
 };
 
 export const encrypt = (textToEncrypt: string, key: string): string => {
@@ -31,15 +34,18 @@ export const encrypt = (textToEncrypt: string, key: string): string => {
 };
 
 export const decrypt = (ciphertext: string, password: string, salt: string): string => {
-	const key = deriveKey(password, salt);
-	const iv = ciphertext.substring(0, 16);
-	const actualCiphertext = ciphertext.substring(16);
+	try {
+		const key = deriveKey(password, salt);
+		const iv = ciphertext.substring(0, 16);
+		const actualCiphertext = ciphertext.substring(16);
 
-	const decrypted = CryptoJS.AES.decrypt(actualCiphertext, CryptoJS.enc.Hex.parse(key), {
-		iv: CryptoJS.enc.Hex.parse(iv),
-		padding: CryptoJS.pad.Pkcs7,
-		mode: CryptoJS.mode.CBC,
-	});
-
-	return decrypted.toString(CryptoJS.enc.Utf8);
+		const decrypted = CryptoJS.AES.decrypt(actualCiphertext, CryptoJS.enc.Hex.parse(key), {
+			iv: CryptoJS.enc.Hex.parse(iv),
+			padding: CryptoJS.pad.Pkcs7,
+			mode: CryptoJS.mode.CBC,
+		});
+		return decrypted.toString(CryptoJS.enc.Utf8);
+	} catch (error) {
+		return '';
+	}
 };

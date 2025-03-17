@@ -4,7 +4,6 @@ import { StoredUtxo } from '@/types';
 
 export async function fetchUTXOs(address: string): Promise<StoredUtxo[]> {
 	const url = `https://turingwallet.xyz/v1/tbc/main/address/${address}/unspent/`;
-	console.log('0');
 
 	try {
 		const response = await fetch(url);

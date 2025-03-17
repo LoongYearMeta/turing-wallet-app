@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { Modal } from '@/components/ui/modal';
 import { hp, wp } from '@/lib/common';
-import { Modal } from './modal';
 
 interface ConfirmModalProps {
 	visible: boolean;

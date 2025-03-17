@@ -2,10 +2,10 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { Avatar } from '@/components/ui/avatar';
+import { DropdownMenu } from '@/components/ui/dropdown-menu';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
-import { Avatar } from './avatar';
-import { DropdownMenu } from './dropdown-menu';
 
 export const Navbar = () => {
 	const [menuVisible, setMenuVisible] = useState(false);
@@ -28,7 +28,10 @@ export const Navbar = () => {
 		},
 		{
 			label: 'Address Book',
-			onPress: () => console.log('Address'),
+			onPress: () => {
+				setMenuVisible(false);
+				router.push('/settings/address-book');
+			},
 		},
 		{
 			label: 'Export Mnemonic',

@@ -1,5 +1,6 @@
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { debounce } from 'lodash';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
 	ActivityIndicator,
@@ -11,12 +12,14 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 
+import { AddressSelector } from '@/components/address-selector';
 import { useAccount } from '@/hooks/useAccount';
 import { useFtTransaction } from '@/hooks/useFtTransaction';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
-import { getFT } from '@/utils/sqlite';
+import { formatFee } from '@/lib/util';
+import { transferFT } from '@/utils/sqlite';
 
 interface FormData {
 	addressTo: string;
@@ -31,11 +34,12 @@ interface FormErrors {
 }
 
 const TokenTransferPage = () => {
-	const { getCurrentAccountAddress, getSalt, getEncryptedKeys, getPassKey } = useAccount();
+	const { getCurrentAccountAddress, getSalt, getPassKey } = useAccount();
 	const { finish_transaction } = useTbcTransaction();
 	const { sendFT } = useFtTransaction();
-	const { contractId } = useLocalSearchParams<{
+	const { contractId, amount } = useLocalSearchParams<{
 		contractId: string;
+		amount: string;
 	}>();
 	const [formData, setFormData] = useState<FormData>({
 		addressTo: '',
@@ -43,73 +47,118 @@ const TokenTransferPage = () => {
 		password: '',
 	});
 	const [formErrors, setFormErrors] = useState<FormErrors>({});
-	const [hasToken, setHasToken] = useState(false);
 	const [estimatedFee, setEstimatedFee] = useState<number | null>(null);
 	const [isCalculatingFee, setIsCalculatingFee] = useState(false);
+	const [showAddressSelector, setShowAddressSelector] = useState(false);
+	const [availableAmount, setAvailableAmount] = useState<number>(0);
 
 	useEffect(() => {
-		const initForm = async () => {
-			const currentAddress = getCurrentAccountAddress();
-			const token = await getFT(contractId, currentAddress);
-			setHasToken(!!token);
-		};
+		if (amount) {
+			setAvailableAmount(parseFloat(amount));
+		}
+	}, [amount]);
 
-		initForm();
-	}, [contractId]);
-
-	// 验证地址
 	const validateAddress = (address: string) => {
 		if (!address) return 'Address is required';
-		if (address.length !== 33 && address.length !== 34) {
-			return 'Address must be 33 or 34 characters long';
+
+		if (!/^[a-zA-Z0-9]+$/.test(address)) {
+			return 'Invalid address';
+		}
+
+		if (address.startsWith('1')) {
+			if (address.length !== 33 && address.length !== 34) {
+				return 'Invalid address';
+			}
+		} else {
+			if (address.length !== 33) {
+				return 'Invalid address';
+			}
 		}
 		return '';
 	};
 
-	// 验证金额
-	const validateAmount = (amount: string) => {
-		if (!amount) return 'Amount is required';
-		const num = Number(amount);
+	const validateAmount = (amountStr: string) => {
+		if (!amountStr) return 'Amount is required';
+		const num = Number(amountStr);
 		if (isNaN(num) || num <= 0) {
 			return 'Please enter a valid positive number';
 		}
+
+		if (num > availableAmount) {
+			return 'Amount exceeds your balance';
+		}
+
 		return '';
 	};
 
-	const validatePassword = async (password: string) => {
-		if (!password) return 'Password is required';
+	const debouncedPasswordValidation = useCallback(
+		debounce(async (password: string) => {
+			if (!password) {
+				setFormErrors((prev) => ({ ...prev, password: 'Password is required' }));
+				return;
+			}
 
-		const isValid = verifyPassword(password, getPassKey(), getSalt());
-		return isValid ? '' : 'Invalid password';
-	};
+			const passKey = getPassKey();
+			const salt = getSalt();
+
+			if (!passKey || !salt) {
+				setFormErrors((prev) => ({
+					...prev,
+					password: 'Account error, please try again',
+				}));
+				return;
+			}
+
+			try {
+				const isValid = verifyPassword(password, passKey, salt);
+				setFormErrors((prev) => ({
+					...prev,
+					password: isValid ? '' : 'Incorrect password',
+				}));
+			} catch (error) {
+				console.error('Password validation error:', error);
+				setFormErrors((prev) => ({
+					...prev,
+					password: 'Incorrect password',
+				}));
+			}
+		}, 1500),
+		[getPassKey, getSalt],
+	);
 
 	const handleInputChange = async (field: keyof FormData, value: string) => {
-		setFormData((prev) => ({ ...prev, [field]: value }));
-
-		// 实时验证
-		let error = '';
-		switch (field) {
-			case 'addressTo':
-				error = validateAddress(value);
-				break;
-			case 'amount':
-				error = validateAmount(value);
-				break;
-			case 'password':
-				error = await validatePassword(value);
-				break;
+		if (field === 'password') {
+			value = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
 		}
 
-		setFormErrors((prev) => ({ ...prev, [field]: error }));
+		setFormData((prev) => ({ ...prev, [field]: value }));
+
+		if (field === 'addressTo') {
+			const error = validateAddress(value);
+			setFormErrors((prev) => ({ ...prev, addressTo: error }));
+		} else if (field === 'amount') {
+			const error = validateAmount(value);
+			setFormErrors((prev) => ({ ...prev, amount: error }));
+		} else if (field === 'password') {
+			debouncedPasswordValidation(value);
+		}
 	};
 
-	// 计算手续费
+	const handleClearField = (field: keyof FormData) => {
+		setFormData((prev) => ({ ...prev, [field]: '' }));
+		setFormErrors((prev) => ({ ...prev, [field]: '' }));
+	};
+
+	const handleSelectAddress = (address: string) => {
+		handleInputChange('addressTo', address);
+	};
+
 	const calculateEstimatedFee = useCallback(async () => {
 		if (!formData.addressTo || !formData.amount || !formData.password) return;
 
 		const addressError = validateAddress(formData.addressTo);
 		const amountError = validateAmount(formData.amount);
-		const passwordError = await validatePassword(formData.password);
+		const passwordError = formErrors.password;
 
 		if (addressError || amountError || passwordError) return;
 
@@ -124,28 +173,32 @@ const TokenTransferPage = () => {
 			);
 			setEstimatedFee(result.fee);
 		} catch (error) {
-			Toast.show({
-				type: 'error',
-				text1: 'Error',
-				text2: error instanceof Error ? error.message : 'Failed to calculate fee',
-			});
+			if (
+				error instanceof Error &&
+				!error.message.includes('Invalid') &&
+				!error.message.includes('Password') &&
+				!error.message.includes('required')
+			) {
+				Toast.show({
+					type: 'error',
+					text1: 'Error',
+					text2: error.message,
+				});
+			}
 			setEstimatedFee(null);
 		} finally {
 			setIsCalculatingFee(false);
 		}
-	}, [formData, contractId]);
+	}, [formData, contractId, formErrors.password]);
 
-	// 监听表单变化
 	useEffect(() => {
 		calculateEstimatedFee();
 	}, [formData, calculateEstimatedFee]);
 
-	// 处理提交
 	const handleSubmit = async () => {
-		// 验证所有字段
 		const addressError = validateAddress(formData.addressTo);
 		const amountError = validateAmount(formData.amount);
-		const passwordError = await validatePassword(formData.password);
+		const passwordError = formErrors.password;
 
 		const newErrors = {
 			addressTo: addressError,
@@ -155,7 +208,6 @@ const TokenTransferPage = () => {
 
 		setFormErrors(newErrors);
 
-		// 如果有错误，显示提示并返回
 		if (Object.values(newErrors).some((error) => error)) {
 			Toast.show({
 				type: 'error',
@@ -173,19 +225,23 @@ const TokenTransferPage = () => {
 				Number(formData.amount),
 				formData.password,
 			);
-
+			const currentAddress = getCurrentAccountAddress();
+			if (formData.addressTo !== currentAddress) {
+				await transferFT(contractId, Number(formData.amount), currentAddress);
+			}
 			await finish_transaction(result.txHex, result.utxos!);
 			Toast.show({
 				type: 'success',
 				text1: 'Success',
-				text2: 'Transaction completed successfully',
+				text2: 'Token transferred successfully',
 			});
+
 			router.back();
 		} catch (error) {
 			Toast.show({
 				type: 'error',
 				text1: 'Error',
-				text2: error instanceof Error ? error.message : 'Transaction failed',
+				text2: error instanceof Error ? error.message : 'Failed to transfer token',
 			});
 		}
 	};
@@ -193,7 +249,12 @@ const TokenTransferPage = () => {
 	return (
 		<View style={styles.container}>
 			<View style={styles.inputGroup}>
-				<Text style={styles.label}>Recipient Address</Text>
+				<View style={styles.labelRow}>
+					<Text style={styles.label}>Recipient Address</Text>
+					<TouchableOpacity onPress={() => setShowAddressSelector(true)}>
+						<Ionicons name="book-outline" size={20} color="#333" />
+					</TouchableOpacity>
+				</View>
 				<View style={styles.inputWrapper}>
 					<TextInput
 						style={[styles.input, formErrors.addressTo && styles.inputError]}
@@ -203,16 +264,16 @@ const TokenTransferPage = () => {
 						autoCapitalize="none"
 						autoCorrect={false}
 					/>
-					{formErrors.addressTo && <Text style={styles.errorText}>{formErrors.addressTo}</Text>}
 					{formData.addressTo.length > 0 && (
 						<TouchableOpacity
 							style={styles.clearButton}
-							onPress={() => handleInputChange('addressTo', '')}
+							onPress={() => handleClearField('addressTo')}
 						>
 							<MaterialIcons name="close" size={20} color="#666" />
 						</TouchableOpacity>
 					)}
 				</View>
+				{formErrors.addressTo && <Text style={styles.errorText}>{formErrors.addressTo}</Text>}
 			</View>
 
 			<View style={styles.inputGroup}>
@@ -227,16 +288,17 @@ const TokenTransferPage = () => {
 						autoCapitalize="none"
 						autoCorrect={false}
 					/>
-					{formErrors.amount && <Text style={styles.errorText}>{formErrors.amount}</Text>}
 					{formData.amount.length > 0 && (
-						<TouchableOpacity
-							style={styles.clearButton}
-							onPress={() => handleInputChange('amount', '')}
-						>
+						<TouchableOpacity style={styles.clearButton} onPress={() => handleClearField('amount')}>
 							<MaterialIcons name="close" size={20} color="#666" />
 						</TouchableOpacity>
 					)}
 				</View>
+				{formErrors.amount ? (
+					<Text style={styles.errorText}>{formErrors.amount}</Text>
+				) : (
+					<Text style={styles.balanceText}>Available: {availableAmount}</Text>
+				)}
 			</View>
 
 			<View style={styles.inputGroup}>
@@ -251,42 +313,50 @@ const TokenTransferPage = () => {
 						autoCapitalize="none"
 						autoCorrect={false}
 					/>
-					{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
 					{formData.password.length > 0 && (
 						<TouchableOpacity
 							style={styles.clearButton}
-							onPress={() => handleInputChange('password', '')}
+							onPress={() => handleClearField('password')}
 						>
 							<MaterialIcons name="close" size={20} color="#666" />
 						</TouchableOpacity>
 					)}
 				</View>
+				{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
 			</View>
 
 			<View style={styles.divider} />
-			<Text style={styles.feeTitle}>Estimated Fee:</Text>
-			{isCalculatingFee ? (
-				<ActivityIndicator size="small" color="#666" />
-			) : (
-				estimatedFee !== null && (
-					<View style={styles.feeContainer}>
-						<Text style={styles.feeLabel}>Estimated Fee:</Text>
-						<Text style={styles.feeAmount}>{estimatedFee.toFixed(8)} Satoshis</Text>
-					</View>
-				)
-			)}
+			<View style={styles.feeContainer}>
+				<Text style={styles.feeLabel}>Estimated Fee: </Text>
+				{isCalculatingFee ? (
+					<ActivityIndicator size="small" color="#666" />
+				) : (
+					estimatedFee !== null && (
+						<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
+					)
+				)}
+			</View>
 
 			<TouchableOpacity
 				style={[
-					styles.submitButton,
-					(Object.values(formErrors).some((error) => error) || isCalculatingFee) &&
-						styles.submitButtonDisabled,
+					styles.transferButton,
+					(!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee) &&
+						styles.transferButtonDisabled,
 				]}
 				onPress={handleSubmit}
-				disabled={Object.values(formErrors).some((error) => error) || isCalculatingFee}
+				disabled={!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee}
 			>
-				<Text style={styles.submitButtonText}>Transfer</Text>
+				<Text style={styles.transferButtonText}>
+					{isCalculatingFee ? 'Calculating Fee...' : 'Transfer'}
+				</Text>
 			</TouchableOpacity>
+
+			<AddressSelector
+				visible={showAddressSelector}
+				onClose={() => setShowAddressSelector(false)}
+				onSelect={handleSelectAddress}
+				userAddress={getCurrentAccountAddress()}
+			/>
 		</View>
 	);
 };
@@ -301,12 +371,18 @@ const styles = StyleSheet.create({
 	inputGroup: {
 		marginBottom: hp(2),
 	},
+	labelRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		marginBottom: hp(1),
+		paddingLeft: wp(1),
+		paddingRight: wp(1),
+	},
 	label: {
 		fontSize: hp(1.6),
 		color: '#333',
-		marginBottom: hp(1),
 		fontWeight: '500',
-		paddingLeft: wp(1),
 	},
 	inputWrapper: {
 		position: 'relative',
@@ -327,7 +403,16 @@ const styles = StyleSheet.create({
 	clearButton: {
 		position: 'absolute',
 		right: wp(2),
+		height: '100%',
+		justifyContent: 'center',
+		alignItems: 'center',
 		padding: wp(1),
+	},
+	balanceText: {
+		fontSize: hp(1.4),
+		color: '#666',
+		marginTop: hp(0.5),
+		marginLeft: wp(1),
 	},
 	submitButton: {
 		backgroundColor: '#000',
@@ -346,23 +431,16 @@ const styles = StyleSheet.create({
 		backgroundColor: '#eee',
 		marginVertical: hp(1.5),
 	},
-	feeTitle: {
-		fontSize: hp(1.6),
-		color: '#333',
-		fontWeight: '500',
-		marginBottom: hp(1),
-		paddingHorizontal: wp(1),
-	},
 	feeContainer: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		justifyContent: 'space-between',
 		paddingVertical: hp(2),
 		paddingHorizontal: wp(1),
 	},
 	feeLabel: {
 		fontSize: hp(1.6),
-		color: '#666',
+		color: '#333',
+		fontWeight: '500',
 	},
 	feeAmount: {
 		fontSize: hp(1.6),
@@ -374,12 +452,24 @@ const styles = StyleSheet.create({
 	},
 	errorText: {
 		color: '#ff4444',
-		fontSize: hp(1.2),
+		fontSize: hp(1.4),
 		marginTop: hp(0.5),
-		paddingLeft: wp(1),
+		marginLeft: wp(1),
 	},
-	submitButtonDisabled: {
+	transferButton: {
+		backgroundColor: '#000',
+		padding: wp(4),
+		borderRadius: 8,
+		alignItems: 'center',
+		marginTop: hp(2),
+	},
+	transferButtonDisabled: {
 		backgroundColor: '#666',
+	},
+	transferButtonText: {
+		color: '#fff',
+		fontSize: hp(1.8),
+		fontWeight: '600',
 	},
 });
 

@@ -13,10 +13,10 @@ export const useUtxo = () => {
 			try {
 				const satoshis_amount = Math.floor(tbc_amount * 1e6);
 				let utxos = getCurrentAccountUtxos();
-				utxos = await fetchUTXOs(address);
-				// if (!utxos || utxos.length === 0) {
-				// 	throw new Error('The balance in the account is zero.');
-				// }
+
+				if (!utxos || utxos.length === 0) {
+					utxos = await fetchUTXOs(address);
+				}
 				let utxo_amount = utxos.reduce((acc, utxo) => acc + utxo.satoshis, 0);
 				if (utxo_amount < satoshis_amount) {
 					utxos = await fetchUTXOs(address);

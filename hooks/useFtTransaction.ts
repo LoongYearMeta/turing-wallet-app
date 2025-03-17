@@ -84,17 +84,12 @@ export const useFtTransaction = () => {
 				let preTXs: tbc.Transaction[] = [];
 				let prepreTxDatas: string[] = [];
 				for (let i = 0; i < ftutxos.length; i++) {
-					console.log(ftutxos[i]);
-
 					preTXs.push(await contract.API.fetchTXraw(ftutxos[i].txId, 'mainnet'));
 					prepreTxDatas.push(
 						await contract.API.fetchFtPrePreTxData(preTXs[i], ftutxos[i].outputIndex, 'mainnet'),
 					);
 				}
-				console.log('debug1');
-
 				const utxo = await getUTXO(address_from, 0.01, password);
-				console.log('debug2');
 				let txHex = '';
 				if (address_to.startsWith('1')) {
 					txHex = Token.transfer(
@@ -131,7 +126,24 @@ export const useFtTransaction = () => {
 					})),
 				};
 			} catch (error: any) {
-				throw new Error(error.message);
+				if (
+					error.message &&
+					(error.message.includes('length') ||
+						error.message.includes('Invalid') ||
+						error.message.includes('Password') ||
+						error.message.includes('required') ||
+						error.message.includes('too short') ||
+						error.message.includes('string') ||
+						error.message.includes('input'))
+				) {
+					return {
+						txHex: '',
+						fee: 0,
+						address_to: '',
+						utxos: [],
+					};
+				}
+				throw error;
 			}
 		},
 		[isTaprootAccount],
@@ -417,11 +429,10 @@ export const useFtTransaction = () => {
 				const satoshis_amount = Math.floor(tbc_amount * 1e6);
 				let utxos = getCurrentAccountUtxos();
 				utxos = await fetchUTXOs(address);
-				console.log(utxos);
 
-				// if (!utxos || utxos.length === 0) {
-				// 	throw new Error('The balance in the account is zero.');
-				// }
+				if (!utxos || utxos.length === 0) {
+					utxos = await fetchUTXOs(address);
+				}
 				let utxo_amount = utxos.reduce((acc, utxo) => acc + utxo.satoshis, 0);
 				if (utxo_amount < satoshis_amount) {
 					utxos = await fetchUTXOs(address);

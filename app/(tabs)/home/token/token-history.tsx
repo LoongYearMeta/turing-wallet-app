@@ -92,12 +92,10 @@ const TokenHistoryPage = () => {
 	const filteredHistories = React.useMemo(() => {
 		let filtered = histories;
 
-		// 先按搜索过滤
 		filtered = filtered.filter((history) =>
 			history.id.toLowerCase().startsWith(searchText.toLowerCase()),
 		);
 
-		// 再按正负值过滤
 		switch (filterType) {
 			case 'positive':
 				filtered = filtered.filter((history) => history.balance_change > 0);

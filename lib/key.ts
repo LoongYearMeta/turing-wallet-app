@@ -87,10 +87,23 @@ export const getKeys_wif = (wif: string): Keys => {
 };
 
 export const verifyPassword = (password: string, passKey: string, salt: string): boolean => {
-	const derivedKey = deriveKey(password, salt);
-	return derivedKey === passKey;
+	if (!password || !passKey || !salt) {
+		return false;
+	}
+	try {
+		const derivedKey = deriveKey(password, salt);
+		return derivedKey === passKey;
+	} catch (error) {
+		console.debug('Password verification warning:', error);
+		return false;
+	}
 };
 
 export const retrieveKeys = (password: string, encryptedKeys: string, salt: string): Keys => {
-	return JSON.parse(decrypt(encryptedKeys, password, salt));
+	try {
+		return JSON.parse(decrypt(encryptedKeys, password, salt));
+	} catch (error) {
+		console.debug('Key retrieval warning:', error);
+		return { walletWif: '' };
+	}
 };

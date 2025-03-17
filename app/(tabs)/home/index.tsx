@@ -1,6 +1,7 @@
 import '@/shim';
+import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
@@ -36,9 +37,15 @@ const HomePage = () => {
 	const [tokenToDelete, setTokenToDelete] = useState<FT | FTPublic | null>(null);
 	const [addModalVisible, setAddModalVisible] = useState(false);
 
-	useEffect(() => {
-		loadOwnedTokens();
-	}, []);
+	useFocusEffect(
+		useCallback(() => {
+			if (activeTab === 'owned') {
+				loadOwnedTokens();
+			} else if (activeTab === 'added' && addedTokens.length === 0) {
+				loadAddedTokens();
+			}
+		}, [activeTab, addedTokens.length]),
+	);
 
 	const loadOwnedTokens = async () => {
 		try {
@@ -109,10 +116,10 @@ const HomePage = () => {
 		});
 	};
 
-	const handleTransferPress = (token: FT | FTPublic) => {
+	const handleTransferPress = (token: FT) => {
 		router.push({
 			pathname: '/(tabs)/home/token/token-transfer',
-			params: { contractId: token.id },
+			params: { contractId: token.id, amount: token.amount.toString() },
 		});
 	};
 

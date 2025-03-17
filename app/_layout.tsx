@@ -131,14 +131,21 @@ export default function RootLayout() {
 			<StatusBar style="dark" />
 			<Stack
 				screenOptions={{
-					headerShown: false,
-					animation: 'none',
+					headerShown: true,
+					animation: 'slide_from_right',
 					contentStyle: {
 						flex: 1,
 						backgroundColor: 'white',
 					},
+					headerTitleStyle: {
+						fontSize: 18,
+						fontWeight: '600',
+					},
 				}}
-			/>
+			>
+				<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+				<Stack.Screen name="settings" options={{ headerShown: false }} />
+			</Stack>
 			<Toast config={toastConfig} position="top" topOffset={60} visibilityTime={3000} />
 		</SQLiteProvider>
 	);

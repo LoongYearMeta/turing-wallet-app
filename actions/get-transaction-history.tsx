@@ -4,6 +4,7 @@ import {
 	addTransactionHistory,
 	getTransactionHistoryById,
 	getTransactionHistoryCount,
+	updateTransactionHistory,
 } from '@/utils/sqlite';
 
 interface TransactionHistoryResponse {
@@ -79,16 +80,26 @@ export async function syncTransactionHistory(address: string): Promise<void> {
 		if (dbCount === totalCount) {
 			return;
 		}
+		const currentTimestamp = Math.floor(Date.now() / 1000);
 		let page = 0;
 		while (true) {
 			const response = await fetchTransactionHistory(address, page);
-			let foundExisting = false;
+			let foundExistingWithSameTimestamp = false;
 
 			for (const tx of response.result) {
 				const existingTx = await getTransactionHistoryById(tx.tx_hash);
-				if (existingTx) {
-					foundExisting = true;
+
+				if (existingTx && existingTx.timestamp && existingTx.timestamp === tx.time_stamp) {
+					foundExistingWithSameTimestamp = true;
 					break;
+				}
+
+				if (existingTx) {
+					await updateTransactionHistory({
+						...existingTx,
+						timestamp: tx.time_stamp || currentTimestamp,
+					});
+					continue;
 				}
 
 				const history = {
@@ -96,7 +107,7 @@ export async function syncTransactionHistory(address: string): Promise<void> {
 					send_address: tx.sender_addresses[0] || '',
 					receive_address: tx.recipient_addresses[0] || '',
 					fee: parseFloat(tx.fee),
-					timestamp: tx.time_stamp,
+					timestamp: tx.time_stamp || currentTimestamp,
 					type: tx.tx_type,
 					balance_change: parseFloat(tx.balance_change),
 				};
@@ -104,7 +115,7 @@ export async function syncTransactionHistory(address: string): Promise<void> {
 				await addTransactionHistory(history, address);
 			}
 
-			if (foundExisting || response.result.length < 10) {
+			if (foundExistingWithSameTimestamp || response.result.length < 10) {
 				break;
 			}
 

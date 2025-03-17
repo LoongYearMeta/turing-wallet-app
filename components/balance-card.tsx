@@ -1,7 +1,8 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import { Link } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
@@ -18,6 +19,7 @@ export const BalanceCard = () => {
 	const address = getCurrentAccountAddress();
 	const [rate, setRate] = useState(0);
 	const [changePercent, setChangePercent] = useState(0);
+	const [isLoading, setIsLoading] = useState(false);
 
 	const totalAssets = (balance?.tbc ?? 0) * rate;
 
@@ -31,30 +33,38 @@ export const BalanceCard = () => {
 		}
 	};
 
-	useEffect(() => {
-		const fetchData = async () => {
-			try {
-				const { rate, changePercent } = await getExchangeRate();
-				setRate(rate);
-				setChangePercent(changePercent);
+	useFocusEffect(
+		useCallback(() => {
+			const fetchData = async () => {
+				if (isLoading) return;
 
-				const address = getCurrentAccountAddress();
-				if (!address) {
-					throw new Error('No address found');
+				setIsLoading(true);
+				try {
+					const { rate, changePercent } = await getExchangeRate();
+					setRate(rate);
+					setChangePercent(changePercent);
+
+					const address = getCurrentAccountAddress();
+					if (!address) {
+						throw new Error('No address found');
+					}
+					const balanceData = await getTbcBalance(address);
+					await updateCurrentAccountBalance(balanceData);
+				} catch (error) {
+					console.error('Failed to fetch balance data:', error);
+					Toast.show({
+						type: 'error',
+						text1: 'Error',
+						text2: error instanceof Error ? error.message : 'Failed to fetch data',
+					});
+				} finally {
+					setIsLoading(false);
 				}
-				const balanceData = await getTbcBalance(address);
-				await updateCurrentAccountBalance(balanceData);
-			} catch (error) {
-				Toast.show({
-					type: 'error',
-					text1: 'Error',
-					text2: error instanceof Error ? error.message : 'Failed to fetch data',
-				});
-			}
-		};
+			};
 
-		fetchData();
-	}, [getCurrentAccountAddress, updateCurrentAccountBalance]);
+			fetchData();
+		}, [getCurrentAccountAddress, updateCurrentAccountBalance]),
+	);
 
 	return (
 		<View style={styles.container}>
