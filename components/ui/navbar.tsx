@@ -16,16 +16,19 @@ export const Navbar = () => {
 	const menuItems = [
 		{
 			label: 'Information Management',
-			onPress: () => console.log('Info'),
+			onPress: () => {
+				setMenuVisible(false);
+				router.push('/settings/information');
+			},
 		},
 		{
 			label: 'Account Management',
 			onPress: () => console.log('Account'),
 		},
-		{
-			label: 'System Settings',
-			onPress: () => console.log('Settings'),
-		},
+		// {
+		// 	label: 'System Settings',
+		// 	onPress: () => console.log('Settings'),
+		// },
 		{
 			label: 'Address Book',
 			onPress: () => {
@@ -35,7 +38,10 @@ export const Navbar = () => {
 		},
 		{
 			label: 'Export Mnemonic',
-			onPress: () => console.log('Export'),
+			onPress: () => {
+				setMenuVisible(false);
+				router.push('/settings/export');
+			},
 		},
 	];
 

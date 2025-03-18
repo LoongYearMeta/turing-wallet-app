@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { useAccount } from '@/hooks/useAccount';
 import { hp } from '@/lib/common';
 import { theme } from '@/lib/theme';
 
@@ -10,11 +11,18 @@ interface AvatarProps {
 }
 
 export const Avatar = ({ address, onPress }: AvatarProps) => {
+	const { getCurrentAccountName } = useAccount();
+	const username = getCurrentAccountName();
+
 	const initial = useMemo(() => {
+		if (username && username.trim().length > 0 && !username.trim().startsWith('Wallet')) {
+			return username.trim()[0].toUpperCase();
+		}
+
 		const charCode = address.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-		const letterIndex = charCode % 26; // 0-25
-		return String.fromCharCode(65 + letterIndex); // 65 是 'A' 的 ASCII 码
-	}, [address]);
+		const letterIndex = charCode % 26;
+		return String.fromCharCode(65 + letterIndex);
+	}, [address, username]);
 
 	return (
 		<TouchableOpacity onPress={onPress}>

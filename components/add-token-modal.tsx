@@ -1,5 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
 	ActivityIndicator,
 	StyleSheet,
@@ -30,9 +30,16 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 	const { getCurrentAccountAddress } = useAccount();
 	const formattedId = formatLongString(contractId.trim());
 
+	// 当模态框关闭时清空输入框
+	useEffect(() => {
+		if (!visible) {
+			setContractId('');
+		}
+	}, [visible]);
+
 	const handleClose = () => {
-		setContractId('');
 		onClose();
+		// 不需要在这里清空，因为useEffect会处理
 	};
 
 	const handleSubmit = async () => {

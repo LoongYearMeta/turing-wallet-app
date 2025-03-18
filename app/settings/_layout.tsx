@@ -18,6 +18,22 @@ export default function SettingsLayout() {
 					headerBackVisible: true,
 				}}
 			/>
+			<Stack.Screen
+				name="information"
+				options={{
+					headerTitle: 'Information Management',
+					headerTitleStyle: styles.headerTitle,
+					headerBackVisible: true,
+				}}
+			/>
+			<Stack.Screen
+				name="export"
+				options={{
+					headerTitle: 'Export',
+					headerTitleStyle: styles.headerTitle,
+					headerBackVisible: true,
+				}}
+			/>
 		</Stack>
 	);
 }

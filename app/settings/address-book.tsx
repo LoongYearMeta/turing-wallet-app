@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
@@ -27,11 +28,9 @@ export default function AddressBookScreen() {
 
 	const loadAddresses = async () => {
 		try {
-			// 加载普通地址
 			const bookAddresses = await getAllAddressesFromBook();
 			setAddresses(bookAddresses);
 
-			// 加载多签地址
 			const multiSigs = await getAllMultiSigAddresses(getCurrentAccountAddress());
 			setMultiSigAddresses(multiSigs);
 		} catch (error) {
@@ -71,23 +70,41 @@ export default function AddressBookScreen() {
 		}
 	};
 
+	const handleCopy = async (text: string, label: string) => {
+		await Clipboard.setStringAsync(text);
+		Toast.show({
+			type: 'success',
+			text1: `${label} copied to clipboard`,
+		});
+	};
+
 	const renderAddressItem = ({ item }: { item: string }) => (
 		<View style={styles.addressItem}>
-			<View style={styles.addressInfo}>
-				<Text style={styles.addressText}>{item}</Text>
+			<Text style={styles.addressText} numberOfLines={1} ellipsizeMode="middle">
+				{item}
+			</Text>
+			<View style={styles.actionButtons}>
+				<TouchableOpacity style={styles.actionButton} onPress={() => handleCopy(item, 'Address')}>
+					<Ionicons name="copy-outline" size={20} color="#666" />
+				</TouchableOpacity>
+				<TouchableOpacity style={styles.actionButton} onPress={() => handleDeleteAddress(item)}>
+					<Ionicons name="trash-outline" size={20} color="#666" />
+				</TouchableOpacity>
 			</View>
-			<TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteAddress(item)}>
-				<Ionicons name="trash-outline" size={20} color="#ff4444" />
-			</TouchableOpacity>
 		</View>
 	);
 
 	const renderMultiSigItem = ({ item }: { item: string }) => (
 		<View style={styles.addressItem}>
-			<View style={styles.addressInfo}>
-				<Text style={styles.addressLabel}>MultiSig</Text>
-				<Text style={styles.addressText}>{item}</Text>
-			</View>
+			<Text style={styles.addressText} numberOfLines={1} ellipsizeMode="middle">
+				{item}
+			</Text>
+			<TouchableOpacity
+				style={styles.actionButton}
+				onPress={() => handleCopy(item, 'MultiSig Address')}
+			>
+				<Ionicons name="copy-outline" size={20} color="#666" />
+			</TouchableOpacity>
 		</View>
 	);
 
@@ -182,26 +199,24 @@ const styles = StyleSheet.create({
 		paddingVertical: hp(1.5),
 		paddingHorizontal: wp(3),
 		backgroundColor: '#f8f8f8',
-		borderRadius: 0,
-		marginBottom: 0,
 	},
 	separator: {
 		height: 1,
 		backgroundColor: '#e0e0e0',
 	},
-	addressInfo: {
-		flex: 1,
-	},
-	addressLabel: {
-		fontSize: hp(1.6),
-		fontWeight: '500',
-		color: '#333',
-		marginBottom: hp(0.5),
-	},
 	addressText: {
 		fontSize: hp(1.8),
 		color: '#333',
-		flexWrap: 'wrap',
+		flex: 1,
+		paddingRight: wp(2),
+	},
+	actionButtons: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: wp(2),
+	},
+	actionButton: {
+		padding: wp(2),
 	},
 	deleteButton: {
 		padding: wp(2),

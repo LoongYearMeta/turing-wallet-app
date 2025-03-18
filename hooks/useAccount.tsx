@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { Account, AccountType, Balance, StoredUtxo } from '@/types';
+import { Account, AccountType, Addresses, Balance, StoredUtxo } from '@/types';
 
 const STORAGE_KEY = 'wallet_storage';
 
@@ -30,6 +30,7 @@ interface AccountStore extends AccountState {
 	getCurrentAccountUtxos: () => StoredUtxo[] | null;
 	getCurrentAccountType: () => AccountType;
 	getCurrentTaprootAddress: () => string | null;
+	getAddresses: () => Addresses;
 	isTaprootAccount: () => boolean;
 	canSwitchToTaproot: () => boolean;
 
@@ -147,6 +148,17 @@ export const useAccount = create(
 				return currentAccount?.type === AccountType.TAPROOT
 					? currentAccount.addresses.taprootAddress || null
 					: null;
+			},
+
+			getAddresses: () => {
+				const currentAccount = get().getCurrentAccount();
+				return (
+					currentAccount?.addresses || {
+						tbcAddress: '',
+						taprootAddress: '',
+						taprootLegacyAddress: '',
+					}
+				);
 			},
 
 			isTaprootAccount: () => {

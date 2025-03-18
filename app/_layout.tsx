@@ -145,6 +145,7 @@ export default function RootLayout() {
 			>
 				<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 				<Stack.Screen name="settings" options={{ headerShown: false }} />
+				<Stack.Screen name="multiSigs" options={{ headerShown: false }} />
 			</Stack>
 			<Toast config={toastConfig} position="top" topOffset={60} visibilityTime={3000} />
 		</SQLiteProvider>

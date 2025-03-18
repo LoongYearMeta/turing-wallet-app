@@ -107,3 +107,7 @@ export const retrieveKeys = (password: string, encryptedKeys: string, salt: stri
 		return { walletWif: '' };
 	}
 };
+
+export const verifyPubKey = (pubKey: string): boolean => {
+	return tbc.PublicKey.isValid(pubKey);
+};

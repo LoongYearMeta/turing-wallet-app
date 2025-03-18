@@ -137,7 +137,6 @@ const styles = StyleSheet.create({
 		backgroundColor: '#f5f5f5',
 		paddingVertical: hp(1),
 		width: '100%',
-		marginBottom: hp(2),
 	},
 	topRow: {
 		flexDirection: 'row',
@@ -209,7 +208,13 @@ const styles = StyleSheet.create({
 		padding: 4,
 	},
 	menu: {
+		marginTop: hp(5),
 		backgroundColor: '#fff',
+		elevation: 4,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.2,
+		shadowRadius: 3,
 	},
 	menuItem: {
 		flexDirection: 'row',

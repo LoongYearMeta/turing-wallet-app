@@ -68,7 +68,7 @@ const CreatePage = () => {
 
 			const accountsCount = getAccountsCount();
 			const newAccount: Account = {
-				accountName: `Turing ${accountsCount + 1}`,
+				accountName: `Wallet ${accountsCount + 1}`,
 				addresses: {
 					tbcAddress,
 				},

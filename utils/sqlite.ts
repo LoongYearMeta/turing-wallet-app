@@ -741,3 +741,22 @@ export async function removeAddressFromBook(address: string): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync('DELETE FROM AddressBook WHERE address = ?', [address]);
 }
+
+export async function restoreMultiSig(multiSigAddress: string, userAddress: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.runAsync(
+		'UPDATE MultiSig SET isDeleted = 0 WHERE multiSig_address = ? AND user_address = ?;',
+		[multiSigAddress, userAddress],
+	);
+}
+
+export async function getMultiSigByAddress(
+	multiSigAddress: string,
+	userAddress: string,
+): Promise<{ multiSig_address: string; isDeleted: number } | null> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	return await db.getFirstAsync<{ multiSig_address: string; isDeleted: number }>(
+		'SELECT multiSig_address, isDeleted FROM MultiSig WHERE multiSig_address = ? AND user_address = ?',
+		[multiSigAddress, userAddress],
+	);
+}

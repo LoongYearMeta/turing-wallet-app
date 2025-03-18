@@ -4,9 +4,9 @@ import React, { useCallback } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
+import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
-import { formatLongString } from '@/lib/util';
 
 interface MenuItem {
 	icon: any;
@@ -22,6 +22,9 @@ interface DropdownMenuProps {
 }
 
 export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuProps) => {
+	const { getCurrentAccountName } = useAccount();
+	const username = getCurrentAccountName();
+
 	const copyToClipboard = async () => {
 		await Clipboard.setStringAsync(address);
 		Toast.show({
@@ -48,41 +51,31 @@ export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuP
 		>
 			<TouchableOpacity style={styles.overlay} onPress={handleClose} activeOpacity={1}>
 				<View style={styles.menuContainer}>
-					{/* User Info Section */}
-					<View style={styles.userSection}>
-						<Text style={styles.userName}>Wallet 1</Text>
-						<View style={styles.addressRow}>
-							<Text style={styles.address} numberOfLines={1}>
-								{formatLongString(address)}
-							</Text>
-							<TouchableOpacity onPress={copyToClipboard}>
-								<MaterialIcons name="content-copy" size={16} color="rgba(255,255,255,0.6)" />
-							</TouchableOpacity>
-						</View>
+					<View style={styles.header}>
+						<Text style={styles.username}>{username}</Text>
+						<Text style={styles.address} numberOfLines={1} ellipsizeMode="middle">
+							{address}
+						</Text>
 					</View>
 
-					<View style={styles.mainDivider} />
+					<View style={styles.divider} />
 
-					{/* Menu Items */}
-					<View style={styles.menuItems}>
-						{items.map((item, index) => (
-							<React.Fragment key={index}>
-								{index > 0 && <View style={styles.itemDivider} />}
-								<TouchableOpacity
-									style={styles.menuItem}
-									onPress={() => {
-										item.onPress();
-										onClose();
-									}}
-								>
-									<View style={styles.iconContainer}>
-										<Ionicons name={getIconName(item.label)} size={20} color="white" />
-									</View>
-									<Text style={styles.menuText}>{item.label}</Text>
-								</TouchableOpacity>
-							</React.Fragment>
-						))}
-					</View>
+					{items.map((item, index) => (
+						<TouchableOpacity
+							key={index}
+							style={styles.menuItem}
+							onPress={() => {
+								onClose();
+								item.onPress();
+							}}
+						>
+							<View style={styles.iconContainer}>
+								<Ionicons name={getIconName(item.label)} size={20} color="white" />
+							</View>
+							<Text style={styles.menuItemText}>{item.label}</Text>
+							<MaterialIcons name="chevron-right" size={20} color="#999" />
+						</TouchableOpacity>
+					))}
 				</View>
 			</TouchableOpacity>
 		</Modal>
@@ -128,31 +121,23 @@ const styles = StyleSheet.create({
 		elevation: 5,
 		overflow: 'hidden',
 	},
-	userSection: {
+	header: {
 		padding: hp(1.5),
 	},
-	userName: {
+	username: {
 		fontSize: hp(1.8),
 		fontWeight: '600',
 		color: 'white',
 		marginBottom: hp(0.5),
-	},
-	addressRow: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: wp(2),
 	},
 	address: {
 		fontSize: hp(1.4),
 		color: 'rgba(255,255,255,0.6)',
 		flex: 1,
 	},
-	mainDivider: {
+	divider: {
 		height: 1,
 		backgroundColor: 'rgba(255,255,255,0.1)',
-	},
-	menuItems: {
-		paddingVertical: hp(0.5),
 	},
 	menuItem: {
 		flexDirection: 'row',
@@ -172,7 +157,7 @@ const styles = StyleSheet.create({
 		backgroundColor: 'rgba(255,255,255,0.1)',
 		marginHorizontal: wp(4),
 	},
-	menuText: {
+	menuItemText: {
 		fontSize: hp(1.4),
 		color: 'white',
 		marginLeft: wp(1.5),

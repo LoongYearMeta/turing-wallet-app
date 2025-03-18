@@ -28,3 +28,8 @@ export const formatContractId = (id: string, showLength: number = 10): string =>
 	if (!id || id.length <= 20) return id;
 	return `${id.slice(0, showLength)}...${id.slice(-showLength)}`;
 };
+
+export const formatPubKey = (pubKey: string): string => {
+	if (!pubKey || pubKey.length <= 40) return pubKey;
+	return `${pubKey.slice(0, 20)}...${pubKey.slice(-20)}`;
+};

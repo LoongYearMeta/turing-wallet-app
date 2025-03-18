@@ -144,11 +144,9 @@ const HomePage = () => {
 
 		try {
 			if ('amount' in tokenToDelete) {
-				// 是 FT 类型
 				await softDeleteFT(tokenToDelete.id, getCurrentAccountAddress());
 				await loadOwnedTokens();
 			} else {
-				// 是 FTPublic 类型
 				await removeFTPublic(tokenToDelete.id);
 				await loadAddedTokens();
 			}
