@@ -1,0 +1,537 @@
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { debounce } from 'lodash';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+	ActivityIndicator,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
+} from 'react-native';
+import Toast from 'react-native-toast-message';
+
+import { AddressSelector } from '@/components/address-selector';
+import { AssetSelector } from '@/components/asset-selector';
+import { useAccount } from '@/hooks/useAccount';
+import { useFtTransaction } from '@/hooks/useFtTransaction';
+import { useTbcTransaction } from '@/hooks/useTbcTransaction';
+import { hp, wp } from '@/lib/common';
+import { verifyPassword } from '@/lib/key';
+import { formatBalance, formatFee } from '@/lib/util';
+import { getActiveFTs, transferFT, type FT } from '@/utils/sqlite';
+
+interface FormData {
+	asset: string;
+	addressTo: string;
+	amount: string;
+	password: string;
+}
+
+interface FormErrors {
+	asset?: string;
+	addressTo?: string;
+	amount?: string;
+	password?: string;
+}
+
+interface Asset {
+	label: string;
+	value: string;
+	balance: number;
+	contractId?: string;
+}
+
+export default function SendPage() {
+	const { getCurrentAccountAddress, getSalt, getPassKey, getCurrentAccountBalance } = useAccount();
+	const { sendTbc, finish_transaction } = useTbcTransaction();
+	const { sendFT } = useFtTransaction();
+	const [formData, setFormData] = useState<FormData>({
+		asset: '',
+		addressTo: '',
+		amount: '',
+		password: '',
+	});
+	const [formErrors, setFormErrors] = useState<FormErrors>({});
+	const [estimatedFee, setEstimatedFee] = useState<number | null>(null);
+	const [isCalculatingFee, setIsCalculatingFee] = useState(false);
+	const [showAddressSelector, setShowAddressSelector] = useState(false);
+	const [assets, setAssets] = useState<Asset[]>([]);
+	const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+	const [showAssetSelector, setShowAssetSelector] = useState(false);
+
+	useEffect(() => {
+		loadAssets();
+	}, []);
+
+	const loadAssets = async () => {
+		try {
+			const tbcBalance = getCurrentAccountBalance();
+			const tokens = await getActiveFTs(getCurrentAccountAddress());
+
+			const assetList: Asset[] = [
+				{ label: 'TBC', value: 'TBC', balance: tbcBalance?.tbc || 0 },
+				...tokens.map((token: FT) => ({
+					label: token.name,
+					value: token.id,
+					balance: token.amount,
+					contractId: token.id,
+				})),
+			];
+			setAssets(assetList);
+
+			const tbcAsset = assetList.find((asset) => asset.value === 'TBC');
+			if (tbcAsset) {
+				setSelectedAsset(tbcAsset);
+				setFormData((prev) => ({ ...prev, asset: 'TBC' }));
+			}
+		} catch (error) {
+			console.error('Failed to load assets:', error);
+		}
+	};
+
+	const validateAddress = (address: string) => {
+		if (!address) return 'Address is required';
+		if (!/^[a-zA-Z0-9]+$/.test(address)) return 'Invalid address';
+		if (address.startsWith('1')) {
+			if (address.length !== 33 && address.length !== 34) return 'Invalid address';
+		} else {
+			if (address.length !== 33) return 'Invalid address';
+		}
+		return '';
+	};
+
+	const validateAmount = (amountStr: string) => {
+		if (!amountStr) return 'Amount is required';
+		if (!selectedAsset) return 'Please select an asset first';
+
+		const num = Number(amountStr);
+		if (isNaN(num) || num <= 0) return 'Please enter a valid positive number';
+		if (num > selectedAsset.balance) return 'Amount exceeds your balance';
+		return '';
+	};
+
+	const debouncedPasswordValidation = useCallback(
+		debounce(async (password: string) => {
+			if (!password) {
+				setFormErrors((prev) => ({ ...prev, password: 'Password is required' }));
+				return;
+			}
+
+			const passKey = getPassKey();
+			const salt = getSalt();
+
+			if (!passKey || !salt) {
+				setFormErrors((prev) => ({
+					...prev,
+					password: 'Account error, please try again',
+				}));
+				return;
+			}
+
+			try {
+				const isValid = verifyPassword(password, passKey, salt);
+				setFormErrors((prev) => ({
+					...prev,
+					password: isValid ? '' : 'Incorrect password',
+				}));
+			} catch (error) {
+				console.error('Password validation error:', error);
+				setFormErrors((prev) => ({
+					...prev,
+					password: 'Incorrect password',
+				}));
+			}
+		}, 1500),
+		[getPassKey, getSalt],
+	);
+
+	const handleInputChange = (field: keyof FormData, value: string) => {
+		if (field === 'password') {
+			value = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
+		}
+
+		setFormData((prev) => ({ ...prev, [field]: value }));
+
+		if (field === 'addressTo') {
+			const error = validateAddress(value);
+			setFormErrors((prev) => ({ ...prev, addressTo: error }));
+		} else if (field === 'amount') {
+			const error = validateAmount(value);
+			setFormErrors((prev) => ({ ...prev, amount: error }));
+		} else if (field === 'password') {
+			debouncedPasswordValidation(value);
+		}
+	};
+
+	const handleClearField = (field: keyof FormData) => {
+		setFormData((prev) => ({ ...prev, [field]: '' }));
+		setFormErrors((prev) => ({ ...prev, [field]: '' }));
+	};
+
+	const handleAssetChange = (item: Asset) => {
+		setSelectedAsset(item);
+		setFormData((prev) => ({ ...prev, asset: item.value }));
+		setEstimatedFee(null);
+	};
+
+	const calculateEstimatedFee = useCallback(async () => {
+		if (!formData.addressTo || !formData.amount || !selectedAsset) return;
+
+		if (!formData.password || formData.password.length < 6) return;
+
+		const addressError = validateAddress(formData.addressTo);
+		const amountError = validateAmount(formData.amount);
+
+		if (addressError || amountError || formErrors.password) return;
+
+		setIsCalculatingFee(true);
+		try {
+			if (selectedAsset.value === 'TBC') {
+				const result = await sendTbc(
+					getCurrentAccountAddress(),
+					formData.addressTo,
+					Number(formData.amount),
+					formData.password,
+				);
+				setEstimatedFee(result.fee);
+			} else {
+				const result = await sendFT(
+					selectedAsset.contractId!,
+					getCurrentAccountAddress(),
+					formData.addressTo,
+					Number(formData.amount),
+					formData.password,
+				);
+				setEstimatedFee(result.fee);
+			}
+		} catch (error) {
+			if (
+				error instanceof Error &&
+				!error.message.includes('Invalid') &&
+				!error.message.includes('Password') &&
+				!error.message.includes('required')
+			) {
+				Toast.show({
+					type: 'error',
+					text1: 'Error',
+					text2: error.message,
+				});
+			}
+			setEstimatedFee(null);
+		} finally {
+			setIsCalculatingFee(false);
+		}
+	}, [formData, selectedAsset, formErrors.password]);
+
+	useEffect(() => {
+		if (formData.password && formData.password.length >= 6 && !formErrors.password) {
+			calculateEstimatedFee();
+		}
+	}, [formData.addressTo, formData.amount, formData.asset, calculateEstimatedFee]);
+
+	const handleSubmit = async () => {
+		if (!selectedAsset) {
+			Toast.show({
+				type: 'error',
+				text1: 'Error',
+				text2: 'Please select an asset',
+			});
+			return;
+		}
+
+		try {
+			let result;
+			if (selectedAsset.value === 'TBC') {
+				result = await sendTbc(
+					getCurrentAccountAddress(),
+					formData.addressTo,
+					Number(formData.amount),
+					formData.password,
+				);
+				await finish_transaction(result.txHex, result.utxos!);
+			} else {
+				result = await sendFT(
+					selectedAsset.contractId!,
+					getCurrentAccountAddress(),
+					formData.addressTo,
+					Number(formData.amount),
+					formData.password,
+				);
+				const currentAddress = getCurrentAccountAddress();
+
+				await finish_transaction(result.txHex, result.utxos!);
+				if (formData.addressTo !== currentAddress) {
+					await transferFT(selectedAsset.contractId!, Number(formData.amount), currentAddress);
+				}
+			}
+
+			Toast.show({
+				type: 'success',
+				text1: 'Success',
+				text2: 'Transaction sent successfully',
+			});
+			router.back();
+		} catch (error) {
+			console.error('Transaction failed:', error);
+			Toast.show({
+				type: 'error',
+				text1: 'Error',
+				text2: error instanceof Error ? error.message : 'Transaction failed',
+			});
+		}
+	};
+
+	return (
+		<View style={styles.container}>
+			<View style={styles.inputGroup}>
+				<View style={styles.labelRow}>
+					<Text style={styles.label}>Asset</Text>
+					<TouchableOpacity onPress={() => setShowAssetSelector(true)}>
+						<MaterialIcons name="account-balance-wallet" size={20} color="#333" />
+					</TouchableOpacity>
+				</View>
+				{selectedAsset && (
+					<View style={styles.selectedAssetWrapper}>
+						<TouchableOpacity onPress={() => setShowAssetSelector(true)} style={{ flex: 1 }}>
+							<Text style={styles.selectedAssetText}>
+								{selectedAsset.label}: {formatBalance(selectedAsset.balance)}
+							</Text>
+						</TouchableOpacity>
+					</View>
+				)}
+			</View>
+
+			{/* Address Input */}
+			<View style={styles.inputGroup}>
+				<View style={styles.labelRow}>
+					<Text style={styles.label}>Recipient Address</Text>
+					<TouchableOpacity onPress={() => setShowAddressSelector(true)}>
+						<Ionicons name="book-outline" size={20} color="#333" />
+					</TouchableOpacity>
+				</View>
+				<View style={styles.inputWrapper}>
+					<TextInput
+						style={[styles.input, formErrors.addressTo && styles.inputError]}
+						value={formData.addressTo}
+						onChangeText={(text) => handleInputChange('addressTo', text)}
+						placeholder="Enter recipient address"
+						autoCapitalize="none"
+						autoCorrect={false}
+					/>
+					{formData.addressTo.length > 0 && (
+						<TouchableOpacity
+							style={styles.clearButton}
+							onPress={() => handleClearField('addressTo')}
+						>
+							<MaterialIcons name="close" size={20} color="#666" />
+						</TouchableOpacity>
+					)}
+				</View>
+				{formErrors.addressTo && <Text style={styles.errorText}>{formErrors.addressTo}</Text>}
+			</View>
+
+			{/* Amount Input */}
+			<View style={styles.inputGroup}>
+				<Text style={styles.label}>Amount</Text>
+				<View style={styles.inputWrapper}>
+					<TextInput
+						style={[styles.input, formErrors.amount && styles.inputError]}
+						value={formData.amount}
+						onChangeText={(text) => handleInputChange('amount', text)}
+						placeholder="Enter amount"
+						keyboardType="decimal-pad"
+						autoCapitalize="none"
+						autoCorrect={false}
+					/>
+					{formData.amount.length > 0 && (
+						<TouchableOpacity style={styles.clearButton} onPress={() => handleClearField('amount')}>
+							<MaterialIcons name="close" size={20} color="#666" />
+						</TouchableOpacity>
+					)}
+				</View>
+				{formErrors.amount && <Text style={styles.errorText}>{formErrors.amount}</Text>}
+			</View>
+
+			{/* Password Input */}
+			<View style={styles.inputGroup}>
+				<Text style={styles.label}>Password</Text>
+				<View style={styles.inputWrapper}>
+					<TextInput
+						style={[styles.input, formErrors.password && styles.inputError]}
+						value={formData.password}
+						onChangeText={(text) => handleInputChange('password', text)}
+						placeholder="Enter your password"
+						secureTextEntry={true}
+						autoCapitalize="none"
+						autoCorrect={false}
+					/>
+					{formData.password.length > 0 && (
+						<TouchableOpacity
+							style={styles.clearButton}
+							onPress={() => handleClearField('password')}
+						>
+							<MaterialIcons name="close" size={20} color="#666" />
+						</TouchableOpacity>
+					)}
+				</View>
+				{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
+			</View>
+
+			<View style={styles.divider} />
+			<View style={styles.feeContainer}>
+				<Text style={styles.feeLabel}>Estimated Fee: </Text>
+				{isCalculatingFee ? (
+					<ActivityIndicator size="small" color="#666" />
+				) : (
+					estimatedFee !== null && (
+						<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
+					)
+				)}
+			</View>
+
+			<TouchableOpacity
+				style={[
+					styles.sendButton,
+					(!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee) &&
+						styles.sendButtonDisabled,
+				]}
+				onPress={handleSubmit}
+				disabled={!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee}
+			>
+				<Text style={styles.sendButtonText}>
+					{isCalculatingFee ? 'Calculating Fee...' : 'Send'}
+				</Text>
+			</TouchableOpacity>
+
+			<AddressSelector
+				visible={showAddressSelector}
+				onClose={() => setShowAddressSelector(false)}
+				onSelect={(address) => handleInputChange('addressTo', address)}
+				userAddress={getCurrentAccountAddress()}
+			/>
+
+			<AssetSelector
+				visible={showAssetSelector}
+				onClose={() => setShowAssetSelector(false)}
+				onSelect={handleAssetChange}
+				assets={assets}
+				selectedAsset={selectedAsset}
+			/>
+		</View>
+	);
+}
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+		backgroundColor: '#fff',
+		padding: wp(4),
+		paddingTop: hp(3),
+	},
+	inputGroup: {
+		marginBottom: hp(2),
+	},
+	labelRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		marginBottom: hp(1),
+		paddingLeft: wp(1),
+		paddingRight: wp(1),
+	},
+	label: {
+		fontSize: hp(1.6),
+		color: '#333',
+		fontWeight: '500',
+		marginBottom: hp(1),
+	},
+	inputWrapper: {
+		position: 'relative',
+		flexDirection: 'row',
+		alignItems: 'center',
+	},
+	input: {
+		flex: 1,
+		borderWidth: 1,
+		borderColor: '#e0e0e0',
+		borderRadius: 8,
+		paddingHorizontal: wp(3),
+		paddingVertical: hp(1.5),
+		fontSize: hp(1.6),
+		backgroundColor: '#f8f8f8',
+		paddingRight: wp(10),
+	},
+	clearButton: {
+		position: 'absolute',
+		right: wp(2),
+		height: '100%',
+		justifyContent: 'center',
+		alignItems: 'center',
+		padding: wp(1),
+	},
+	selectedAssetWrapper: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		marginLeft: wp(1),
+		marginTop: hp(0.5),
+		backgroundColor: '#f8f8f8',
+		padding: wp(2),
+		borderRadius: 8,
+	},
+	selectedAssetText: {
+		fontSize: hp(1.6),
+		color: '#333',
+		fontWeight: '500',
+	},
+	clearAssetButton: {
+		padding: wp(1),
+	},
+	errorText: {
+		color: '#ff4444',
+		fontSize: hp(1.4),
+		marginTop: hp(0.5),
+		marginLeft: wp(1),
+	},
+	divider: {
+		height: 1,
+		backgroundColor: '#eee',
+		marginVertical: hp(1.5),
+	},
+	feeContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		paddingVertical: hp(2),
+		paddingHorizontal: wp(1),
+	},
+	feeLabel: {
+		fontSize: hp(1.6),
+		color: '#333',
+		fontWeight: '500',
+	},
+	feeAmount: {
+		fontSize: hp(1.6),
+		color: '#333',
+		fontWeight: '500',
+	},
+	sendButton: {
+		backgroundColor: '#000',
+		padding: wp(4),
+		borderRadius: 8,
+		alignItems: 'center',
+		marginTop: hp(2),
+	},
+	sendButtonDisabled: {
+		backgroundColor: '#666',
+	},
+	sendButtonText: {
+		color: '#fff',
+		fontSize: hp(1.8),
+		fontWeight: '600',
+	},
+	inputError: {
+		borderColor: '#ff4444',
+	},
+});

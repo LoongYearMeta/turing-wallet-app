@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import { useNavigation, useRouter } from 'expo-router';
+import React, { useEffect, useLayoutEffect } from 'react';
 import { Animated, Dimensions, Easing, StyleSheet, View } from 'react-native';
 
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
@@ -15,12 +15,19 @@ const TEXT_ANIMATION_DELAY = 300;
 
 const WelcomePage = () => {
 	const router = useRouter();
+	const navigation = useNavigation();
 	const imageOpacity = new Animated.Value(0);
 	const imageScale = new Animated.Value(0.9);
 	const textOpacity = new Animated.Value(0);
 	const textTranslateY = new Animated.Value(15);
 
 	const { getCurrentAccountAddress } = useAccount();
+
+	useLayoutEffect(() => {
+		navigation.setOptions({
+			headerShown: false,
+		});
+	}, [navigation]);
 
 	useEffect(() => {
 		Animated.parallel([

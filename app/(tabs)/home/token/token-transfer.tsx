@@ -226,10 +226,11 @@ const TokenTransferPage = () => {
 				formData.password,
 			);
 			const currentAddress = getCurrentAccountAddress();
+
+			await finish_transaction(result.txHex, result.utxos!);
 			if (formData.addressTo !== currentAddress) {
 				await transferFT(contractId, Number(formData.amount), currentAddress);
 			}
-			await finish_transaction(result.txHex, result.utxos!);
 			Toast.show({
 				type: 'success',
 				text1: 'Success',
@@ -383,6 +384,7 @@ const styles = StyleSheet.create({
 		fontSize: hp(1.6),
 		color: '#333',
 		fontWeight: '500',
+		marginBottom: hp(1),
 	},
 	inputWrapper: {
 		position: 'relative',

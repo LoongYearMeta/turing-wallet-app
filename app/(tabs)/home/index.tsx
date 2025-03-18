@@ -1,6 +1,6 @@
 import '@/shim';
 import { useFocusEffect } from '@react-navigation/native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
@@ -27,7 +27,7 @@ import {
 
 type TabType = 'owned' | 'added';
 
-const HomePage = () => {
+export default function HomePage() {
 	const [activeTab, setActiveTab] = useState<TabType>('owned');
 	const [ownedTokens, setOwnedTokens] = useState<FT[]>([]);
 	const [addedTokens, setAddedTokens] = useState<FTPublic[]>([]);
@@ -36,6 +36,7 @@ const HomePage = () => {
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [tokenToDelete, setTokenToDelete] = useState<FT | FTPublic | null>(null);
 	const [addModalVisible, setAddModalVisible] = useState(false);
+	const { refresh } = useLocalSearchParams<{ refresh?: string }>();
 
 	useFocusEffect(
 		useCallback(() => {
@@ -259,7 +260,7 @@ const HomePage = () => {
 			/>
 		</ScreenWrapper>
 	);
-};
+}
 
 const styles = StyleSheet.create({
 	container: {
@@ -277,5 +278,3 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 	},
 });
-
-export default HomePage;

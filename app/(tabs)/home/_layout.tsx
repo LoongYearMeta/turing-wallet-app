@@ -14,6 +14,13 @@ export default function HomeLayout() {
 				}}
 			/>
 			<Stack.Screen
+				name="send"
+				options={{
+					headerTitle: 'Send Assets',
+					headerShown: true,
+				}}
+			/>
+			<Stack.Screen
 				name="token/token-transfer"
 				options={{
 					headerTitle: 'Transfer Token',

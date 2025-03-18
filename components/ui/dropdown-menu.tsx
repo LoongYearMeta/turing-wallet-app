@@ -34,7 +34,6 @@ export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuP
 	};
 
 	const handleClose = useCallback(() => {
-		// 先关闭菜单内容
 		onClose();
 	}, [onClose]);
 

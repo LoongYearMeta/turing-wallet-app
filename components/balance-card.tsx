@@ -1,8 +1,8 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import { Link } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
@@ -33,8 +33,10 @@ export const BalanceCard = () => {
 		}
 	};
 
-	useFocusEffect(
-		useCallback(() => {
+	const isFocused = useIsFocused();
+
+	useEffect(() => {
+		if (isFocused) {
 			const fetchData = async () => {
 				if (isLoading) return;
 
@@ -63,8 +65,8 @@ export const BalanceCard = () => {
 			};
 
 			fetchData();
-		}, [getCurrentAccountAddress, updateCurrentAccountBalance]),
-	);
+		}
+	}, [isFocused]);
 
 	return (
 		<View style={styles.container}>
