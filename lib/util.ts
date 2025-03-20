@@ -33,3 +33,7 @@ export const formatPubKey = (pubKey: string): string => {
 	if (!pubKey || pubKey.length <= 40) return pubKey;
 	return `${pubKey.slice(0, 20)}...${pubKey.slice(-20)}`;
 };
+
+export const formatDate = (timestamp: number) => {
+	return new Date(timestamp * 1000).toLocaleString();
+};

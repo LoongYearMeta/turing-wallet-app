@@ -63,10 +63,15 @@ const WelcomePage = () => {
 		}, TEXT_ANIMATION_DELAY);
 
 		const timer = setTimeout(() => {
-			const address = getCurrentAccountAddress();
-			if (address) {
-				router.replace('/(tabs)/home');
-			} else {
+			try {
+				const address = getCurrentAccountAddress();
+				if (address) {
+					router.replace('/(tabs)/home');
+				} else {
+					router.replace('/login');
+				}
+			} catch (error) {
+				console.error('Navigation error:', error);
 				router.replace('/login');
 			}
 		}, AUTO_NAVIGATE_DELAY);

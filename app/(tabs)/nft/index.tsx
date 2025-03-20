@@ -1,24 +1,614 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { router } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import {
+	ActivityIndicator,
+	FlatList,
+	Image,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
+	Dimensions,
+	Animated,
+} from 'react-native';
+import Toast from 'react-native-toast-message';
 
+import { syncCollections } from '@/actions/get-collections';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
+import { RestoreCollectionModal } from '@/components/restore-collection-modal';
 import { Navbar } from '@/components/ui/navbar';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
-import { wp } from '@/lib/common';
+import { useAccount } from '@/hooks/useAccount';
+import { hp, wp } from '@/lib/common';
+import { theme } from '@/lib/theme';
+import { Collection, NFT, getActiveNFTs, getAllCollections, softDeleteCollection, softDeleteNFT } from '@/utils/sqlite';
+import { syncNFTs } from '@/actions/get-nfts';
+import { RestoreNFTModal } from '@/components/restore-nft-modal';
 
-const TokenPage = () => {
+const NFTPage = () => {
+	const [activeTab, setActiveTab] = useState<'collections' | 'nfts'>('collections');
+	const screenWidth = Dimensions.get('window').width;
+	const panX = React.useRef(new Animated.Value(0)).current;
+
+	// 处理标签切换
+	const handleTabChange = (tab: 'collections' | 'nfts') => {
+		console.log('Switching to tab:', tab);
+		setActiveTab(tab);
+		
+		Animated.timing(panX, {
+			toValue: tab === 'collections' ? 0 : -screenWidth,
+			duration: 300,
+			useNativeDriver: true,
+		}).start();
+	};
+
 	return (
-		<ScreenWrapper bg="white">
+		<ScreenWrapper bg="#f5f5f5">
 			<Navbar />
-			<View style={styles.container}>{/* Add your token page content here */}</View>
+			<View style={styles.tabContainer}>
+				<TouchableOpacity
+					style={[styles.tabButton, activeTab === 'collections' && styles.activeTabButton]}
+					onPress={() => handleTabChange('collections')}
+				>
+					<Text
+						style={[styles.tabText, activeTab === 'collections' && styles.activeTabText]}
+					>
+						Collections
+					</Text>
+				</TouchableOpacity>
+				<TouchableOpacity
+					style={[styles.tabButton, activeTab === 'nfts' && styles.activeTabButton]}
+					onPress={() => handleTabChange('nfts')}
+				>
+					<Text
+						style={[styles.tabText, activeTab === 'nfts' && styles.activeTabText]}
+					>
+						NFTs
+					</Text>
+				</TouchableOpacity>
+			</View>
+			
+			<Animated.View 
+				style={[
+					styles.tabContentContainer,
+					{ transform: [{ translateX: panX }] }
+				]}
+			>
+				<View style={[styles.tabContent, { width: screenWidth }]}>
+					<CollectionsTab />
+				</View>
+				<View style={[styles.tabContent, { width: screenWidth }]}>
+					<NFTsTab />
+				</View>
+			</Animated.View>
 		</ScreenWrapper>
+	);
+};
+
+const CollectionsTab = () => {
+	const [collections, setCollections] = useState<Collection[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [refreshing, setRefreshing] = useState(false);
+	const [searchText, setSearchText] = useState('');
+	const { getCurrentAccountAddress } = useAccount();
+	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+	const [restoreModalVisible, setRestoreModalVisible] = useState(false);
+	const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
+
+	const loadCollections = useCallback(async () => {
+		try {
+			setLoading(true);
+			const userAddress = getCurrentAccountAddress();
+			const userCollections = await getAllCollections(userAddress);
+			setCollections(userCollections);
+		} catch (error) {
+			console.error('Failed to load collections:', error);
+		} finally {
+			setLoading(false);
+		}
+	}, [getCurrentAccountAddress]);
+
+	useFocusEffect(
+		useCallback(() => {
+			loadCollections();
+		}, [loadCollections]),
+	);
+
+	const handleRefresh = async () => {
+		try {
+			setRefreshing(true);
+			const userAddress = getCurrentAccountAddress();
+	
+			await syncCollections(userAddress);
+			await loadCollections();
+			Toast.show({
+				type: 'success',
+				text1: 'Collections refreshed',
+			});
+		} catch (error) {
+			console.error('Failed to refresh collections:', error);
+			Toast.show({
+				type: 'error',
+				text1: 'Error',
+				text2: 'Failed to refresh collections',
+			});
+		} finally {
+			setRefreshing(false);
+		}
+	};
+
+	const handleDeleteCollection = (collection: Collection) => {
+		setSelectedCollection(collection);
+		setDeleteModalVisible(true);
+	};
+
+	const confirmDeleteCollection = async () => {
+		if (!selectedCollection) return;
+		
+		try {
+			await softDeleteCollection(selectedCollection.id);
+			Toast.show({
+				type: 'success',
+				text1: 'Collection deleted',
+			});
+			loadCollections();
+		} catch (error) {
+			console.error('Failed to delete collection:', error);
+			Toast.show({
+				type: 'error',
+				text1: 'Error',
+				text2: 'Failed to delete collection',
+			});
+		} finally {
+			setDeleteModalVisible(false);
+			setSelectedCollection(null);
+		}
+	};
+
+	const filteredCollections = collections.filter(
+		(collection) =>
+			collection.name.toLowerCase().startsWith(searchText.toLowerCase()) ||
+			collection.id.toLowerCase().startsWith(searchText.toLowerCase())
+	);
+
+	const renderCollectionItem = ({ item }: { item: Collection }) => (
+		<TouchableOpacity 
+			style={styles.collectionItem}
+			onPress={() => router.push(`/(tabs)/nft/collection/collection-detail?id=${item.id}`)}
+		>
+			<Image source={{ uri: item.icon }} style={styles.image} resizeMode="cover" />
+			<TouchableOpacity 
+				style={styles.deleteButton}
+				onPress={(e) => {
+					e.stopPropagation(); // 防止触发父元素的onPress
+					handleDeleteCollection(item);
+				}}
+			>
+				<MaterialIcons name="delete" size={24} color="#fff" />
+			</TouchableOpacity>
+			<Text style={styles.collectionName} numberOfLines={1}>
+				{item.name}
+			</Text>
+		</TouchableOpacity>
+	);
+
+	if (loading && !refreshing) {
+		return (
+			<View style={styles.loadingContainer}>
+				<ActivityIndicator size="large" color={theme.colors.primary} />
+			</View>
+		);
+	}
+
+	return (
+		<View style={styles.container}>
+			<View style={styles.searchContainer}>
+				<View style={styles.searchInputContainer}>
+					<MaterialIcons name="search" size={20} color="#999" style={styles.searchIcon} />
+					<TextInput
+						style={styles.searchInput}
+						placeholder="Search collections..."
+						value={searchText}
+						onChangeText={setSearchText}
+					/>
+					{searchText.length > 0 && (
+						<TouchableOpacity onPress={() => setSearchText('')} style={styles.clearButton}>
+							<MaterialIcons name="close" size={20} color="#999" />
+						</TouchableOpacity>
+					)}
+				</View>
+				<View style={styles.actionButtons}>
+					<TouchableOpacity 
+						style={styles.actionButton} 
+						onPress={handleRefresh}
+						disabled={refreshing}
+					>
+						{refreshing ? (
+							<ActivityIndicator size="small" color="#333" />
+						) : (
+							<MaterialIcons name="refresh" size={24} color="#333" />
+						)}
+					</TouchableOpacity>
+					<TouchableOpacity 
+						style={styles.actionButton}
+						onPress={() => setRestoreModalVisible(true)}
+					>
+						<MaterialIcons name="restore" size={24} color="#333" />
+					</TouchableOpacity>
+					<TouchableOpacity 
+						style={styles.actionButton}
+						onPress={() => router.push('/(tabs)/nft/collection/create-collection')}
+					>
+						<MaterialIcons name="add" size={24} color="#333" />
+					</TouchableOpacity>
+				</View>
+			</View>
+
+			{filteredCollections.length > 0 ? (
+				<FlatList
+					data={filteredCollections}
+					renderItem={renderCollectionItem}
+					keyExtractor={(item) => item.id}
+					numColumns={2}
+					columnWrapperStyle={styles.columnWrapper}
+					contentContainerStyle={styles.listContent}
+					showsVerticalScrollIndicator={false}
+					refreshing={refreshing}
+					onRefresh={handleRefresh}
+				/>
+			) : (
+				<View style={styles.emptyContainer}>
+					<Text style={styles.emptyText}>
+						{searchText ? 'No matching collections found' : 'No collections found'}
+					</Text>
+				</View>
+			)}
+
+			<ConfirmModal
+				visible={deleteModalVisible}
+				title="Delete Collection"
+				message={`Are you sure you want to delete "${selectedCollection?.name}"? You can restore it later using the collection ID.`}
+				onConfirm={confirmDeleteCollection}
+				onCancel={() => {
+					setDeleteModalVisible(false);
+					setSelectedCollection(null);
+				}}
+			/>
+
+			<RestoreCollectionModal
+				visible={restoreModalVisible}
+				onClose={() => setRestoreModalVisible(false)}
+				onSuccess={loadCollections}
+			/>
+		</View>
+	);
+};
+
+const NFTsTab = () => {
+	const [nfts, setNfts] = useState<NFT[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [refreshing, setRefreshing] = useState(false);
+	const [searchText, setSearchText] = useState('');
+	const { getCurrentAccountAddress } = useAccount();
+	const [restoreModalVisible, setRestoreModalVisible] = useState(false);
+	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+	const [selectedNFT, setSelectedNFT] = useState<NFT | null>(null);
+
+	const loadNFTs = useCallback(async () => {
+		try {
+			setLoading(true);
+			const userAddress = getCurrentAccountAddress();
+			const userNFTs = await getActiveNFTs(userAddress);
+			setNfts(userNFTs);
+		} catch (error) {
+			console.error('Failed to load NFTs:', error);
+		} finally {
+			setLoading(false);
+		}
+	}, [getCurrentAccountAddress]);
+
+	useFocusEffect(
+		useCallback(() => {
+			loadNFTs(); // 只加载本地数据，不执行 syncNFTs
+		}, [loadNFTs]),
+	);
+
+	const handleRefresh = async () => {
+		try {
+			setRefreshing(true);
+			const userAddress = getCurrentAccountAddress();
+
+			await syncNFTs(userAddress); // 只在用户主动刷新时执行
+			await loadNFTs();
+			Toast.show({
+				type: 'success',
+				text1: 'NFTs refreshed',
+			});
+		} catch (error) {
+			console.error('Failed to refresh NFTs:', error);
+			Toast.show({
+				type: 'error',
+				text1: 'Error',
+				text2: 'Failed to refresh NFTs',
+			});
+		} finally {
+			setRefreshing(false);
+		}
+	};
+
+	const handleDeleteNFT = (nft: NFT) => {
+		setSelectedNFT(nft);
+		setDeleteModalVisible(true);
+	};
+
+	const confirmDeleteNFT = async () => {
+		if (!selectedNFT) return;
+		
+		try {
+			await softDeleteNFT(selectedNFT.id);
+			Toast.show({
+				type: 'success',
+				text1: 'NFT deleted',
+			});
+			loadNFTs();
+		} catch (error) {
+			console.error('Failed to delete NFT:', error);
+			Toast.show({
+				type: 'error',
+				text1: 'Error',
+				text2: 'Failed to delete NFT',
+			});
+		} finally {
+			setDeleteModalVisible(false);
+			setSelectedNFT(null);
+		}
+	};
+
+	const filteredNFTs = nfts.filter(
+		(nft) =>
+			nft.name.toLowerCase().startsWith(searchText.toLowerCase()) ||
+			nft.id.toLowerCase().startsWith(searchText.toLowerCase()),
+	);
+
+	const renderNFTItem = ({ item }: { item: NFT }) => (
+		<TouchableOpacity 
+			style={styles.collectionItem}
+			onPress={() => router.push(`/(tabs)/nft/nft-detail?id=${item.id}`)}
+		>
+			<Image source={{ uri: item.icon }} style={styles.image} resizeMode="cover" />
+			<TouchableOpacity 
+				style={styles.deleteButton}
+				onPress={(e) => {
+					e.stopPropagation(); // 防止触发父元素的onPress
+					handleDeleteNFT(item);
+				}}
+			>
+				<MaterialIcons name="delete" size={24} color="#fff" />
+			</TouchableOpacity>
+			<Text style={styles.collectionName} numberOfLines={1}>
+				{item.name}
+			</Text>
+		</TouchableOpacity>
+	);
+
+	if (loading && !refreshing) {
+		return (
+			<View style={styles.loadingContainer}>
+				<ActivityIndicator size="large" color={theme.colors.primary} />
+			</View>
+		);
+	}
+
+	return (
+		<View style={styles.container}>
+			<View style={styles.searchContainer}>
+				<View style={styles.searchInputContainer}>
+					<MaterialIcons name="search" size={20} color="#999" style={styles.searchIcon} />
+					<TextInput
+						style={styles.searchInput}
+						placeholder="Search NFTs..."
+						value={searchText}
+						onChangeText={setSearchText}
+					/>
+					{searchText.length > 0 && (
+						<TouchableOpacity onPress={() => setSearchText('')} style={styles.clearButton}>
+							<MaterialIcons name="close" size={20} color="#999" />
+						</TouchableOpacity>
+					)}
+				</View>
+				<View style={styles.actionButtons}>
+					<TouchableOpacity onPress={handleRefresh} style={styles.actionButton}>
+						<MaterialIcons name="refresh" size={24} color={theme.colors.primary} />
+					</TouchableOpacity>
+					<TouchableOpacity 
+						onPress={() => setRestoreModalVisible(true)} 
+						style={styles.actionButton}
+					>
+						<MaterialIcons name="restore" size={24} color={theme.colors.primary} />
+					</TouchableOpacity>
+				</View>
+			</View>
+
+			{filteredNFTs.length > 0 ? (
+				<FlatList
+					data={filteredNFTs}
+					renderItem={renderNFTItem}
+					keyExtractor={(item) => item.id}
+					numColumns={2}
+					columnWrapperStyle={styles.columnWrapper}
+					contentContainerStyle={styles.listContent}
+					showsVerticalScrollIndicator={false}
+					refreshing={refreshing}
+					onRefresh={handleRefresh}
+				/>
+			) : (
+				<View style={styles.emptyContainer}>
+					<Text style={styles.emptyText}>
+						{searchText ? 'No matching NFTs found' : 'No NFTs found'}
+					</Text>
+				</View>
+			)}
+
+			<RestoreNFTModal
+				visible={restoreModalVisible}
+				onClose={() => setRestoreModalVisible(false)}
+				onSuccess={loadNFTs}
+			/>
+
+			<ConfirmModal
+				visible={deleteModalVisible}
+				title="Delete NFT"
+				message={`Are you sure you want to delete "${selectedNFT?.name}"? You can restore it from blockchain anytime.`}
+				onConfirm={confirmDeleteNFT}
+				onCancel={() => {
+					setDeleteModalVisible(false);
+					setSelectedNFT(null);
+				}}
+			/>
+		</View>
 	);
 };
 
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		paddingHorizontal: wp(5),
+		backgroundColor: '#f5f5f5',
+		paddingHorizontal: wp(4),
+	},
+	tabContainer: {
+		flexDirection: 'row',
+		borderBottomWidth: 1,
+		borderBottomColor: '#f0f0f0',
+		backgroundColor: '#f5f5f5',
+	},
+	tabButton: {
+		flex: 1,
+		paddingVertical: hp(1.5),
+		alignItems: 'center',
+	},
+	activeTabButton: {
+		borderBottomWidth: 3,
+		borderBottomColor: theme.colors.primary,
+	},
+	tabText: {
+		fontSize: hp(1.6),
+		fontWeight: '600',
+		color: '#999',
+	},
+	activeTabText: {
+		color: theme.colors.text,
+	},
+	loadingContainer: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+		backgroundColor: '#f5f5f5',
+	},
+	columnWrapper: {
+		justifyContent: 'space-between',
+		marginBottom: hp(1.5),
+	},
+	listContent: {
+		paddingTop: hp(2),
+		paddingBottom: hp(4),
+	},
+	collectionItem: {
+		width: wp(43),
+		height: wp(43),
+		borderRadius: 12,
+		overflow: 'hidden',
+		marginBottom: hp(2),
+		position: 'relative',
+	},
+	imageContainer: {
+		width: '100%',
+		height: wp(39),
+		borderRadius: 8,
+		overflow: 'hidden',
+		marginBottom: hp(1),
+		position: 'relative',
+	},
+	image: {
+		width: '100%',
+		height: '100%',
+	},
+	deleteButton: {
+		position: 'absolute',
+		top: wp(2),
+		right: wp(2),
+		zIndex: 10,
+	},
+	collectionName: {
+		position: 'absolute',
+		bottom: wp(2),
+		left: 0,
+		right: 0,
+		fontSize: hp(1.6),
+		fontWeight: '600',
+		color: '#fff',
+		textAlign: 'center',
+		textShadowColor: 'rgba(0, 0, 0, 0.75)',
+		textShadowOffset: { width: 1, height: 1 },
+		textShadowRadius: 3,
+	},
+	emptyContainer: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+		paddingBottom: hp(10),
+	},
+	emptyText: {
+		fontSize: hp(1.8),
+		color: '#999',
+		marginBottom: hp(2),
+	},
+	searchContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		paddingHorizontal: wp(4),
+		paddingVertical: hp(1.5),
+		borderBottomWidth: 1,
+		borderBottomColor: '#f0f0f0',
+		backgroundColor: '#f5f5f5',
+	},
+	searchInputContainer: {
+		flex: 1,
+		flexDirection: 'row',
+		alignItems: 'center',
+		backgroundColor: '#eeeeee',
+		borderRadius: 8,
+		paddingHorizontal: wp(2),
+	},
+	searchIcon: {
+		marginRight: wp(1),
+	},
+	searchInput: {
+		flex: 1,
+		height: hp(4.5),
+		fontSize: hp(1.6),
+	},
+	actionButtons: {
+		flexDirection: 'row',
+		marginLeft: wp(2),
+	},
+	actionButton: {
+		padding: wp(1.5),
+		marginLeft: wp(1),
+	},
+	clearButton: {
+		padding: wp(1),
+	},
+	tabContentContainer: {
+		flex: 1,
+		flexDirection: 'row',
+		width: Dimensions.get('window').width * 2,
+	},
+	tabContent: {
+		flex: 1,
 	},
 });
 
-export default TokenPage;
+export default NFTPage;

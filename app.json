@@ -1,21 +1,18 @@
 {
   "expo": {
-    "name": "turing-wallet",
-    "slug": "turing-wallet",
+    "name": "Turing Wallet",
+    "slug": "Turing Wallet",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "turing-wallet",
+    "scheme": "Turing Wallet",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#000"
-      },
+     
       "package": "com.anonymous.turingwallet"
     },
     "web": {

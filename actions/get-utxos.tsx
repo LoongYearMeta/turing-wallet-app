@@ -1,5 +1,3 @@
-import '@/shim';
-
 import { StoredUtxo } from '@/types';
 
 export async function fetchUTXOs(address: string): Promise<StoredUtxo[]> {

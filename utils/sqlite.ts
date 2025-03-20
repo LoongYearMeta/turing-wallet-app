@@ -75,87 +75,90 @@ export interface FTPublic {
 	holds_count: number;
 }
 
-export async function initDatabase(): Promise<void> {
-	const db = await SQLite.openDatabaseAsync('wallet.db');
-	await db.execAsync(`
-		PRAGMA journal_mode = WAL;
-		CREATE TABLE IF NOT EXISTS Collection (
-			id TEXT PRIMARY KEY,
-			name TEXT,
-			supply INTEGER,
-			creator TEXT,
-			icon TEXT,
-			isDeleted INTEGER DEFAULT 0,
-			user_address TEXT
-		);
-		CREATE TABLE IF NOT EXISTS NFT (
-			id TEXT PRIMARY KEY,
-			collection_id TEXT,
-			collection_index INTEGER,
-			name TEXT,
-			symbol TEXT,
-			description TEXT,
-			attributes TEXT,
-			transfer_times INTEGER DEFAULT 0,
-			icon TEXT,
-			collection_name TEXT,
-			isDeleted INTEGER DEFAULT 0,
-			user_address TEXT
-		);
-		CREATE TABLE IF NOT EXISTS FT (
-			id TEXT PRIMARY KEY,
-			name TEXT,
-			decimal INTEGER,
-			amount REAL,
-			symbol TEXT,
-			isDeleted INTEGER DEFAULT 0,
-			user_address TEXT
-		);
-		CREATE TABLE IF NOT EXISTS TransactionHistory (
-			id TEXT PRIMARY KEY,
-			send_address TEXT,
-			receive_address TEXT,
-			fee REAL,
-			timestamp INTEGER,
-			type TEXT,
-			balance_change REAL,
-			user_address TEXT
-		);
-		CREATE TABLE IF NOT EXISTS NFT_History (
-			id TEXT PRIMARY KEY,
-			send_address TEXT,
-			receive_address TEXT,
-			timestamp INTEGER,
-			contract_id TEXT
-		);
-		CREATE TABLE IF NOT EXISTS FT_History (
-			id TEXT PRIMARY KEY,
-			send_address TEXT,
-			receive_address TEXT,
-			fee REAL,
-			timestamp INTEGER,
-			contract_id TEXT,
-			balance_change REAL
-		);
-		CREATE TABLE IF NOT EXISTS MultiSig (
-			multiSig_address TEXT PRIMARY KEY,
-			pubKeys TEXT,
-			isDeleted INTEGER DEFAULT 0,
-			user_address TEXT
-		);
-		CREATE TABLE IF NOT EXISTS FT_Public (
-			id TEXT PRIMARY KEY,
-			name TEXT NOT NULL,
-			symbol TEXT NOT NULL,
-			decimal INTEGER NOT NULL,
-			supply REAL NOT NULL,
-			holds_count INTEGER NOT NULL
-		);
-		CREATE TABLE IF NOT EXISTS AddressBook (
-			address TEXT PRIMARY KEY
-		);
-	`);
-}
+export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
+	try {
+		await db.execAsync(`
+			PRAGMA journal_mode = WAL;
+			CREATE TABLE IF NOT EXISTS Collection (
+				id TEXT PRIMARY KEY,
+				name TEXT,
+				supply INTEGER,
+				creator TEXT,
+				icon TEXT,
+				isDeleted INTEGER DEFAULT 0,
+				user_address TEXT
+			);
+			CREATE TABLE IF NOT EXISTS NFT (
+				id TEXT PRIMARY KEY,
+				collection_id TEXT,
+				collection_index INTEGER,
+				name TEXT,
+				symbol TEXT,
+				description TEXT,
+				attributes TEXT,
+				transfer_times INTEGER DEFAULT 0,
+				icon TEXT,
+				collection_name TEXT,
+				isDeleted INTEGER DEFAULT 0,
+				user_address TEXT
+			);
+			CREATE TABLE IF NOT EXISTS FT (
+				id TEXT PRIMARY KEY,
+				name TEXT,
+				decimal INTEGER,
+				amount REAL,
+				symbol TEXT,
+				isDeleted INTEGER DEFAULT 0,
+				user_address TEXT
+			);
+			CREATE TABLE IF NOT EXISTS TransactionHistory (
+				id TEXT PRIMARY KEY,
+				send_address TEXT,
+				receive_address TEXT,
+				fee REAL,
+				timestamp INTEGER,
+				type TEXT,
+				balance_change REAL,
+				user_address TEXT
+			);
+			CREATE TABLE IF NOT EXISTS NFT_History (
+				id TEXT PRIMARY KEY,
+				send_address TEXT,
+				receive_address TEXT,
+				timestamp INTEGER,
+				contract_id TEXT
+			);
+			CREATE TABLE IF NOT EXISTS FT_History (
+				id TEXT PRIMARY KEY,
+				send_address TEXT,
+				receive_address TEXT,
+				fee REAL,
+				timestamp INTEGER,
+				contract_id TEXT,
+				balance_change REAL
+			);
+			CREATE TABLE IF NOT EXISTS MultiSig (
+				multiSig_address TEXT PRIMARY KEY,
+				pubKeys TEXT,
+				isDeleted INTEGER DEFAULT 0,
+				user_address TEXT
+			);
+			CREATE TABLE IF NOT EXISTS FT_Public (
+				id TEXT PRIMARY KEY,
+				name TEXT NOT NULL,
+				symbol TEXT NOT NULL,
+				decimal INTEGER NOT NULL,
+				supply REAL NOT NULL,
+				holds_count INTEGER NOT NULL
+			);
+			CREATE TABLE IF NOT EXISTS AddressBook (
+				address TEXT PRIMARY KEY
+			);
+		`);
+	} catch (error) {
+		console.error('Database initialization error:', error);
+	}
+};
 
 export async function addCollection(collection: Collection, userAddress: string): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
@@ -189,18 +192,10 @@ export async function getCollection(id: string): Promise<Collection | null> {
 
 export async function getAllCollections(userAddress: string): Promise<Collection[]> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	const results = await db.getAllAsync<Collection>(
+	return await db.getAllAsync<Collection>(
 		'SELECT * FROM Collection WHERE user_address = ? AND isDeleted = 0',
 		[userAddress],
 	);
-	return results.map((result) => ({
-		id: result.id,
-		name: result.name,
-		supply: result.supply,
-		creator: result.creator,
-		icon: result.icon,
-		isDeleted: Boolean(result.isDeleted),
-	}));
 }
 
 export async function addNFT(nft: NFT, userAddress: string): Promise<void> {
@@ -541,29 +536,64 @@ export async function getMultiSigPubKeys(multiSigAddress: string): Promise<strin
 
 export async function getTransactionHistoryCount(userAddress: string): Promise<number> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	const result: any = await db.getFirstAsync(
-		'SELECT COUNT(*) as count FROM TransactionHistory WHERE user_address = ?',
-		[userAddress],
-	);
-	return result.rows[0]['COUNT(*)'];
+	try {
+		const result = await db.getAllAsync<{ count: number }>(
+			'SELECT COUNT(*) as count FROM TransactionHistory WHERE user_address = ?',
+			[userAddress],
+		);
+		if (result && result.length > 0) {
+			return result[0].count;
+		}
+		return 0;
+	} catch (error) {
+		console.error('Error getting transaction history count:', error);
+		return 0;
+	}
 }
 
 export async function getCollectionCount(userAddress: string): Promise<number> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	const result: any = await db.getFirstAsync(
-		'SELECT COUNT(*) as count FROM Collection WHERE user_address = ? AND isDeleted = 0',
-		[userAddress],
-	);
-	return result.rows[0]['COUNT(*)'];
+	try {
+		const tableCheck = await db.getAllAsync(
+			"SELECT name FROM sqlite_master WHERE type='table' AND name='Collection'"
+		);
+		
+		if (tableCheck.length === 0) {
+			console.log('Collection table does not exist, returning 0');
+			return 0;
+		}
+		
+		const result = await db.getAllAsync<{ count: number }>(
+			'SELECT COUNT(*) as count FROM Collection WHERE user_address = ? AND isDeleted = 0',
+			[userAddress],
+		);
+		if (result && result.length > 0) {
+			const count = result[0].count;
+			console.log('Collection count:', count);
+			return count;
+		}
+		return 0;
+	} catch (error) {
+		console.error('Error getting collection count:', error);
+		return 0;
+	}
 }
 
 export async function getNFTCount(userAddress: string): Promise<number> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	const result: any = await db.getFirstAsync(
-		'SELECT COUNT(*) as count FROM NFT WHERE user_address = ? AND isDeleted = 0',
-		[userAddress],
-	);
-	return result.rows[0]['COUNT(*)'];
+	try {
+		const result = await db.getAllAsync<{ count: number }>(
+			'SELECT COUNT(*) as count FROM NFT WHERE user_address = ? AND isDeleted = 0',
+			[userAddress],
+		);
+		if (result && result.length > 0) {
+			return result[0].count;
+		}
+		return 0;
+	} catch (error) {
+		console.error('Error getting NFT count:', error);
+		return 0;
+	}
 }
 
 export async function removeFT(id: string, userAddress: string): Promise<void> {
@@ -758,5 +788,35 @@ export async function getMultiSigByAddress(
 	return await db.getFirstAsync<{ multiSig_address: string; isDeleted: number }>(
 		'SELECT multiSig_address, isDeleted FROM MultiSig WHERE multiSig_address = ? AND user_address = ?',
 		[multiSigAddress, userAddress],
+	);
+}
+
+export async function restoreCollection(id: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.runAsync('UPDATE Collection SET isDeleted = 0 WHERE id = ?;', [id]);
+	await db.runAsync('UPDATE NFT SET isDeleted = 0 WHERE collection_id = ?;', [id]);
+}
+
+export async function restoreNFT(id: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.runAsync('UPDATE NFT SET isDeleted = 0 WHERE id = ?;', [id]);
+}
+
+export async function updateNFTHistory(history: NFTHistory): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.runAsync(
+		`UPDATE NFT_History SET 
+		 send_address = ?, 
+		 receive_address = ?, 
+		 timestamp = ?, 
+		 contract_id = ? 
+		 WHERE id = ?`,
+		[
+			history.send_address,
+			history.receive_address,
+			history.timestamp,
+			history.contract_id,
+			history.id,
+		]
 	);
 }

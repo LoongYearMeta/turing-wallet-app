@@ -152,22 +152,38 @@ export default function SendPage() {
 			value = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
 		}
 
-		setFormData((prev) => ({ ...prev, [field]: value }));
+		const updatedFormData = { ...formData, [field]: value };
+		setFormData(updatedFormData);
 
+		let error = '';
 		if (field === 'addressTo') {
-			const error = validateAddress(value);
-			setFormErrors((prev) => ({ ...prev, addressTo: error }));
+			error = validateAddress(value);
 		} else if (field === 'amount') {
-			const error = validateAmount(value);
-			setFormErrors((prev) => ({ ...prev, amount: error }));
+			error = validateAmount(value);
 		} else if (field === 'password') {
 			debouncedPasswordValidation(value);
+			
+			if (!formErrors.addressTo && !formErrors.amount && updatedFormData.addressTo && updatedFormData.amount) {
+				calculateEstimatedFee();
+			}
+			
+			return;
+		}
+
+		setFormErrors((prev) => ({ ...prev, [field]: error }));
+
+		if (!error && updatedFormData.password && updatedFormData.addressTo && updatedFormData.amount && !formErrors.password) {
+			calculateEstimatedFee();
 		}
 	};
 
 	const handleClearField = (field: keyof FormData) => {
 		setFormData((prev) => ({ ...prev, [field]: '' }));
 		setFormErrors((prev) => ({ ...prev, [field]: '' }));
+		
+		if (field === 'password' || field === 'addressTo' || field === 'amount') {
+			setEstimatedFee(null);
+		}
 	};
 
 	const handleAssetChange = (item: Asset) => {
@@ -382,13 +398,15 @@ export default function SendPage() {
 			<View style={styles.divider} />
 			<View style={styles.feeContainer}>
 				<Text style={styles.feeLabel}>Estimated Fee: </Text>
-				{isCalculatingFee ? (
-					<ActivityIndicator size="small" color="#666" />
-				) : (
-					estimatedFee !== null && (
-						<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
-					)
-				)}
+				<View style={styles.feeValueContainer}>
+					{isCalculatingFee ? (
+						<ActivityIndicator size="small" color="#666" />
+					) : (
+						estimatedFee !== null && (
+							<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
+						)
+					)}
+				</View>
 			</View>
 
 			<TouchableOpacity
@@ -503,6 +521,7 @@ const styles = StyleSheet.create({
 	feeContainer: {
 		flexDirection: 'row',
 		alignItems: 'center',
+		justifyContent: 'space-between',
 		paddingVertical: hp(2),
 		paddingHorizontal: wp(1),
 	},
@@ -511,10 +530,15 @@ const styles = StyleSheet.create({
 		color: '#333',
 		fontWeight: '500',
 	},
+	feeValueContainer: {
+		flex: 1,
+		alignItems: 'flex-end',
+	},
 	feeAmount: {
 		fontSize: hp(1.6),
 		color: '#333',
 		fontWeight: '500',
+		textAlign: 'right',
 	},
 	sendButton: {
 		backgroundColor: '#000',

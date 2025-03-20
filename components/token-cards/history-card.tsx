@@ -5,7 +5,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
 import { hp, wp } from '@/lib/common';
-import { formatBalance, formatContractId } from '@/lib/util';
+import { formatBalance, formatContractId, formatDate } from '@/lib/util';
 import type { FTHistory } from '@/utils/sqlite';
 
 interface HistoryCardProps {
@@ -13,9 +13,6 @@ interface HistoryCardProps {
 }
 
 export const HistoryCard = ({ history }: HistoryCardProps) => {
-	const formatDate = (timestamp: number) => {
-		return new Date(timestamp * 1000).toLocaleString();
-	};
 
 	const handleCopyId = async () => {
 		await Clipboard.setStringAsync(history.id);

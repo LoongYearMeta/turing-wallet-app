@@ -23,12 +23,21 @@ const LoginPage = () => {
 						title="Create a new wallet"
 						description="Start fresh with a new wallet for your digital assets"
 						onPress={() => router.push('/create')}
+						style={styles.card}
 					/>
 
 					<LoginCard
-						title="Restore your wallet"
+						title="Restore with Mnemonic"
 						description="Recover your existing wallet using your recovery phrase"
 						onPress={() => router.push('/restore')}
+						style={styles.card}
+					/>
+
+					<LoginCard
+						title="Restore with Private Key"
+						description="Recover your existing wallet using your private key"
+						onPress={() => router.push('/restore-by-priKey')}
+						style={styles.card}
 					/>
 				</View>
 			</View>
@@ -58,6 +67,9 @@ const styles = StyleSheet.create({
 	},
 	cardsContainer: {
 		paddingTop: hp(0),
+	},
+	card: {
+		backgroundColor: '#E8EAED',
 	},
 });
 

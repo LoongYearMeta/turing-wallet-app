@@ -1,4 +1,7 @@
+import '@/shim';
 import axios from 'axios';
+import * as contract from 'tbc-contract';
+import * as tbc from 'tbc-lib-js';
 
 import {
 	addNFT,
@@ -37,6 +40,19 @@ export async function fetchNFTs(address: string, page: number): Promise<NFTRespo
 		`https://turingwallet.xyz/v1/tbc/main/nft/address/${address}/page/${page}/size/10?if_extra_collection_info_needed=false`,
 	);
 	return response.data;
+}
+
+export async function fetchNFTCounts_byCollection(collection_id: string): Promise<number> {
+	try {
+		const response = await axios.get(
+			`https://turingwallet.xyz/v1/tbc/main/nft/collection/id/${collection_id}/page/0/size/0`,
+		);
+		
+		return response.data.nftTotalCount;
+	} catch (error) {
+		console.error('Failed to fetch NFT counts:', error);
+		throw new Error('Failed to fetch NFT counts in collection');
+	}
 }
 
 export async function getNFTInfo(

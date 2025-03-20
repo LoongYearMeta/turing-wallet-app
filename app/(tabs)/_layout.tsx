@@ -23,7 +23,7 @@ export default function TabLayout() {
 				}}
 			/>
 			<Tabs.Screen
-				name="nft/index"
+				name="nft"
 				options={{
 					title: 'NFT',
 					tabBarIcon: ({ color, size }) => (
@@ -32,7 +32,7 @@ export default function TabLayout() {
 				}}
 			/>
 			<Tabs.Screen
-				name="dapp/index"
+				name="dapp"
 				options={{
 					title: 'DApp',
 					tabBarIcon: ({ color, size }) => <MaterialIcons name="apps" size={size} color={color} />,

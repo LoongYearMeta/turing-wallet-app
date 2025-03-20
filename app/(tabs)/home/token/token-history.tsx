@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, FlatList } from 'react-native';
 import { Menu, MenuItem } from 'react-native-material-menu';
 import Toast from 'react-native-toast-message';
 
@@ -27,6 +27,7 @@ const TokenHistoryPage = () => {
 	const { getCurrentAccountAddress } = useAccount();
 	const [filterType, setFilterType] = useState<FilterType>('all');
 	const [filterMenuVisible, setFilterMenuVisible] = useState(false);
+	const [refreshing, setRefreshing] = useState(false);
 
 	useEffect(() => {
 		loadHistories();
@@ -43,6 +44,7 @@ const TokenHistoryPage = () => {
 
 	const handleRefresh = async () => {
 		try {
+			setRefreshing(true);
 			const address = getCurrentAccountAddress();
 			await syncFTHistory(address, contractId);
 			await loadHistories();
@@ -58,6 +60,8 @@ const TokenHistoryPage = () => {
 				text1: 'Error',
 				text2: 'Failed to refresh history',
 			});
+		} finally {
+			setRefreshing(false);
 		}
 	};
 
@@ -193,18 +197,16 @@ const TokenHistoryPage = () => {
 				</View>
 			</View>
 
-			<ScrollView
+			<FlatList
+				data={filteredHistories}
+				keyExtractor={(item) => item.id}
+				renderItem={({ item }) => <HistoryCard key={item.id} history={item} />}
+				refreshing={refreshing}
+				onRefresh={handleRefresh}
 				style={styles.scrollView}
 				showsVerticalScrollIndicator={false}
-				bounces={true}
-				decelerationRate="normal"
-				overScrollMode="never"
 				contentContainerStyle={styles.scrollContent}
-			>
-				{filteredHistories.map((history) => (
-					<HistoryCard key={history.id} history={history} />
-				))}
-			</ScrollView>
+			/>
 		</View>
 	);
 };

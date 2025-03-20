@@ -12,6 +12,7 @@ import { SQLiteProvider } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { theme } from '@/lib/theme';
 import { initDatabase } from '@/utils/sqlite';
@@ -117,9 +118,22 @@ export default function RootLayout() {
 	});
 
 	useEffect(() => {
+		const timeout = setTimeout(() => {
+			console.log('Timeout reached, forcing splash screen hide');
+			SplashScreen.hideAsync().catch(err => 
+				console.error('Error hiding splash screen after timeout:', err)
+			);
+		}, 3000);
+
 		if (fontsLoaded) {
-			SplashScreen.hideAsync();
+			console.log('Fonts loaded, hiding splash screen');
+			clearTimeout(timeout);
+			SplashScreen.hideAsync().catch(err => 
+				console.error('Error hiding splash screen:', err)
+			);
 		}
+
+		return () => clearTimeout(timeout);
 	}, [fontsLoaded]);
 
 	if (!fontsLoaded) {
@@ -127,28 +141,41 @@ export default function RootLayout() {
 	}
 
 	return (
-		<SQLiteProvider databaseName="wallet.db" onInit={initDatabase}>
-			<StatusBar style="dark" />
-			<Stack
-				screenOptions={{
-					headerShown: true,
-					animation: 'slide_from_right',
-					contentStyle: {
-						flex: 1,
-						backgroundColor: 'white',
-					},
-					headerTitleStyle: {
-						fontSize: 18,
-						fontWeight: '600',
-					},
-				}}
-			>
-				<Stack.Screen name="index" options={{ headerShown: false }} />
-				<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-				<Stack.Screen name="settings" options={{ headerShown: false }} />
-				<Stack.Screen name="multiSigs" options={{ headerShown: false }} />
-			</Stack>
-			<Toast config={toastConfig} position="top" topOffset={60} visibilityTime={3000} />
-		</SQLiteProvider>
+		<GestureHandlerRootView style={{ flex: 1 }}>
+			<SQLiteProvider databaseName="wallet.db" onInit={initDatabase}>
+				<StatusBar style="dark" />
+				<Stack
+					screenOptions={{
+						gestureEnabled: true,
+						gestureDirection: 'horizontal',
+						animation: 'slide_from_right',
+						headerShown: true,
+						contentStyle: {
+							flex: 1,
+							backgroundColor: 'white',
+						},
+						headerTitleStyle: {
+							fontSize: 18,
+							fontWeight: '600',
+						},
+					}}
+				>
+					<Stack.Screen name="index" options={{ headerShown: false }} />
+					<Stack.Screen name="login" options={{ headerShown: false }} />
+					<Stack.Screen 
+						name="create" 
+						options={{ 
+							headerShown: false,
+							gestureEnabled: true,
+						}} 
+					/>
+					<Stack.Screen name="restore" options={{ headerShown: false }} />
+					<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+					<Stack.Screen name="settings" options={{ headerShown: false }} />
+					<Stack.Screen name="multiSigs" options={{ headerShown: false }} />
+				</Stack>
+				<Toast config={toastConfig} position="top" topOffset={60} visibilityTime={3000} />
+			</SQLiteProvider>
+		</GestureHandlerRootView>
 	);
 }

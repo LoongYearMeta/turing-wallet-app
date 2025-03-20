@@ -1,52 +1,54 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, StyleProp, ViewStyle } from 'react-native';
 
-import { hp } from '@/lib/common';
+import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
 
 interface LoginCardProps {
 	title: string;
 	description: string;
 	onPress: () => void;
+	style?: StyleProp<ViewStyle>;
 }
 
-export const LoginCard = ({ title, description, onPress }: LoginCardProps) => {
+export const LoginCard = ({ title, description, onPress, style }: LoginCardProps) => {
 	return (
-		<Pressable
-			style={({ pressed }) => [styles.container, pressed && styles.pressed]}
-			onPress={onPress}
+		<TouchableOpacity 
+			style={[styles.card, style]} 
+			onPress={onPress} 
+			activeOpacity={0.7}
 		>
-			<Text style={styles.title}>{title}</Text>
-			<Text style={styles.description}>{description}</Text>
-		</Pressable>
+			<View style={styles.content}>
+				<Text style={styles.title}>{title}</Text>
+				<Text style={styles.description}>{description}</Text>
+			</View>
+		</TouchableOpacity>
 	);
 };
 
 const styles = StyleSheet.create({
-	container: {
+	card: {
 		backgroundColor: 'white',
 		borderRadius: theme.radius.lg,
-		padding: hp(3.5),
-		marginBottom: hp(3),
+		marginBottom: hp(2),
+		padding: wp(5),
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.1,
 		shadowRadius: 4,
 		elevation: 2,
 	},
-	pressed: {
-		opacity: 0.9,
-		transform: [{ scale: 0.98 }],
+	content: {
+		gap: hp(1),
 	},
 	title: {
-		fontSize: hp(2.8),
-		fontWeight: '700',
+		fontSize: hp(2.2),
+		fontWeight: '600',
 		color: theme.colors.text,
-		marginBottom: hp(1.2),
 	},
 	description: {
-		fontSize: hp(1.4),
+		fontSize: hp(1.5),
 		color: theme.colors.textLight,
-		lineHeight: hp(2),
+		lineHeight: hp(2.2),
 	},
 });

@@ -1,6 +1,6 @@
 import '@/shim';
 import { useFocusEffect } from '@react-navigation/native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
@@ -36,7 +36,6 @@ export default function HomePage() {
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [tokenToDelete, setTokenToDelete] = useState<FT | FTPublic | null>(null);
 	const [addModalVisible, setAddModalVisible] = useState(false);
-	const { refresh } = useLocalSearchParams<{ refresh?: string }>();
 
 	useFocusEffect(
 		useCallback(() => {

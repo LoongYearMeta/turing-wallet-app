@@ -30,7 +30,7 @@ export async function getCollectionInfo(
 	try {
 		const response = await fetchCollections(address, 0);
 		const totalCount = response.collectionCount;
-		const maxPage = Math.ceil(totalCount / 10) - 1; // 页码从0开始
+		const maxPage = Math.ceil(totalCount / 10) - 1; 
 		return { totalCount, maxPage };
 	} catch (error) {
 		return { totalCount: 0, maxPage: 0 };
@@ -66,7 +66,7 @@ export async function syncCollections(address: string): Promise<void> {
 	try {
 		const { totalCount } = await getCollectionInfo(address);
 		const dbCount = await getCollectionCount(address);
-
+			
 		if (dbCount === totalCount) {
 			return;
 		}
@@ -75,7 +75,7 @@ export async function syncCollections(address: string): Promise<void> {
 		while (true) {
 			const response = await fetchCollections(address, page);
 			let foundExisting = false;
-
+			
 			for (const col of response.collectionList) {
 				const existingCollection = await getCollection(col.collectionId);
 				if (existingCollection) {

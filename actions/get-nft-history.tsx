@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { addNFTHistory, getNFTHistoryById, type NFTHistory } from '@/utils/sqlite';
+import { addNFTHistory, getNFTHistoryById, updateNFTHistory, type NFTHistory } from '@/utils/sqlite';
 
 interface NFTHistoryResponse {
 	address: string;
@@ -67,25 +67,44 @@ export async function initNFTHistory(address: string): Promise<void> {
 	}
 }
 
-export async function syncNFTHistory(address: string): Promise<void> {
+export async function syncNFTHistory(address: string, contract_id?: string): Promise<void> {
 	try {
 		let page = 0;
+		const currentTimestamp = Math.floor(Date.now() / 1000);
+
 		while (true) {
 			const response = await fetchNFTHistory(address, page);
 			let foundExisting = false;
 
 			for (const tx of response.result) {
+				if (contract_id && tx.nft_contract_id !== contract_id) {
+					continue;
+				}
+
 				const existingHistory = await getNFTHistoryById(tx.txid);
-				if (existingHistory) {
+				
+				if (
+					existingHistory &&
+					existingHistory.timestamp &&
+					existingHistory.timestamp === tx.time_stamp
+				) {
 					foundExisting = true;
 					break;
+				}
+
+				if (existingHistory) {
+					await updateNFTHistory({
+						...existingHistory,
+						timestamp: tx.time_stamp || currentTimestamp,
+					});
+					continue;
 				}
 
 				const history: NFTHistory = {
 					id: tx.txid,
 					send_address: tx.sender_addresses[0] || '',
 					receive_address: tx.recipient_addresses[0] || '',
-					timestamp: tx.time_stamp,
+					timestamp: tx.time_stamp || currentTimestamp,
 					contract_id: tx.nft_contract_id,
 				};
 
@@ -99,6 +118,7 @@ export async function syncNFTHistory(address: string): Promise<void> {
 			page++;
 		}
 	} catch (error) {
+		console.error('Failed to sync NFT history:', error);
 		throw new Error('Failed to sync NFT history');
 	}
 }

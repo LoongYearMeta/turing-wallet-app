@@ -1,12 +1,10 @@
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { InteractionManager, ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
 import Icon from '@/assets/icons';
-import { BackButton } from '@/components/ui/back-button';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { useAccount } from '@/hooks/useAccount';
@@ -19,6 +17,7 @@ const CreatePage = () => {
 	const [password, setPassword] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [loading, setLoading] = useState(false);
+	const [isSubmitting, setIsSubmitting] = useState(false);
 	const { addAccount, setCurrentAccount, setPassKeyAndSalt, getAccountsCount } = useAccount();
 	const router = useRouter();
 
@@ -38,25 +37,40 @@ const CreatePage = () => {
 		});
 	};
 
-	const onSubmit = async () => {
+	const onSubmit = () => {
+		if (isSubmitting) return;
+		
+		setIsSubmitting(true);
+		
+		requestAnimationFrame(() => {
+			InteractionManager.runAfterInteractions(() => {
+				validateAndSubmitForm();
+			});
+		});
+	};
+
+	const validateAndSubmitForm = async () => {
+		if (!password || !confirmPassword) {
+			showToast('error', 'Please fill in all fields');
+			setIsSubmitting(false);
+			return;
+		}
+
+		if (!validatePassword(password)) {
+			showToast('error', 'Password must be 6-15 characters and contain only letters and numbers');
+			setIsSubmitting(false);
+			return;
+		}
+
+		if (password !== confirmPassword) {
+			showToast('error', 'Passwords do not match');
+			setIsSubmitting(false);
+			return;
+		}
+
 		try {
-			if (!password || !confirmPassword) {
-				return showToast('error', 'Please fill in all fields');
-			}
-
-			if (!validatePassword(password)) {
-				return showToast(
-					'error',
-					'Password must be 6-15 characters and contain only letters and numbers',
-				);
-			}
-
-			if (password !== confirmPassword) {
-				return showToast('error', 'Passwords do not match');
-			}
-
 			setLoading(true);
-
+			
 			const result = generateKeysEncrypted_mnemonic(password);
 			if (!result) {
 				throw new Error('Failed to generate keys');
@@ -98,21 +112,24 @@ const CreatePage = () => {
 		} catch (error) {
 			console.error('Error creating wallet:', error);
 			showToast('error', 'Failed to create wallet. Please try again.');
-		} finally {
+			setIsSubmitting(false);
 			setLoading(false);
 		}
 	};
+
+	const isButtonDisabled = loading || isSubmitting;
+	
+	const buttonStyle = [
+		styles.button,
+		isSubmitting && styles.buttonSubmitting,
+		loading && styles.buttonLoading
+	];
 
 	return (
 		<ScreenWrapper bg={'white'}>
 			<StatusBar style="dark" />
 			<View style={styles.container}>
 				<View style={styles.content}>
-					{/* back button */}
-					<View>
-						<BackButton router={router} />
-					</View>
-
 					{/* welcome */}
 					<View>
 						<Text style={styles.welcomeText}>Set your password</Text>
@@ -134,6 +151,7 @@ const CreatePage = () => {
 								placeholderTextColor={theme.colors.textLight}
 								value={password}
 								onChangeText={setPassword}
+								editable={!isButtonDisabled}
 							/>
 						</View>
 
@@ -146,14 +164,29 @@ const CreatePage = () => {
 								placeholderTextColor={theme.colors.textLight}
 								value={confirmPassword}
 								onChangeText={setConfirmPassword}
+								editable={!isButtonDisabled}
 							/>
 						</View>
 					</View>
 				</View>
 
 				<View style={styles.bottomContainer}>
-					{/* button */}
-					<Button title="Create account" loading={loading} onPress={onSubmit} />
+					<TouchableOpacity
+						style={buttonStyle}
+						onPress={onSubmit}
+						disabled={isButtonDisabled}
+						activeOpacity={0.5}
+						pressRetentionOffset={{ top: 10, left: 10, bottom: 10, right: 10 }}
+					>
+						{loading ? (
+							<View style={styles.loadingContainer}>
+								<ActivityIndicator color="white" size="small" />
+								<Text style={styles.buttonText}>Creating wallet...</Text>
+							</View>
+						) : (
+							<Text style={styles.buttonText}>Create account</Text>
+						)}
+					</TouchableOpacity>
 				</View>
 			</View>
 		</ScreenWrapper>
@@ -226,6 +259,35 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 		color: theme.colors.text,
 		marginLeft: wp(2),
+	},
+	disabledButton: {
+		opacity: 0.7,
+		backgroundColor: theme.colors.primary,
+	},
+	button: {
+		backgroundColor: theme.colors.primary,
+		height: hp(6.6),
+		justifyContent: 'center',
+		alignItems: 'center',
+		borderRadius: theme.radius.xl,
+		borderCurve: 'continuous',
+	},
+	buttonSubmitting: {
+		backgroundColor: '#999',
+	},
+	buttonLoading: {
+		backgroundColor: '#999',
+	},
+	buttonText: {
+		fontSize: hp(2.5),
+		color: 'white',
+		fontWeight: '700',
+	},
+	loadingContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: wp(2),
 	},
 });
 
