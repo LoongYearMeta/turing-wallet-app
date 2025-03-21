@@ -103,13 +103,14 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				user_address TEXT
 			);
 			CREATE TABLE IF NOT EXISTS FT (
-				id TEXT PRIMARY KEY,
+				id TEXT,
 				name TEXT,
 				decimal INTEGER,
 				amount REAL,
 				symbol TEXT,
 				isDeleted INTEGER DEFAULT 0,
-				user_address TEXT
+				user_address TEXT,
+				PRIMARY KEY (id, user_address)
 			);
 			CREATE TABLE IF NOT EXISTS TransactionHistory (
 				id TEXT PRIMARY KEY,
@@ -317,11 +318,30 @@ export async function getNFT(id: string): Promise<NFT | null> {
 
 export async function upsertFT(ft: FT, userAddress: string): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	await db.runAsync(
-		`INSERT OR REPLACE INTO FT (id, name, decimal, amount, symbol, user_address, isDeleted)
-		 VALUES (?, ?, ?, ?, ?, ?, 0)`,
-		[ft.id, ft.name, ft.decimal, ft.amount, ft.symbol, userAddress],
+	
+	const existingFT = await db.getFirstAsync(
+		'SELECT * FROM FT WHERE id = ? AND user_address = ?',
+		[ft.id, userAddress]
 	);
+	
+	if (existingFT) {
+		await db.runAsync(
+			`UPDATE FT SET 
+			 name = ?, 
+			 decimal = ?, 
+			 amount = ?, 
+			 symbol = ?, 
+			 isDeleted = ? 
+			 WHERE id = ? AND user_address = ?`,
+			[ft.name, ft.decimal, ft.amount, ft.symbol, ft.isDeleted ? 1 : 0, ft.id, userAddress]
+		);
+	} else {
+		await db.runAsync(
+			`INSERT INTO FT (id, name, decimal, amount, symbol, user_address, isDeleted)
+			 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			[ft.id, ft.name, ft.decimal, ft.amount, ft.symbol, userAddress, ft.isDeleted ? 1 : 0]
+		);
+	}
 }
 
 export async function getFT(id: string, userAddress: string): Promise<FT | null> {
@@ -344,7 +364,7 @@ export async function transferFT(id: string, amount: number, userAddress: string
 		throw new Error('FT not found');
 	}
 
-	const newAmount = currentFT.amount - amount;
+	const newAmount = currentFT.amount + amount;
 
 	if (newAmount < 0) {
 		throw new Error('Insufficient balance');
@@ -819,4 +839,9 @@ export async function updateNFTHistory(history: NFTHistory): Promise<void> {
 			history.id,
 		]
 	);
+}
+
+export async function updateNFTUserAddress(nftId: string, userAddress: string): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.runAsync('UPDATE NFT SET user_address = ? WHERE id = ?;', [userAddress, nftId]);
 }

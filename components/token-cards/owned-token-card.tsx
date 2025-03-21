@@ -42,7 +42,7 @@ export const OwnedTokenCard = ({
 							<MaterialIcons name="send" size={22} color="#666" />
 						</TouchableOpacity>
 						<TouchableOpacity style={styles.actionButton} onPress={() => onDeletePress(token)}>
-							<MaterialIcons name="delete" size={22} color="#666" />
+							<MaterialIcons name="visibility-off" size={22} color="#666" />
 						</TouchableOpacity>
 					</View>
 				</View>

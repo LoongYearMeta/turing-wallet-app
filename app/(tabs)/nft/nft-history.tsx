@@ -9,7 +9,6 @@ import { syncNFTHistory } from '@/actions/get-nft-history';
 import { NFTHistoryCard } from '@/components/nft-cards/nft-history-card';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
-import { theme } from '@/lib/theme';
 import type { NFTHistory } from '@/utils/sqlite';
 import { getNFTHistoryByContractId } from '@/utils/sqlite';
 

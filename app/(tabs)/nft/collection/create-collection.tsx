@@ -241,15 +241,6 @@ const CreateCollectionPage = () => {
 		} else if (field === 'password') {
 			debouncedPasswordValidation(value);
 
-			if (
-				!formErrors.name &&
-				!formErrors.description &&
-				!formErrors.supply &&
-				updatedFormData.image
-			) {
-				calculateEstimatedFee();
-			}
-
 			return;
 		}
 

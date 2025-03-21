@@ -29,7 +29,17 @@ export default function AddressBookScreen() {
 	const loadAddresses = async () => {
 		try {
 			const bookAddresses = await getAllAddressesFromBook();
-			setAddresses(bookAddresses);
+			
+			// 获取当前账户地址
+			const currentAddress = getCurrentAccountAddress();
+			
+			// 检查当前地址是否已在地址簿中
+			if (!bookAddresses.includes(currentAddress)) {
+				// 将当前地址添加到地址列表的开头
+				setAddresses([currentAddress, ...bookAddresses]);
+			} else {
+				setAddresses(bookAddresses);
+			}
 
 			const multiSigs = await getAllMultiSigAddresses(getCurrentAccountAddress());
 			setMultiSigAddresses(multiSigs);
@@ -80,16 +90,23 @@ export default function AddressBookScreen() {
 
 	const renderAddressItem = ({ item }: { item: string }) => (
 		<View style={styles.addressItem}>
-			<Text style={styles.addressText} numberOfLines={1} ellipsizeMode="middle">
-				{item}
-			</Text>
+			<View style={{ flex: 1 }}>
+				<Text style={styles.addressText} numberOfLines={1} ellipsizeMode="middle">
+					{item}
+				</Text>
+				{item === getCurrentAccountAddress() && (
+					<Text style={styles.currentAddressLabel}>Current Account</Text>
+				)}
+			</View>
 			<View style={styles.actionButtons}>
 				<TouchableOpacity style={styles.actionButton} onPress={() => handleCopy(item, 'Address')}>
 					<Ionicons name="copy-outline" size={20} color="#666" />
 				</TouchableOpacity>
-				<TouchableOpacity style={styles.actionButton} onPress={() => handleDeleteAddress(item)}>
-					<Ionicons name="trash-outline" size={20} color="#666" />
-				</TouchableOpacity>
+				{item !== getCurrentAccountAddress() && (
+					<TouchableOpacity style={styles.actionButton} onPress={() => handleDeleteAddress(item)}>
+						<Ionicons name="trash-outline" size={20} color="#666" />
+					</TouchableOpacity>
+				)}
 			</View>
 		</View>
 	);
@@ -227,5 +244,10 @@ const styles = StyleSheet.create({
 		color: '#999',
 		marginTop: hp(2),
 		fontSize: hp(1.5),
+	},
+	currentAddressLabel: {
+		fontSize: hp(1.2),
+		color: '#007AFF',
+		marginTop: hp(0.5),
 	},
 });

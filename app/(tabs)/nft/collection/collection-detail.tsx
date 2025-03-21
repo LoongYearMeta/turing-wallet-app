@@ -183,10 +183,28 @@ const CollectionDetailPage = () => {
 						)}
 					</View>
 					<TouchableOpacity
-						style={styles.addButton}
-						onPress={() => router.push(`/(tabs)/nft/create-nft?collectionId=${collection.id}`)}
+						style={[
+							styles.addButton,
+							(collection.supply - createdNFTCount) <= 0 && styles.disabledButton
+						]}
+						onPress={() => {
+							if ((collection.supply - createdNFTCount) > 0) {
+								router.push(`/(tabs)/nft/create-nft?collectionId=${collection.id}`);
+							} else {
+								Toast.show({
+									type: 'error',
+									text1: 'Error',
+									text2: 'Collection supply limit reached',
+								});
+							}
+						}}
+						disabled={(collection.supply - createdNFTCount) <= 0}
 					>
-						<MaterialIcons name="add" size={24} color="#333" />
+						<MaterialIcons 
+							name="add" 
+							size={24} 
+							color={(collection.supply - createdNFTCount) <= 0 ? "#999" : "#333"} 
+						/>
 					</TouchableOpacity>
 				</View>
 
@@ -226,7 +244,7 @@ const CollectionDetailPage = () => {
 			<ConfirmModal
 				visible={deleteModalVisible}
 				title="Delete NFT"
-				message={`Are you sure you want to delete "${selectedNFT?.name}"? You can restore it from blockchain anytime.`}
+				message={`Are you sure you want to delete "${selectedNFT?.name}"? You can restore it anytime.`}
 				onConfirm={confirmDeleteNFT}
 				onCancel={() => {
 					setDeleteModalVisible(false);
@@ -388,6 +406,9 @@ const styles = StyleSheet.create({
 		paddingTop: hp(1),
 		paddingBottom: hp(4),
 		paddingHorizontal: 0,
+	},
+	disabledButton: {
+		opacity: 0.5,
 	},
 });
 

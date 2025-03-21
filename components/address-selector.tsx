@@ -38,7 +38,17 @@ export const AddressSelector = ({
 	const loadAddresses = async () => {
 		try {
 			const bookAddresses = await getAllAddressesFromBook();
-			setAddresses(bookAddresses);
+			
+			// 获取当前账户地址
+			const currentAddress = userAddress;
+			
+			// 检查当前地址是否已在地址簿中
+			if (!bookAddresses.includes(currentAddress)) {
+				// 将当前地址添加到地址列表的开头
+				setAddresses([currentAddress, ...bookAddresses]);
+			} else {
+				setAddresses(bookAddresses);
+			}
 
 			const multiSigs = await getAllMultiSigAddresses(userAddress);
 			setMultiSigAddresses(multiSigs);
@@ -54,7 +64,12 @@ export const AddressSelector = ({
 
 	const renderAddressItem = ({ item }: { item: string }) => (
 		<TouchableOpacity style={styles.addressItem} onPress={() => handleSelect(item)}>
-			<Text style={styles.addressText}>{item}</Text>
+			<View style={{ flex: 1 }}>
+				<Text style={styles.addressText}>{item}</Text>
+				{item === userAddress && (
+					<Text style={styles.currentAddressLabel}>Current Account</Text>
+				)}
+			</View>
 		</TouchableOpacity>
 	);
 
@@ -167,5 +182,10 @@ const styles = StyleSheet.create({
 		marginTop: hp(1),
 		marginBottom: hp(2),
 		fontSize: hp(1.5),
+	},
+	currentAddressLabel: {
+		fontSize: hp(1.2),
+		color: '#007AFF',
+		marginTop: hp(0.5),
 	},
 });

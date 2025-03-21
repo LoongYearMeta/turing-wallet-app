@@ -1,5 +1,5 @@
 import * as Clipboard from 'expo-clipboard';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
@@ -33,7 +33,6 @@ const NFTDetailPage = () => {
 
 		try {
 			setLoading(true);
-			const userAddress = getCurrentAccountAddress();
 
 			const nftData = await getNFT(id);
 			setNFT(nftData);
@@ -159,6 +158,13 @@ const NFTDetailPage = () => {
 							onPress={() => router.push(`/(tabs)/nft/nft-history?id=${nft.id}`)}
 						>
 							<Text style={styles.viewCollectionText}>View NFT History</Text>
+						</TouchableOpacity>
+
+						<TouchableOpacity 
+							style={[styles.viewCollectionButton, { marginTop: hp(0.5) }]} 
+							onPress={() => router.push(`/(tabs)/nft/nft-transfer?id=${nft.id}&transferTimes=${nft.transfer_times}`)}
+						>
+							<Text style={styles.viewCollectionText}>Transfer NFT</Text>
 						</TouchableOpacity>
 					</View>
 				</View>

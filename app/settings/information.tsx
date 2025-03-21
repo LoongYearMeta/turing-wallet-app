@@ -292,7 +292,7 @@ export default function InformationPage() {
 						style={styles.actionButton}
 						onPress={() => setMultiSigModalVisible(true)}
 					>
-						<MaterialIcons name="restore" size={24} color={theme.colors.primary} />
+						<MaterialIcons name="visibility" size={22} color={theme.colors.primary} />
 					</TouchableOpacity>
 				</View>
 			</View>
@@ -321,7 +321,7 @@ export default function InformationPage() {
 										setDeleteModalVisible(true);
 									}}
 								>
-									<MaterialIcons name="delete-outline" size={22} color="#666" />
+									<MaterialIcons name="visibility-off" size={22} color="#666" />
 								</TouchableOpacity>
 								<MaterialIcons
 									name={expandedMultiSig === item.multiSig_address ? 'expand-less' : 'expand-more'}
@@ -406,8 +406,8 @@ export default function InformationPage() {
 
 			<ConfirmModal
 				visible={deleteModalVisible}
-				title="Delete MultiSig Wallet"
-				message="Are you sure you want to delete this MultiSig wallet? You can restore it from blockchain anytime."
+				title="Hide MultiSig Wallet"
+				message="Are you sure you want to hide this MultiSig wallet? You can restore it anytime."
 				onConfirm={handleDeleteMultiSig}
 				onCancel={() => {
 					setDeleteModalVisible(false);

@@ -19,7 +19,7 @@ import { useTbcTransaction } from '@/hooks/useTbcTransaction';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
 import { formatFee } from '@/lib/util';
-import { transferFT } from '@/utils/sqlite';
+import { getFT, removeFT, transferFT, upsertFT } from '@/utils/sqlite';
 
 interface FormData {
 	addressTo: string;
@@ -34,7 +34,7 @@ interface FormErrors {
 }
 
 const TokenTransferPage = () => {
-	const { getCurrentAccountAddress, getSalt, getPassKey } = useAccount();
+	const { getCurrentAccountAddress, getSalt, getPassKey, getAllAccountAddresses } = useAccount();
 	const { finish_transaction } = useTbcTransaction();
 	const { sendFT } = useFtTransaction();
 	const { contractId, amount } = useLocalSearchParams<{
@@ -141,25 +141,15 @@ const TokenTransferPage = () => {
 			error = validateAmount(value);
 		} else if (field === 'password') {
 			debouncedPasswordValidation(value);
-			
-			if (!formErrors.addressTo && !formErrors.amount && updatedFormData.addressTo && updatedFormData.amount) {
-				calculateEstimatedFee();
-			}
-			
 			return;
 		}
-
 		setFormErrors((prev) => ({ ...prev, [field]: error }));
-
-		if (!error && updatedFormData.password && updatedFormData.addressTo && updatedFormData.amount && !formErrors.password) {
-			calculateEstimatedFee();
-		}
 	};
 
 	const handleClearField = (field: keyof FormData) => {
 		setFormData((prev) => ({ ...prev, [field]: '' }));
 		setFormErrors((prev) => ({ ...prev, [field]: '' }));
-		
+
 		if (field === 'password' || field === 'addressTo' || field === 'amount') {
 			setEstimatedFee(null);
 		}
@@ -174,9 +164,13 @@ const TokenTransferPage = () => {
 
 		const addressError = validateAddress(formData.addressTo);
 		const amountError = validateAmount(formData.amount);
-		const passwordError = formErrors.password;
+		if (addressError || amountError) return;
 
-		if (addressError || amountError || passwordError) return;
+		const passKey = getPassKey();
+		const salt = getSalt();
+		if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
+			return;
+		}
 
 		setIsCalculatingFee(true);
 		try {
@@ -209,7 +203,7 @@ const TokenTransferPage = () => {
 
 	useEffect(() => {
 		calculateEstimatedFee();
-	}, [formData, calculateEstimatedFee]);
+	}, [formData]);
 
 	const handleSubmit = async () => {
 		const addressError = validateAddress(formData.addressTo);
@@ -244,9 +238,45 @@ const TokenTransferPage = () => {
 			const currentAddress = getCurrentAccountAddress();
 
 			await finish_transaction(result.txHex, result.utxos!);
-			if (formData.addressTo !== currentAddress) {
-				await transferFT(contractId, Number(formData.amount), currentAddress);
+
+			const allAccountAddresses = getAllAccountAddresses();
+
+			if (formData.addressTo === currentAddress) {
+			} else if (allAccountAddresses.includes(formData.addressTo)) {
+				const receiverToken = await getFT(contractId, formData.addressTo);
+
+				if (receiverToken) {
+					await transferFT(contractId, Number(formData.amount), formData.addressTo);
+				} else {
+					const senderToken = await getFT(contractId, currentAddress);
+					if (senderToken) {
+						await upsertFT(
+							{
+								id: contractId,
+								name: senderToken.name,
+								decimal: senderToken.decimal,
+								amount: Number(formData.amount),
+								symbol: senderToken.symbol,
+								isDeleted: false,
+							},
+							formData.addressTo,
+						);
+					}
+				}
+				await transferFT(contractId, -Number(formData.amount), currentAddress);
+				const updatedSenderToken = await getFT(contractId, currentAddress);
+				if (updatedSenderToken && updatedSenderToken.amount <= 0) {
+					await removeFT(contractId, currentAddress);
+				}
 			}
+			else {
+				await transferFT(contractId, -Number(formData.amount), currentAddress);
+				const updatedSenderToken = await getFT(contractId, currentAddress);
+				if (updatedSenderToken && updatedSenderToken.amount <= 0) {
+					await removeFT(contractId, currentAddress);
+				}
+			}
+
 			Toast.show({
 				type: 'success',
 				text1: 'Success',

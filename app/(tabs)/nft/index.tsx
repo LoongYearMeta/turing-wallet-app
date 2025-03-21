@@ -187,7 +187,7 @@ const CollectionsTab = () => {
 					handleDeleteCollection(item);
 				}}
 			>
-				<MaterialIcons name="delete" size={24} color="#fff" />
+				<MaterialIcons name="visibility-off" size={24} color="#fff" />
 			</TouchableOpacity>
 			<Text style={styles.collectionName} numberOfLines={1}>
 				{item.name}
@@ -236,7 +236,7 @@ const CollectionsTab = () => {
 						style={styles.actionButton}
 						onPress={() => setRestoreModalVisible(true)}
 					>
-						<MaterialIcons name="restore" size={24} color="#333" />
+						<MaterialIcons name="visibility" size={24} color="#333" />
 					</TouchableOpacity>
 					<TouchableOpacity 
 						style={styles.actionButton}
@@ -269,8 +269,8 @@ const CollectionsTab = () => {
 
 			<ConfirmModal
 				visible={deleteModalVisible}
-				title="Delete Collection"
-				message={`Are you sure you want to delete "${selectedCollection?.name}"? You can restore it later using the collection ID.`}
+				title="Hide Collection"
+				message={`Are you sure you want to hide "${selectedCollection?.name}"? You can restore it anytime.`}
 				onConfirm={confirmDeleteCollection}
 				onCancel={() => {
 					setDeleteModalVisible(false);
@@ -386,7 +386,7 @@ const NFTsTab = () => {
 					handleDeleteNFT(item);
 				}}
 			>
-				<MaterialIcons name="delete" size={24} color="#fff" />
+				<MaterialIcons name="visibility-off" size={24} color="#fff" />
 			</TouchableOpacity>
 			<Text style={styles.collectionName} numberOfLines={1}>
 				{item.name}
@@ -427,7 +427,7 @@ const NFTsTab = () => {
 						onPress={() => setRestoreModalVisible(true)} 
 						style={styles.actionButton}
 					>
-						<MaterialIcons name="restore" size={24} color={theme.colors.primary} />
+						<MaterialIcons name="visibility" size={24} color={theme.colors.primary} />
 					</TouchableOpacity>
 				</View>
 			</View>
@@ -460,8 +460,8 @@ const NFTsTab = () => {
 
 			<ConfirmModal
 				visible={deleteModalVisible}
-				title="Delete NFT"
-				message={`Are you sure you want to delete "${selectedNFT?.name}"? You can restore it from blockchain anytime.`}
+				title="Hide NFT"
+				message={`Are you sure you want to hide "${selectedNFT?.name}"? You can restore it anytime.`}
 				onConfirm={confirmDeleteNFT}
 				onCancel={() => {
 					setDeleteModalVisible(false);

@@ -162,25 +162,17 @@ export default function SendPage() {
 			error = validateAmount(value);
 		} else if (field === 'password') {
 			debouncedPasswordValidation(value);
-			
-			if (!formErrors.addressTo && !formErrors.amount && updatedFormData.addressTo && updatedFormData.amount) {
-				calculateEstimatedFee();
-			}
-			
+
 			return;
 		}
 
 		setFormErrors((prev) => ({ ...prev, [field]: error }));
-
-		if (!error && updatedFormData.password && updatedFormData.addressTo && updatedFormData.amount && !formErrors.password) {
-			calculateEstimatedFee();
-		}
 	};
 
 	const handleClearField = (field: keyof FormData) => {
 		setFormData((prev) => ({ ...prev, [field]: '' }));
 		setFormErrors((prev) => ({ ...prev, [field]: '' }));
-		
+
 		if (field === 'password' || field === 'addressTo' || field === 'amount') {
 			setEstimatedFee(null);
 		}
@@ -242,10 +234,8 @@ export default function SendPage() {
 	}, [formData, selectedAsset, formErrors.password]);
 
 	useEffect(() => {
-		if (formData.password && formData.password.length >= 6 && !formErrors.password) {
-			calculateEstimatedFee();
-		}
-	}, [formData.addressTo, formData.amount, formData.asset, calculateEstimatedFee]);
+		calculateEstimatedFee();
+	}, [formData]);
 
 	const handleSubmit = async () => {
 		if (!selectedAsset) {

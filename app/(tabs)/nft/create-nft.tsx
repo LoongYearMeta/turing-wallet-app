@@ -169,11 +169,10 @@ const CreateNFTPage = () => {
 			return;
 		}
 
-		// 再次验证密码
 		const passKey = getPassKey();
 		const salt = getSalt();
 		if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
-			return; // 密码验证失败，不计算手续费
+			return; 
 		}
 
 		setIsCalculatingFee(true);
