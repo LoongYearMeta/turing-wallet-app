@@ -20,6 +20,7 @@ import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
 import { formatFee } from '@/lib/util';
 import { getFT, removeFT, transferFT, upsertFT } from '@/utils/sqlite';
+import { fetchUTXOs } from '@/actions/get-utxos';
 
 interface FormData {
 	addressTo: string;
@@ -34,7 +35,13 @@ interface FormErrors {
 }
 
 const TokenTransferPage = () => {
-	const { getCurrentAccountAddress, getSalt, getPassKey, getAllAccountAddresses } = useAccount();
+	const {
+		getCurrentAccountAddress,
+		getSalt,
+		getPassKey,
+		getAllAccountAddresses,
+		updateCurrentAccountUtxos,
+	} = useAccount();
 	const { finish_transaction } = useTbcTransaction();
 	const { sendFT } = useFtTransaction();
 	const { contractId, amount } = useLocalSearchParams<{
@@ -51,6 +58,11 @@ const TokenTransferPage = () => {
 	const [isCalculatingFee, setIsCalculatingFee] = useState(false);
 	const [showAddressSelector, setShowAddressSelector] = useState(false);
 	const [availableAmount, setAvailableAmount] = useState<number>(0);
+	const [pendingTransaction, setPendingTransaction] = useState<{
+		txHex: string;
+		utxos: any[];
+	} | null>(null);
+	const currentAddress = getCurrentAccountAddress();
 
 	useEffect(() => {
 		if (amount) {
@@ -176,13 +188,17 @@ const TokenTransferPage = () => {
 		try {
 			const result = await sendFT(
 				contractId,
-				getCurrentAccountAddress(),
+				currentAddress,
 				formData.addressTo,
 				Number(formData.amount),
 				formData.password,
 			);
 			setEstimatedFee(result.fee);
-		} catch (error) {
+			setPendingTransaction({
+				txHex: result.txHex,
+				utxos: result.utxos || [],
+			});
+		} catch (error: any) {
 			if (
 				error instanceof Error &&
 				!error.message.includes('Invalid') &&
@@ -196,6 +212,7 @@ const TokenTransferPage = () => {
 				});
 			}
 			setEstimatedFee(null);
+			setPendingTransaction(null);
 		} finally {
 			setIsCalculatingFee(false);
 		}
@@ -227,17 +244,37 @@ const TokenTransferPage = () => {
 			return;
 		}
 
-		try {
-			const result = await sendFT(
-				contractId,
-				getCurrentAccountAddress(),
-				formData.addressTo,
-				Number(formData.amount),
-				formData.password,
-			);
-			const currentAddress = getCurrentAccountAddress();
+		if (!pendingTransaction) {
+			Toast.show({
+				type: 'error',
+				text1: 'Error',
+				text2: 'Please wait for transaction preparation',
+			});
+			return;
+		}
 
-			await finish_transaction(result.txHex, result.utxos!);
+		try {
+			try {
+				await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
+			} catch (error: any) {
+				if (
+					error.message.includes('missing inputs') ||
+					error.message.includes('txn-mempool-conflict')
+				) {
+					const utxos = await fetchUTXOs(currentAddress);
+					await updateCurrentAccountUtxos(utxos, currentAddress);
+					const result = await sendFT(
+						contractId,
+						currentAddress,
+						formData.addressTo,
+						Number(formData.amount),
+						formData.password,
+					);
+					await finish_transaction(result.txHex, result.utxos!);
+				} else {
+					throw new Error('Failed to broadcast transaction!');
+				}
+			}
 
 			const allAccountAddresses = getAllAccountAddresses();
 
@@ -268,8 +305,7 @@ const TokenTransferPage = () => {
 				if (updatedSenderToken && updatedSenderToken.amount <= 0) {
 					await removeFT(contractId, currentAddress);
 				}
-			}
-			else {
+			} else {
 				await transferFT(contractId, -Number(formData.amount), currentAddress);
 				const updatedSenderToken = await getFT(contractId, currentAddress);
 				if (updatedSenderToken && updatedSenderToken.amount <= 0) {
@@ -404,7 +440,7 @@ const TokenTransferPage = () => {
 				visible={showAddressSelector}
 				onClose={() => setShowAddressSelector(false)}
 				onSelect={handleSelectAddress}
-				userAddress={getCurrentAccountAddress()}
+				userAddress={currentAddress}
 			/>
 		</View>
 	);

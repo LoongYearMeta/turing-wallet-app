@@ -21,10 +21,9 @@ export const deriveKey = (password: string, salt: string): string => {
 	}
 };
 
-export const encrypt = (textToEncrypt: string, key: string): string => {
+export const encrypt = (textToEncrypt: string, password: string): string => {
 	const iv = generateRandomSalt(8);
-
-	const encrypted = CryptoJS.AES.encrypt(textToEncrypt, CryptoJS.enc.Hex.parse(key), {
+	const encrypted = CryptoJS.AES.encrypt(textToEncrypt, CryptoJS.enc.Hex.parse(password), {
 		iv: CryptoJS.enc.Hex.parse(iv),
 		padding: CryptoJS.pad.Pkcs7,
 		mode: CryptoJS.mode.CBC,
@@ -33,13 +32,12 @@ export const encrypt = (textToEncrypt: string, key: string): string => {
 	return iv + encrypted.toString();
 };
 
-export const decrypt = (ciphertext: string, password: string, salt: string): string => {
+export const decrypt = (ciphertext: string, password: string): string => {
 	try {
-		const key = deriveKey(password, salt);
 		const iv = ciphertext.substring(0, 16);
 		const actualCiphertext = ciphertext.substring(16);
 
-		const decrypted = CryptoJS.AES.decrypt(actualCiphertext, CryptoJS.enc.Hex.parse(key), {
+		const decrypted = CryptoJS.AES.decrypt(actualCiphertext, CryptoJS.enc.Hex.parse(password), {
 			iv: CryptoJS.enc.Hex.parse(iv),
 			padding: CryptoJS.pad.Pkcs7,
 			mode: CryptoJS.mode.CBC,

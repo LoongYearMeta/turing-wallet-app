@@ -9,7 +9,6 @@ import { hp, wp } from '@/lib/common';
 import { formatBalance, formatContractId } from '@/lib/util';
 import type { FTPublic } from '@/utils/sqlite';
 
-
 interface AddedTokenCardProps {
 	token: FTPublic;
 	onDeletePress: (token: FTPublic) => void;

@@ -23,6 +23,7 @@ import { verifyPassword } from '@/lib/key';
 import { formatFee } from '@/lib/util';
 import { addCollection } from '@/utils/sqlite';
 import { theme } from '@/lib/theme';
+import { fetchUTXOs } from '@/actions/get-utxos';
 
 interface FormData {
 	name: string;
@@ -52,10 +53,16 @@ const CreateCollectionPage = () => {
 	const [estimatedFee, setEstimatedFee] = useState<number | null>(null);
 	const [isCalculatingFee, setIsCalculatingFee] = useState(false);
 	const [isCreating, setIsCreating] = useState(false);
+	const [pendingTransaction, setPendingTransaction] = useState<{
+		txHex: string;
+		utxos: any[];
+	} | null>(null);
 
-	const { getCurrentAccountAddress, getSalt, getPassKey } = useAccount();
+	const { getCurrentAccountAddress, getSalt, getPassKey, updateCurrentAccountUtxos } = useAccount();
 	const { createCollection } = useNftTransaction();
 	const { finish_transaction } = useTbcTransaction();
+
+	const currentAddress = getCurrentAccountAddress();
 
 	// 验证集合名称
 	const validateName = (name: string) => {
@@ -169,16 +176,14 @@ const CreateCollectionPage = () => {
 			return;
 		}
 
-		// 再次验证密码
 		const passKey = getPassKey();
 		const salt = getSalt();
 		if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
-			return; // 密码验证失败，不计算手续费
+			return;
 		}
 
 		setIsCalculatingFee(true);
 		try {
-			const userAddress = getCurrentAccountAddress();
 			const collectionData = {
 				collectionName: formData.name,
 				description: formData.description,
@@ -186,8 +191,12 @@ const CreateCollectionPage = () => {
 				file: formData.image,
 			};
 
-			const transaction = await createCollection(collectionData, userAddress, formData.password);
+			const transaction = await createCollection(collectionData, currentAddress, formData.password);
 			setEstimatedFee(transaction.fee);
+			setPendingTransaction({
+				txHex: transaction.txHex || '',
+				utxos: transaction.utxos || [],
+			});
 		} catch (error) {
 			if (
 				error instanceof Error &&
@@ -202,20 +211,11 @@ const CreateCollectionPage = () => {
 				});
 			}
 			setEstimatedFee(null);
+			setPendingTransaction(null);
 		} finally {
 			setIsCalculatingFee(false);
 		}
-	}, [
-		formData,
-		validateName,
-		validateDescription,
-		validateSupply,
-		validateImage,
-		getPassKey,
-		getSalt,
-		getCurrentAccountAddress,
-		createCollection,
-	]);
+	}, [formData]);
 
 	// 添加useEffect钩子，与转移token页面完全一致
 	useEffect(() => {
@@ -308,7 +308,6 @@ const CreateCollectionPage = () => {
 		}
 	};
 
-	// 创建合集
 	const handleCreateCollection = async () => {
 		if (
 			!formData.name ||
@@ -321,33 +320,57 @@ const CreateCollectionPage = () => {
 			return;
 		}
 
+		if (!pendingTransaction) {
+			Toast.show({
+				type: 'error',
+				text1: 'Error',
+				text2: 'Please wait for transaction preparation',
+			});
+			return;
+		}
+
 		try {
 			setIsCreating(true);
+			let txId: string | undefined;
+			try {
+				txId = await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
+			} catch (error: any) {
+				if (
+					error.message.includes('missing inputs') ||
+					error.message.includes('txn-mempool-conflict')
+				) {
+					const utxos = await fetchUTXOs(currentAddress);
+					await updateCurrentAccountUtxos(utxos, currentAddress);
 
-			const userAddress = getCurrentAccountAddress();
-			const collectionData = {
-				collectionName: formData.name,
-				description: formData.description,
-				supply: parseInt(formData.supply),
-				file: formData.image,
-			};
+					const collectionData = {
+						collectionName: formData.name,
+						description: formData.description,
+						supply: parseInt(formData.supply),
+						file: formData.image,
+					};
 
-			const transaction = await createCollection(collectionData, userAddress, formData.password);
-
-			const txId = await finish_transaction(transaction.txHex, transaction.utxos!);
+					const transaction = await createCollection(
+						collectionData,
+						currentAddress,
+						formData.password,
+					);
+					txId = await finish_transaction(transaction.txHex, transaction.utxos!);
+				} else {
+					throw new Error('Failed to broadcast transaction.');
+				}
+			}
 
 			if (txId) {
-				// 添加合集到数据库
 				await addCollection(
 					{
 						id: txId,
 						name: formData.name,
 						supply: parseInt(formData.supply),
-						creator: userAddress,
+						creator: currentAddress,
 						icon: formData.image,
 						isDeleted: false,
 					},
-					userAddress,
+					currentAddress,
 				);
 
 				Toast.show({
@@ -356,7 +379,6 @@ const CreateCollectionPage = () => {
 					text2: 'Collection created successfully',
 				});
 
-				// 返回到 NFT 页面
 				router.back();
 			}
 		} catch (error) {
@@ -678,5 +700,6 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 	},
 });
+
 
 export default CreateCollectionPage;

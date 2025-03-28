@@ -845,3 +845,18 @@ export async function updateNFTUserAddress(nftId: string, userAddress: string): 
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync('UPDATE NFT SET user_address = ? WHERE id = ?;', [userAddress, nftId]);
 }
+
+export async function clearAllData(): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.execAsync(`
+		DELETE FROM TransactionHistory;
+		DELETE FROM NFT_History;
+		DELETE FROM FT_History;
+		DELETE FROM NFT;
+		DELETE FROM FT;
+		DELETE FROM Collection;
+		DELETE FROM MultiSig;
+		DELETE FROM FT_Public;
+		DELETE FROM AddressBook;
+	`);
+}

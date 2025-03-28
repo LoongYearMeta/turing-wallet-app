@@ -9,6 +9,7 @@ import { useFtTransaction } from '@/hooks/useFtTransaction';
 import { useNftTransaction } from '@/hooks/useNftTransaction';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
 import { retrieveKeys } from '@/lib/key';
+import { fetchUTXOs } from '@/actions/get-utxos';
 
 export interface SendTransactionResponse {
 	txid?: string;
@@ -56,7 +57,7 @@ interface FTData {
 }
 
 export const useResponse = () => {
-	const { getCurrentAccountAddress } = useAccount();
+	const { getCurrentAccountAddress, updateCurrentAccountUtxos } = useAccount();
 	const { sendTbc, finish_transaction } = useTbcTransaction();
 	const { getUTXO, mergeFT, sendFT } = useFtTransaction();
 	const { createCollection, createNFT, transferNFT } = useNftTransaction();
@@ -66,10 +67,29 @@ export const useResponse = () => {
 			try {
 				const address_from = getCurrentAccountAddress();
 				const { txHex, utxos } = await sendTbc(address_from, address_to, amount, password);
-				const txid = await finish_transaction(txHex, utxos!);
-				if (!txid) {
-					return { error: 'broadcast-transaction-failed' };
+
+				let txid: string | undefined;
+				try {
+					txid = await finish_transaction(txHex, utxos!);
+				} catch (error: any) {
+					if (
+						error.message.includes('missing inputs') ||
+						error.message.includes('txn-mempool-conflict')
+					) {
+						const newUtxos = await fetchUTXOs(address_from);
+						await updateCurrentAccountUtxos(newUtxos, address_from);
+
+						const result = await sendTbc(address_from, address_to, amount, password);
+						txid = await finish_transaction(result.txHex, result.utxos!);
+					} else {
+						throw new Error('Failed to broadcast transaction.');
+					}
 				}
+
+				if (!txid) {
+					throw new Error('Failed to broadcast transaction.');
+				}
+
 				return { txid };
 			} catch (error: any) {
 				return { error: error.message ?? 'unknown' };
@@ -83,10 +103,29 @@ export const useResponse = () => {
 			try {
 				const address_from = getCurrentAccountAddress();
 				const { txHex, utxos } = await createCollection(collection_data, address_from, password);
-				const txid = await finish_transaction(txHex, utxos!);
-				if (!txid) {
-					return { error: 'broadcast-transaction-failed' };
+
+				let txid: string | undefined;
+				try {
+					txid = await finish_transaction(txHex, utxos!);
+				} catch (error: any) {
+					if (
+						error.message.includes('missing inputs') ||
+						error.message.includes('txn-mempool-conflict')
+					) {
+						const newUtxos = await fetchUTXOs(address_from);
+						await updateCurrentAccountUtxos(newUtxos, address_from);
+
+						const result = await createCollection(collection_data, address_from, password);
+						txid = await finish_transaction(result.txHex, result.utxos!);
+					} else {
+						throw new Error('Failed to broadcast transaction.');
+					}
 				}
+
+				if (!txid) {
+					throw new Error('Failed to broadcast transaction.');
+				}
+
 				return { txid };
 			} catch (error: any) {
 				return { error: error.message ?? 'unknown' };
@@ -100,10 +139,28 @@ export const useResponse = () => {
 			try {
 				const address_from = getCurrentAccountAddress();
 				const { txHex, utxos } = await createNFT(collection_id, nft_data, address_from, password);
-				const txid = await finish_transaction(txHex, utxos!);
-				if (!txid) {
-					return { error: 'broadcast-transaction-failed' };
+				let txid: string | undefined;
+				try {
+					txid = await finish_transaction(txHex, utxos!);
+				} catch (error: any) {
+					if (
+						error.message.includes('missing inputs') ||
+						error.message.includes('txn-mempool-conflict')
+					) {
+						const newUtxos = await fetchUTXOs(address_from);
+						await updateCurrentAccountUtxos(newUtxos, address_from);
+
+						const result = await createNFT(collection_id, nft_data, address_from, password);
+						txid = await finish_transaction(result.txHex, result.utxos!);
+					} else {
+						throw new Error('Failed to broadcast transaction.');
+					}
 				}
+
+				if (!txid) {
+					throw new Error('Failed to broadcast transaction.');
+				}
+
 				return { txid };
 			} catch (error: any) {
 				return { error: error.message ?? 'unknown' };
@@ -123,10 +180,34 @@ export const useResponse = () => {
 					transfer_times,
 					password,
 				);
-				const txid = await finish_transaction(txHex, utxos!);
-				if (!txid) {
-					return { error: 'broadcast-transaction-failed' };
+				let txid: string | undefined;
+				try {
+					txid = await finish_transaction(txHex, utxos!);
+				} catch (error: any) {
+					if (
+						error.message.includes('missing inputs') ||
+						error.message.includes('txn-mempool-conflict')
+					) {
+						const newUtxos = await fetchUTXOs(address_from);
+						await updateCurrentAccountUtxos(newUtxos, address_from);
+
+						const result = await transferNFT(
+							contract_id,
+							address_from,
+							address_to,
+							transfer_times,
+							password,
+						);
+						txid = await finish_transaction(result.txHex, result.utxos!);
+					} else {
+						throw new Error('Failed to broadcast transaction.');
+					}
 				}
+
+				if (!txid) {
+					throw new Error('Failed to broadcast transaction.');
+				}
+
 				return { txid };
 			} catch (error: any) {
 				return { error: error.message ?? 'unknown' };
@@ -138,14 +219,13 @@ export const useResponse = () => {
 	const mintFTResponse = useCallback(
 		async (ft_data: FTData, password: string) => {
 			try {
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const address_from = getCurrentAccountAddress();
 				const utxo = await getUTXO(address_from, 0.01, password);
@@ -155,10 +235,30 @@ export const useResponse = () => {
 					amount: ft_data.amount,
 					decimal: ft_data.decimal,
 				});
-				const [txSourceRaw, txMintRaw] = newToken.MintFT(privateKey, address_from, utxo);
-				const txSourceId = await finish_transaction(txSourceRaw, [
-					{ ...utxo, height: 0, isSpented: false },
-				]);
+				let [txSourceRaw, txMintRaw]: [string, string] = ['', ''];
+				[txSourceRaw, txMintRaw] = newToken.MintFT(privateKey, address_from, utxo);
+				let txSourceId: string | undefined;
+				try {
+					txSourceId = await finish_transaction(txSourceRaw, [
+						{ ...utxo, height: 0, isSpented: false, address: address_from },
+					]);
+				} catch (error: any) {
+					if (
+						error.message.includes('missing inputs') ||
+						error.message.includes('txn-mempool-conflict')
+					) {
+						const newUtxos = await fetchUTXOs(address_from);
+						await updateCurrentAccountUtxos(newUtxos, address_from);
+						const utxo_new = await getUTXO(address_from, 0.01, password);
+
+						[txSourceRaw, txMintRaw] = newToken.MintFT(privateKey, address_from, utxo_new);
+						txSourceId = await finish_transaction(txSourceRaw, [
+							{ ...utxo_new, height: 0, isSpented: false, address: address_from },
+						]);
+					} else {
+						throw new Error('Failed to broadcast sourcetransaction.');
+					}
+				}
 
 				if (!txSourceId) {
 					return { error: 'broadcast-source-transaction-failed' };
@@ -186,7 +286,23 @@ export const useResponse = () => {
 					amount,
 					password,
 				);
-				const txid = await finish_transaction(txHex, utxos!);
+				let txid: string | undefined;
+				try {
+					txid = await finish_transaction(txHex, utxos!);
+				} catch (error: any) {
+					if (
+						error.message.includes('missing inputs') ||
+						error.message.includes('txn-mempool-conflict')
+					) {
+						const newUtxos = await fetchUTXOs(address_from);
+						await updateCurrentAccountUtxos(newUtxos, address_from);
+
+						const result = await sendFT(contract_id, address_from, address_to, amount, password);
+						txid = await finish_transaction(result.txHex, result.utxos!);
+					} else {
+						throw new Error('Failed to broadcast transaction.');
+					}
+				}
 				if (!txid) {
 					return { error: 'broadcast-transaction-failed' };
 				}
@@ -209,14 +325,13 @@ export const useResponse = () => {
 		) => {
 			try {
 				const address_from = getCurrentAccountAddress();
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const utxo = await getUTXO(address_from, 0.01, password);
 				let txSourceRaw: string = '';
@@ -227,9 +342,32 @@ export const useResponse = () => {
 					with_lock
 						? ([txSourceRaw, txMintRaw] = await pool.createPoolNftWithLock(privateKey, utxo))
 						: ([txSourceRaw, txMintRaw] = await pool.createPoolNFT(privateKey, utxo));
-					const txSourceId = await finish_transaction(txSourceRaw, [
-						{ ...utxo, height: 0, isSpented: false },
-					]);
+					let txSourceId: string | undefined;
+					try {
+						txSourceId = await finish_transaction(txSourceRaw, [
+							{ ...utxo, height: 0, isSpented: false, address: address_from },
+						]);
+					} catch (error: any) {
+						if (
+							error.message.includes('missing inputs') ||
+							error.message.includes('txn-mempool-conflict')
+						) {
+							const newUtxos = await fetchUTXOs(address_from);
+							await updateCurrentAccountUtxos(newUtxos, address_from);
+							const utxo_new = await getUTXO(address_from, 0.01, password);
+							with_lock
+								? ([txSourceRaw, txMintRaw] = await pool.createPoolNftWithLock(
+										privateKey,
+										utxo_new,
+									))
+								: ([txSourceRaw, txMintRaw] = await pool.createPoolNFT(privateKey, utxo_new));
+							txSourceId = await finish_transaction(txSourceRaw, [
+								{ ...utxo_new, height: 0, isSpented: false, address: address_from },
+							]);
+						} else {
+							throw new Error('Failed to broadcast source transaction.');
+						}
+					}
 					if (!txSourceId) {
 						return { error: 'broadcast-source-transaction-failed' };
 					}
@@ -254,9 +392,39 @@ export const useResponse = () => {
 								serverProvider_tag,
 								serviceFeeRate,
 							));
-					const txSourceId = await finish_transaction(txSourceRaw, [
-						{ ...utxo, height: 0, isSpented: false },
-					]);
+					let txSourceId: string | undefined;
+					try {
+						txSourceId = await finish_transaction(txSourceRaw, [
+							{ ...utxo, height: 0, isSpented: false, address: address_from },
+						]);
+					} catch (error: any) {
+						if (
+							error.message.includes('missing inputs') ||
+							error.message.includes('txn-mempool-conflict')
+						) {
+							const newUtxos = await fetchUTXOs(address_from);
+							await updateCurrentAccountUtxos(newUtxos, address_from);
+							const utxo_new = await getUTXO(address_from, 0.01, password);
+							with_lock
+								? ([txSourceRaw, txMintRaw] = await pool.createPoolNftWithLock(
+										privateKey,
+										utxo_new,
+										serverProvider_tag,
+										serviceFeeRate,
+									))
+								: ([txSourceRaw, txMintRaw] = await pool.createPoolNFT(
+										privateKey,
+										utxo_new,
+										serverProvider_tag,
+										serviceFeeRate,
+									));
+							txSourceId = await finish_transaction(txSourceRaw, [
+								{ ...utxo_new, height: 0, isSpented: false, address: address_from },
+							]);
+						} else {
+							throw new Error('Failed to broadcast source transaction.');
+						}
+					}
 					if (!txSourceId) {
 						return { error: 'broadcast-source-transaction-failed' };
 					}
@@ -284,14 +452,13 @@ export const useResponse = () => {
 		) => {
 			try {
 				const address_from = getCurrentAccountAddress();
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const utxo = await getUTXO(address_from, 0.01, password);
 				let poolUse;
@@ -317,15 +484,35 @@ export const useResponse = () => {
 					await mergeFT(poolUse.ft_a_contractTxid, address_from, password);
 				}
 
-				const txHex = await poolUse.initPoolNFT(
-					privateKey,
-					address_to,
-					utxo,
-					tbc_amount,
-					ft_amount,
-				);
-
-				const txid = await finish_transaction(txHex, [{ ...utxo, height: 0, isSpented: false }]);
+				let txHex = await poolUse.initPoolNFT(privateKey, address_to, utxo, tbc_amount, ft_amount);
+				let txid: string | undefined;
+				try {
+					txid = await finish_transaction(txHex, [
+						{ ...utxo, height: 0, isSpented: false, address: address_from },
+					]);
+				} catch (error: any) {
+					if (
+						error.message.includes('missing inputs') ||
+						error.message.includes('txn-mempool-conflict')
+					) {
+						const newUtxos = await fetchUTXOs(address_from);
+						await updateCurrentAccountUtxos(newUtxos, address_from);
+						const utxo_new = await getUTXO(address_from, 0.01, password);
+						await poolUse.initfromContractId();
+						txHex = await poolUse.initPoolNFT(
+							privateKey,
+							address_to,
+							utxo_new,
+							tbc_amount,
+							ft_amount,
+						);
+						txid = await finish_transaction(txHex, [
+							{ ...utxo_new, height: 0, isSpented: false, address: address_from },
+						]);
+					} else {
+						throw new Error('Failed to broadcast transaction.');
+					}
+				}
 				if (!txid) {
 					return { error: 'broadcast-transaction-failed' };
 				}
@@ -349,14 +536,13 @@ export const useResponse = () => {
 			const tbcAmount: number = tbc_amount;
 			try {
 				const address_from = getCurrentAccountAddress();
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				let poolUse;
 				if (poolNFT_version === 1) {
@@ -372,9 +558,23 @@ export const useResponse = () => {
 				}
 
 				await poolUse.initfromContractId();
-				const ft_amount =
-					BigInt(poolUse.ft_a_amount) /
-					BigInt(BigInt(poolUse.tbc_amount) / BigInt(Math.floor(tbcAmount * Math.pow(10, 6))));
+				let ft_amount = BigInt(0);
+				if (BigInt(poolUse.tbc_amount) > BigInt(Math.floor(tbcAmount * Math.pow(10, 6)))) {
+					ft_amount =
+						(BigInt(poolUse.ft_a_amount) * BigInt(Math.pow(10, 6))) /
+						BigInt(
+							(BigInt(poolUse.tbc_amount) * BigInt(Math.pow(10, 6))) /
+								BigInt(Math.floor(tbcAmount * Math.pow(10, 6))),
+						);
+				} else {
+					ft_amount =
+						(BigInt(poolUse.ft_a_amount) *
+							BigInt(
+								(BigInt(Math.floor(tbcAmount * Math.pow(10, 6))) * BigInt(Math.pow(10, 6))) /
+									BigInt(poolUse.tbc_amount),
+							)) /
+						BigInt(Math.pow(10, 6));
+				}
 
 				const ftUtxoSuit = await getFTUtxoByContractId(
 					address_from,
@@ -386,8 +586,29 @@ export const useResponse = () => {
 				}
 
 				const utxo = await getUTXO(address_from, tbcAmount + 0.01, password);
-				const txHex = await poolUse.increaseLP(privateKey, address_to, utxo, tbcAmount);
-				const txid = await finish_transaction(txHex, [{ ...utxo, height: 0, isSpented: false }]);
+				let txHex = await poolUse.increaseLP(privateKey, address_to, utxo, tbcAmount);
+				let txid: string | undefined;
+				try {
+					txid = await finish_transaction(txHex, [
+						{ ...utxo, height: 0, isSpented: false, address: address_from },
+					]);
+				} catch (error: any) {
+					if (
+						error.message.includes('missing inputs') ||
+						error.message.includes('txn-mempool-conflict')
+					) {
+						const newUtxos = await fetchUTXOs(address_from);
+						await updateCurrentAccountUtxos(newUtxos, address_from);
+						const utxo_new = await getUTXO(address_from, tbcAmount + 0.01, password);
+						await poolUse.initfromContractId();
+						txHex = await poolUse.increaseLP(privateKey, address_to, utxo_new, tbcAmount);
+						txid = await finish_transaction(txHex, [
+							{ ...utxo_new, height: 0, isSpented: false, address: address_from },
+						]);
+					} else {
+						throw new Error('Failed to broadcast transaction.');
+					}
+				}
 				if (!txid) {
 					return { error: 'broadcast-transaction-failed' };
 				}
@@ -410,14 +631,13 @@ export const useResponse = () => {
 		) => {
 			try {
 				const address_from = getCurrentAccountAddress();
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				let poolUse;
 				if (poolNFT_version === 1) {
@@ -497,7 +717,29 @@ export const useResponse = () => {
 					await poolUse.initfromContractId();
 					txHex = await poolUse.consumeLP(privateKey, address_to, utxo, ft_amount);
 				}
-				const txid = await finish_transaction(txHex, [{ ...utxo, height: 0, isSpented: false }]);
+
+				let txid: string | undefined;
+				try {
+					txid = await finish_transaction(txHex, [
+						{ ...utxo, height: 0, isSpented: false, address: address_from },
+					]);
+				} catch (error: any) {
+					if (
+						error.message.includes('missing inputs') ||
+						error.message.includes('txn-mempool-conflict')
+					) {
+						const newUtxos = await fetchUTXOs(address_from);
+						await updateCurrentAccountUtxos(newUtxos, address_from);
+						const utxo_new = await getUTXO(address_from, 0.01, password);
+						await poolUse.initfromContractId();
+						txHex = await poolUse.consumeLP(privateKey, address_to, utxo_new, ft_amount);
+						txid = await finish_transaction(txHex, [
+							{ ...utxo_new, height: 0, isSpented: false, address: address_from },
+						]);
+					} else {
+						throw new Error('Failed to broadcast transaction.');
+					}
+				}
 				if (!txid) {
 					return { error: 'broadcast-transaction-failed' };
 				}
@@ -519,14 +761,13 @@ export const useResponse = () => {
 		) => {
 			try {
 				const address_from = getCurrentAccountAddress();
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 
 				let poolUse;
@@ -573,7 +814,28 @@ export const useResponse = () => {
 					await poolUse.initfromContractId();
 					txHex = await poolUse.swaptoTBC_baseToken(privateKey, address_to, utxo, ft_amount);
 				}
-				const txid = await finish_transaction(txHex, [{ ...utxo, height: 0, isSpented: false }]);
+				let txid: string | undefined;
+				try {
+					txid = await finish_transaction(txHex, [
+						{ ...utxo, height: 0, isSpented: false, address: address_from },
+					]);
+				} catch (error: any) {
+					if (
+						error.message.includes('missing inputs') ||
+						error.message.includes('txn-mempool-conflict')
+					) {
+						const newUtxos = await fetchUTXOs(address_from);
+						await updateCurrentAccountUtxos(newUtxos, address_from);
+						const utxo_new = await getUTXO(address_from, 0.01, password);
+						await poolUse.initfromContractId();
+						txHex = await poolUse.swaptoTBC_baseToken(privateKey, address_to, utxo_new, ft_amount);
+						txid = await finish_transaction(txHex, [
+							{ ...utxo_new, height: 0, isSpented: false, address: address_from },
+						]);
+					} else {
+						throw new Error('Failed to broadcast transaction.');
+					}
+				}
 				if (!txid) {
 					return { error: 'broadcast-transaction-failed' };
 				}
@@ -596,14 +858,13 @@ export const useResponse = () => {
 		) => {
 			try {
 				const address_from = getCurrentAccountAddress();
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 
 				let poolUse;
@@ -640,7 +901,28 @@ export const useResponse = () => {
 					await poolUse.initfromContractId();
 					txHex = await poolUse.swaptoToken_baseTBC(privateKey, address_to, utxo, tbc_amount);
 				}
-				const txid = await finish_transaction(txHex, [{ ...utxo, height: 0, isSpented: false }]);
+				let txid: string | undefined;
+				try {
+					txid = await finish_transaction(txHex, [
+						{ ...utxo, height: 0, isSpented: false, address: address_from },
+					]);
+				} catch (error: any) {
+					if (
+						error.message.includes('missing inputs') ||
+						error.message.includes('txn-mempool-conflict')
+					) {
+						const newUtxos = await fetchUTXOs(address_from);
+						await updateCurrentAccountUtxos(newUtxos, address_from);
+						const utxo_new = await getUTXO(address_from, tbc_amount + 0.01, password);
+						await poolUse.initfromContractId();
+						txHex = await poolUse.swaptoToken_baseTBC(privateKey, address_to, utxo_new, tbc_amount);
+						txid = await finish_transaction(txHex, [
+							{ ...utxo_new, height: 0, isSpented: false, address: address_from },
+						]);
+					} else {
+						throw new Error('Failed to broadcast transaction.');
+					}
+				}
 				if (!txid) {
 					return { error: 'broadcast-transaction-failed' };
 				}
@@ -661,14 +943,13 @@ export const useResponse = () => {
 		) => {
 			try {
 				const address_from = getCurrentAccountAddress();
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				let poolUse;
 				if (poolNFT_version === 1) {
@@ -686,11 +967,31 @@ export const useResponse = () => {
 				let txids: string[] = [];
 				for (let i = 0; i < merge_times; i++) {
 					const utxo = await getUTXO(address_from, 0.01, password);
-					const txHex = await poolUse.mergeFTinPool(privateKey, utxo);
+					let txHex = await poolUse.mergeFTinPool(privateKey, utxo);
 					if (txHex === true) break;
-					const txid = await finish_transaction(txHex as string, [
-						{ ...utxo, height: 0, isSpented: false },
-					]);
+					let txid: string | undefined;
+					try {
+						txid = await finish_transaction(txHex as string, [
+							{ ...utxo, height: 0, isSpented: false, address: address_from },
+						]);
+					} catch (error: any) {
+						if (
+							error.message.includes('missing inputs') ||
+							error.message.includes('txn-mempool-conflict')
+						) {
+							const newUtxos = await fetchUTXOs(address_from);
+							await updateCurrentAccountUtxos(newUtxos, address_from);
+							const utxo_new = await getUTXO(address_from, 0.01, password);
+							await poolUse.initfromContractId();
+							txHex = await poolUse.mergeFTinPool(privateKey, utxo_new);
+							txid = await finish_transaction(txHex as string, [
+								{ ...utxo_new, height: 0, isSpented: false, address: address_from },
+							]);
+						} else {
+							throw new Error('Failed to broadcast transaction.');
+						}
+					}
+
 					if (!txid) {
 						return { error: 'broadcast-transaction-failed' };
 					}
@@ -713,14 +1014,13 @@ export const useResponse = () => {
 		async (poolNft_contractId: string, poolNFT_version: number, password: string) => {
 			try {
 				const address_from = getCurrentAccountAddress();
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				let poolUse;
 				if (poolNFT_version === 1) {
@@ -738,16 +1038,38 @@ export const useResponse = () => {
 				let txids: string[] = [];
 				for (let i = 0; i < 10; i++) {
 					const utxo = await getUTXO(address_from, 0.01, password);
-					const txHex = await poolUse.mergeFTLP(privateKey, utxo);
+					let txHex = await poolUse.mergeFTLP(privateKey, utxo);
 					if (txHex === true) break;
-					const txid = await finish_transaction(txHex as string, [
-						{ ...utxo, height: 0, isSpented: false },
-					]);
+					let txid: string | undefined;
+					try {
+						txid = await finish_transaction(txHex as string, [
+							{ ...utxo, height: 0, isSpented: false, address: address_from },
+						]);
+					} catch (error: any) {
+						if (
+							error.message.includes('missing inputs') ||
+							error.message.includes('txn-mempool-conflict')
+						) {
+							const newUtxos = await fetchUTXOs(address_from);
+							await updateCurrentAccountUtxos(newUtxos, address_from);
+							const utxo_new = await getUTXO(address_from, 0.01, password);
+							await poolUse.initfromContractId();
+							txHex = await poolUse.mergeFTLP(privateKey, utxo_new);
+							txid = await finish_transaction(txHex as string, [
+								{ ...utxo_new, height: 0, isSpented: false, address: address_from },
+							]);
+						} else {
+							throw new Error('Failed to broadcast transaction.');
+						}
+					}
+
 					if (!txid) {
 						return { error: 'broadcast-transaction-failed' };
 					}
 					txids[i] = txid;
-					await new Promise((resolve) => setTimeout(resolve, 3000));
+					if (i < 9) {
+						await new Promise((resolve) => setTimeout(resolve, 3000));
+					}
 				}
 				return { txid: txids.join(', ') };
 			} catch (error: any) {

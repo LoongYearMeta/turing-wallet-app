@@ -34,6 +34,14 @@ export default function SettingsLayout() {
 					headerBackVisible: true,
 				}}
 			/>
+			<Stack.Screen
+				name="account-management"
+				options={{
+					headerTitle: 'Account Management',
+					headerTitleStyle: styles.headerTitle,
+					headerBackVisible: true,
+				}}
+			/>
 		</Stack>
 	);
 }

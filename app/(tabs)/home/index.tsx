@@ -242,13 +242,13 @@ export default function HomePage() {
 			</ScrollView>
 			<ConfirmModal
 				visible={deleteModalVisible}
-				title={'amount' in (tokenToDelete || {}) ? "Hide Token" : "Delete Token"}
-				message={`Are you sure you want to ${'amount' in (tokenToDelete || {}) ? "hide" : "delete"} ${
+				title={'amount' in (tokenToDelete || {}) ? 'Hide Token' : 'Delete Token'}
+				message={`Are you sure you want to ${'amount' in (tokenToDelete || {}) ? 'hide' : 'delete'} ${
 					tokenToDelete?.name || 'this token'
 				}? ${
-					'amount' in (tokenToDelete || {}) 
-						? "You can restore it anytime." 
-						: "This will remove it from your added tokens list."
+					'amount' in (tokenToDelete || {})
+						? 'You can restore it anytime.'
+						: 'This will remove it from your added tokens list.'
 				}`}
 				onConfirm={handleConfirmDelete}
 				onCancel={() => {

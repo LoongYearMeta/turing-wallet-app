@@ -1,7 +1,14 @@
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { InteractionManager, ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+	InteractionManager,
+	ActivityIndicator,
+	StyleSheet,
+	Text,
+	TouchableOpacity,
+	View,
+} from 'react-native';
 import Toast from 'react-native-toast-message';
 
 import Icon from '@/assets/icons';
@@ -9,11 +16,16 @@ import { Input } from '@/components/ui/input';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
-import { generateKeysEncrypted_mnemonic } from '@/lib/key';
+import { generateKeysEncrypted_mnemonic, verifyPassword } from '@/lib/key';
 import { theme } from '@/lib/theme';
 import { Account, AccountType } from '@/types';
 
 const CreatePage = () => {
+	const { getPassKey, getSalt } = useAccount();
+	const passKey = getPassKey();
+	const salt = getSalt();
+	const hasExistingAccount = passKey && salt;
+
 	const [password, setPassword] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [loading, setLoading] = useState(false);
@@ -39,9 +51,9 @@ const CreatePage = () => {
 
 	const onSubmit = () => {
 		if (isSubmitting) return;
-		
+
 		setIsSubmitting(true);
-		
+
 		requestAnimationFrame(() => {
 			InteractionManager.runAfterInteractions(() => {
 				validateAndSubmitForm();
@@ -50,62 +62,114 @@ const CreatePage = () => {
 	};
 
 	const validateAndSubmitForm = async () => {
-		if (!password || !confirmPassword) {
-			showToast('error', 'Please fill in all fields');
-			setIsSubmitting(false);
-			return;
-		}
-
-		if (!validatePassword(password)) {
-			showToast('error', 'Password must be 6-15 characters and contain only letters and numbers');
-			setIsSubmitting(false);
-			return;
-		}
-
-		if (password !== confirmPassword) {
-			showToast('error', 'Passwords do not match');
-			setIsSubmitting(false);
-			return;
+		if (hasExistingAccount) {
+			if (!confirmPassword) {
+				showToast('error', 'Please enter your password');
+				setIsSubmitting(false);
+				return;
+			}
+			if (!verifyPassword(confirmPassword, passKey, salt)) {
+				showToast('error', 'Incorrect password');
+				setIsSubmitting(false);
+				return;
+			}
+			setPassword(confirmPassword);
+		} else {
+			if (!password || !confirmPassword) {
+				showToast('error', 'Please fill in all fields');
+				setIsSubmitting(false);
+				return;
+			}
+			if (!validatePassword(password)) {
+				showToast('error', 'Password must be 6-15 characters and contain only letters and numbers');
+				setIsSubmitting(false);
+				return;
+			}
+			if (password !== confirmPassword) {
+				showToast('error', 'Passwords do not match');
+				setIsSubmitting(false);
+				return;
+			}
 		}
 
 		try {
 			setLoading(true);
-			
-			const result = generateKeysEncrypted_mnemonic(password);
-			if (!result) {
-				throw new Error('Failed to generate keys');
+
+			if (hasExistingAccount) {
+				const result = generateKeysEncrypted_mnemonic(password, salt);
+				if (!result) {
+					throw new Error('Failed to generate keys');
+				}
+
+				const { encryptedKeys, tbcAddress, pubKey, taprootAddress, taprootLegacyAddress } = result;
+
+				const accountsCount = getAccountsCount();
+				const newAccount: Account = {
+					accountName: `Wallet ${accountsCount + 1}`,
+					addresses: {
+						tbcAddress,
+						taprootAddress,
+						taprootLegacyAddress,
+					},
+					encryptedKeys,
+					balance: {
+						tbc: 0,
+						btc: 0,
+					},
+					pubKey: {
+						tbcPubKey: pubKey,
+					},
+					paymentUtxos: [],
+					type: AccountType.TBC,
+				};
+
+				await addAccount(newAccount);
+				await setCurrentAccount(tbcAddress);
+			} else {
+				const result = generateKeysEncrypted_mnemonic(password);
+				if (!result) {
+					throw new Error('Failed to generate keys');
+				}
+
+				const {
+					salt,
+					passKey,
+					encryptedKeys,
+					tbcAddress,
+					pubKey,
+					taprootAddress,
+					taprootLegacyAddress,
+				} = result;
+
+				await setPassKeyAndSalt(passKey, salt);
+
+				const accountsCount = getAccountsCount();
+				const newAccount: Account = {
+					accountName: `Wallet ${accountsCount + 1}`,
+					addresses: {
+						tbcAddress,
+						taprootAddress,
+						taprootLegacyAddress,
+					},
+					encryptedKeys,
+					balance: {
+						tbc: 0,
+						btc: 0,
+					},
+					pubKey: {
+						tbcPubKey: pubKey,
+					},
+					paymentUtxos: [],
+					type: AccountType.TBC,
+				};
+
+				await addAccount(newAccount);
+
+				await setCurrentAccount(tbcAddress);
 			}
 
-			const { salt, passKey, encryptedKeys, tbcAddress, pubKey } = result;
-
-			await setPassKeyAndSalt(passKey, salt);
-
-			const accountsCount = getAccountsCount();
-			const newAccount: Account = {
-				accountName: `Wallet ${accountsCount + 1}`,
-				addresses: {
-					tbcAddress,
-				},
-				encryptedKeys,
-				balance: {
-					tbc: 0,
-					satoshis: 0,
-				},
-				pubKey: {
-					tbcPubKey: pubKey,
-				},
-				paymentUtxos: [],
-				type: AccountType.TBC,
-			};
-
-			await addAccount(newAccount);
-
-			await setCurrentAccount(tbcAddress);
-
 			await new Promise((resolve) => setTimeout(resolve, 100));
-
 			showToast('success', 'Wallet created successfully!');
-
 			setTimeout(() => {
 				router.replace('/(tabs)/home');
 			}, 1500);
@@ -118,11 +182,11 @@ const CreatePage = () => {
 	};
 
 	const isButtonDisabled = loading || isSubmitting;
-	
+
 	const buttonStyle = [
 		styles.button,
 		isSubmitting && styles.buttonSubmitting,
-		loading && styles.buttonLoading
+		loading && styles.buttonLoading,
 	];
 
 	return (
@@ -130,38 +194,42 @@ const CreatePage = () => {
 			<StatusBar style="dark" />
 			<View style={styles.container}>
 				<View style={styles.content}>
-					{/* welcome */}
 					<View>
-						<Text style={styles.welcomeText}>Set your password</Text>
+						<Text style={styles.welcomeText}>
+							{hasExistingAccount ? 'Confirm Password' : 'Set your password'}
+						</Text>
 					</View>
 
-					{/* form */}
 					<View style={styles.form}>
-						<Text style={styles.description}>
-							Set a password to manage your wallet. This password is unrecoverable. If you forget
-							it, you can set a new one by resetting and re-importing your wallet.
-						</Text>
+						{!hasExistingAccount && (
+							<Text style={styles.description}>
+								Please set a password to protect your wallet. Once you forget it, you can set a new
+								one by resetting and re-importing your wallet.
+							</Text>
+						)}
+
+						{!hasExistingAccount ? (
+							<View style={styles.inputGroup}>
+								<Text style={styles.label}>Password</Text>
+								<Input
+									icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
+									secureTextEntry
+									placeholder="Set your password"
+									value={password}
+									onChangeText={setPassword}
+									editable={!isButtonDisabled}
+								/>
+							</View>
+						) : null}
 
 						<View style={styles.inputGroup}>
-							<Text style={styles.label}>Password</Text>
+							<Text style={styles.label}>
+								{hasExistingAccount ? 'Password' : 'Confirm Password'}
+							</Text>
 							<Input
 								icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
 								secureTextEntry
-								placeholder="Enter your password"
-								placeholderTextColor={theme.colors.textLight}
-								value={password}
-								onChangeText={setPassword}
-								editable={!isButtonDisabled}
-							/>
-						</View>
-
-						<View style={styles.inputGroup}>
-							<Text style={styles.label}>Confirm Password</Text>
-							<Input
-								icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
-								secureTextEntry
-								placeholder="Confirm your password"
-								placeholderTextColor={theme.colors.textLight}
+								placeholder={hasExistingAccount ? 'Enter your password' : 'Confirm your password'}
 								value={confirmPassword}
 								onChangeText={setConfirmPassword}
 								editable={!isButtonDisabled}
@@ -201,10 +269,10 @@ const styles = StyleSheet.create({
 	},
 	content: {
 		gap: 30,
-		paddingTop: hp(2),
+		paddingTop: hp(4),
 	},
 	welcomeText: {
-		fontSize: hp(4),
+		fontSize: hp(2.8),
 		fontWeight: '700',
 		color: theme.colors.text,
 	},

@@ -6,12 +6,31 @@ import { Avatar } from '@/components/ui/avatar';
 import { DropdownMenu } from '@/components/ui/dropdown-menu';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
+import { clearAllData } from '@/utils/sqlite';
 
 export const Navbar = () => {
 	const [menuVisible, setMenuVisible] = useState(false);
+	const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 	const router = useRouter();
-	const { getCurrentAccountAddress } = useAccount();
+	const { clear, getCurrentAccountAddress } = useAccount();
 	const address = getCurrentAccountAddress();
+
+	const handleSignOut = () => {
+		setMenuVisible(false);
+		setLogoutModalVisible(true);
+	};
+
+	const confirmSignOut = async () => {
+		try {
+			await clearAllData();
+			await clear();
+			setLogoutModalVisible(false);
+			router.replace('/');
+		} catch (error) {
+			console.error('Failed to sign out:', error);
+		}
+	};
 
 	const menuItems = [
 		{
@@ -23,7 +42,10 @@ export const Navbar = () => {
 		},
 		{
 			label: 'Account Management',
-			onPress: () => console.log('Account'),
+			onPress: () => {
+				setMenuVisible(false);
+				router.push('/settings/account-management');
+			},
 		},
 		// {
 		// 	label: 'System Settings',
@@ -43,6 +65,11 @@ export const Navbar = () => {
 				router.push('/settings/export');
 			},
 		},
+		{
+			label: 'Sign Out',
+			onPress: handleSignOut,
+			danger: true,
+		},
 	];
 
 	return (
@@ -59,6 +86,14 @@ export const Navbar = () => {
 					address={address}
 				/>
 			</View>
+
+			<ConfirmModal
+				visible={logoutModalVisible}
+				title="Sign Out All Accounts"
+				message="Are you sure you want to sign out from all accounts? This will clear all data and cannot be undone."
+				onConfirm={confirmSignOut}
+				onCancel={() => setLogoutModalVisible(false)}
+			/>
 		</View>
 	);
 };

@@ -13,7 +13,7 @@ import { hp, wp } from '@/lib/common';
 import { formatBalance } from '@/lib/util';
 
 export const BalanceCard = () => {
-	const { getCurrentAccountAddress, getCurrentAccountBalance, updateCurrentAccountBalance } =
+	const { getCurrentAccountAddress, getCurrentAccountBalance, updateCurrentAccountTbcBalance } =
 		useAccount();
 	const balance = getCurrentAccountBalance();
 	const address = getCurrentAccountAddress();
@@ -51,7 +51,7 @@ export const BalanceCard = () => {
 						throw new Error('No address found');
 					}
 					const balanceData = await getTbcBalance(address);
-					await updateCurrentAccountBalance(balanceData);
+					await updateCurrentAccountTbcBalance(balanceData);
 				} catch (error) {
 					console.error('Failed to fetch balance data:', error);
 					Toast.show({

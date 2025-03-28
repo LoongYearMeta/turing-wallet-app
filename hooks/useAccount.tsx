@@ -27,18 +27,27 @@ interface AccountStore extends AccountState {
 	getCurrentAccountName: () => string | null;
 	getCurrentAccountBalance: () => Balance | null;
 	getCurrentAccountTbcPubKey: () => string | null;
-	getCurrentAccountUtxos: () => StoredUtxo[] | null;
+	getCurrentAccountUtxos: (address: string) => StoredUtxo[] | null;
 	getCurrentAccountType: () => AccountType;
+	getCurrentTbcAddress: () => string | null;
 	getCurrentTaprootAddress: () => string | null;
+	getCurrentTaprootLegacyAddress: () => string | null;
 	getAddresses: () => Addresses;
 	isTaprootAccount: () => boolean;
+	isTaprootLegacyAccount: () => boolean;
+	isTbcAccount: () => boolean;
 	canSwitchToTaproot: () => boolean;
+	canSwitchToTaprootLegacy: () => boolean;
+	canSwitchToTbc: () => boolean;
 
 	updateCurrentAccountName: (name: string) => Promise<void>;
+	updateCurrentAccountTbcBalance: (tbcBalance: number) => Promise<void>;
+	updateCurrentAccountBtcBalance: (btcBalance: number) => Promise<void>;
 	updateCurrentAccountBalance: (balance: Balance) => Promise<void>;
-	updateCurrentAccountUtxos: (utxos: StoredUtxo[]) => Promise<void>;
+	updateCurrentAccountUtxos: (utxos: StoredUtxo[], address: string) => Promise<void>;
 
 	switchToTaproot: () => Promise<void>;
+	switchToTaprootLegacy: () => Promise<void>;
 	switchToTBC: () => Promise<void>;
 
 	setPassKeyAndSalt: (passKey: string, salt: string) => Promise<void>;
@@ -47,6 +56,9 @@ interface AccountStore extends AccountState {
 	getEncryptedKeys: () => string | null;
 
 	clear: () => Promise<void>;
+
+	removeCurrentAccount: () => Promise<void>;
+	switchAccount: (address: string) => Promise<void>;
 }
 
 export const useAccount = create(
@@ -65,8 +77,10 @@ export const useAccount = create(
 
 				const addressToCheck =
 					data.type === AccountType.TAPROOT
-						? data.addresses.taprootLegacyAddress || data.addresses.taprootAddress
-						: data.addresses.tbcAddress;
+						? data.addresses.taprootAddress
+						: data.type === AccountType.TAPROOT_LEGACY
+							? data.addresses.taprootLegacyAddress
+							: data.addresses.tbcAddress;
 
 				if (!addressToCheck) {
 					throw new Error('Incorrect address');
@@ -78,24 +92,37 @@ export const useAccount = create(
 
 				set({
 					accounts: {
-						...get().accounts,
+						...currentAccounts,
 						[addressToCheck]: data,
 					},
+					currentAccount: addressToCheck,
 				});
 			},
 
 			removeAccount: async (address: string) => {
-				const { [address]: _, ...remainingAccounts } = get().accounts;
-				set({ accounts: remainingAccounts });
+				const { [address]: _, ...rest } = get().accounts;
+				set({ accounts: rest });
+
+				if (get().currentAccount === address) {
+					const remainingAddresses = Object.keys(rest);
+					if (remainingAddresses.length > 0) {
+						set({ currentAccount: remainingAddresses[0] });
+					} else {
+						set({ currentAccount: '' });
+					}
+				}
 			},
 
 			setCurrentAccount: async (address: string) => {
+				if (!get().accounts[address]) {
+					throw new Error('Account does not exist');
+				}
 				set({ currentAccount: address });
 			},
 
 			getCurrentAccount: () => {
-				const { accounts, currentAccount } = get();
-				return currentAccount ? accounts[currentAccount] : null;
+				const currentAccount = get().currentAccount;
+				return currentAccount ? get().accounts[currentAccount] : null;
 			},
 
 			getAccountsCount: () => {
@@ -119,66 +146,136 @@ export const useAccount = create(
 			},
 
 			getCurrentAccountName: () => {
-				const currentAccount = get().getCurrentAccount();
-				return currentAccount?.accountName || null;
+				const account = get().getCurrentAccount();
+				return account ? account.accountName : null;
 			},
 
 			getCurrentAccountBalance: () => {
-				const currentAccount = get().getCurrentAccount();
-				return currentAccount?.balance || null;
+				const account = get().getCurrentAccount();
+				return account ? account.balance : null;
 			},
 
 			getCurrentAccountTbcPubKey: () => {
-				const currentAccount = get().getCurrentAccount();
-				return currentAccount?.pubKey.tbcPubKey || null;
+				const account = get().getCurrentAccount();
+				return account ? account.pubKey.tbcPubKey : null;
 			},
 
-			getCurrentAccountUtxos: () => {
-				const currentAccount = get().getCurrentAccount();
-				return currentAccount?.paymentUtxos.filter((utxo) => !utxo.isSpented) || null;
+			getCurrentAccountUtxos: (address: string) => {
+				const account = get().getCurrentAccount();
+				if (!account) return null;
+
+				if (address) {
+					return account.paymentUtxos.filter((utxo) => utxo.address === address && !utxo.isSpented);
+				}
+
+				const currentAddress = get().getCurrentAccountAddress();
+				return account.paymentUtxos.filter(
+					(utxo) => utxo.address === currentAddress && !utxo.isSpented,
+				);
 			},
 
 			getCurrentAccountType: () => {
-				const currentAccount = get().getCurrentAccount();
-				return currentAccount?.type || AccountType.TBC;
+				const account = get().getCurrentAccount();
+				return account ? account.type : AccountType.TBC;
+			},
+
+			getCurrentTbcAddress: () => {
+				const account = get().getCurrentAccount();
+				return account ? account.addresses.tbcAddress : null;
 			},
 
 			getCurrentTaprootAddress: () => {
-				const currentAccount = get().getCurrentAccount();
-				return currentAccount?.type === AccountType.TAPROOT
-					? currentAccount.addresses.taprootAddress || null
-					: null;
+				const account = get().getCurrentAccount();
+				return account ? account.addresses.taprootAddress : null;
+			},
+
+			getCurrentTaprootLegacyAddress: () => {
+				const account = get().getCurrentAccount();
+				return account ? account.addresses.taprootLegacyAddress : null;
 			},
 
 			getAddresses: () => {
-				const currentAccount = get().getCurrentAccount();
-				return (
-					currentAccount?.addresses || {
-						tbcAddress: '',
-						taprootAddress: '',
-						taprootLegacyAddress: '',
-					}
-				);
+				const account = get().getCurrentAccount();
+				return account
+					? account.addresses
+					: { tbcAddress: '', taprootAddress: '', taprootLegacyAddress: '' };
 			},
 
 			isTaprootAccount: () => {
-				const account = get().accounts[get().currentAccount];
-				return account?.type === AccountType.TAPROOT;
+				return get().getCurrentAccountType() === AccountType.TAPROOT;
+			},
+
+			isTaprootLegacyAccount: () => {
+				return get().getCurrentAccountType() === AccountType.TAPROOT_LEGACY;
+			},
+
+			isTbcAccount: () => {
+				return get().getCurrentAccountType() === AccountType.TBC;
 			},
 
 			canSwitchToTaproot: () => {
-				const account = get().accounts[get().currentAccount];
-				return (
-					account?.type === AccountType.TBC &&
-					!!account.addresses.taprootAddress &&
-					!!account.addresses.taprootLegacyAddress
-				);
+				const account = get().getCurrentAccount();
+				return !!account?.addresses.taprootAddress;
+			},
+
+			canSwitchToTaprootLegacy: () => {
+				const account = get().getCurrentAccount();
+				return !!account?.addresses.taprootLegacyAddress;
+			},
+
+			canSwitchToTbc: () => {
+				const account = get().getCurrentAccount();
+				return !!account?.addresses.tbcAddress;
 			},
 
 			updateCurrentAccountName: async (name: string) => {
 				const currentAccount = get().getCurrentAccount();
 				if (currentAccount) {
-					const updatedAccount = { ...currentAccount, accountName: name };
+					const updatedAccount = {
+						...currentAccount,
+						accountName: name,
+					};
+
+					set({
+						accounts: {
+							...get().accounts,
+							[get().currentAccount]: updatedAccount,
+						},
+					});
+				}
+			},
+
+			updateCurrentAccountTbcBalance: async (tbcBalance: number) => {
+				const currentAccount = get().getCurrentAccount();
+				if (currentAccount) {
+					const updatedAccount = {
+						...currentAccount,
+						balance: {
+							...currentAccount.balance,
+							tbc: tbcBalance,
+						},
+					};
+
+					set({
+						accounts: {
+							...get().accounts,
+							[get().currentAccount]: updatedAccount,
+						},
+					});
+				}
+			},
+
+			updateCurrentAccountBtcBalance: async (btcBalance: number) => {
+				const currentAccount = get().getCurrentAccount();
+				if (currentAccount) {
+					const updatedAccount = {
+						...currentAccount,
+						balance: {
+							...currentAccount.balance,
+							btc: btcBalance,
+						},
+					};
+
 					set({
 						accounts: {
 							...get().accounts,
@@ -191,7 +288,11 @@ export const useAccount = create(
 			updateCurrentAccountBalance: async (balance: Balance) => {
 				const currentAccount = get().getCurrentAccount();
 				if (currentAccount) {
-					const updatedAccount = { ...currentAccount, balance };
+					const updatedAccount = {
+						...currentAccount,
+						balance,
+					};
+
 					set({
 						accounts: {
 							...get().accounts,
@@ -201,10 +302,18 @@ export const useAccount = create(
 				}
 			},
 
-			updateCurrentAccountUtxos: async (utxos: StoredUtxo[]) => {
+			updateCurrentAccountUtxos: async (utxos: StoredUtxo[], address: string) => {
 				const currentAccount = get().getCurrentAccount();
 				if (currentAccount) {
-					const updatedAccount = { ...currentAccount, paymentUtxos: utxos };
+					const existingUtxos = currentAccount.paymentUtxos.filter(
+						(utxo) => utxo.address !== address,
+					);
+
+					const updatedAccount = {
+						...currentAccount,
+						paymentUtxos: [...existingUtxos, ...utxos],
+					};
+
 					set({
 						accounts: {
 							...get().accounts,
@@ -216,16 +325,30 @@ export const useAccount = create(
 
 			switchToTaproot: async () => {
 				const account = get().getCurrentAccount();
-				if (
-					!account ||
-					!account.addresses.taprootAddress ||
-					!account.addresses.taprootLegacyAddress
-				) {
+				if (!account || !account.addresses.taprootAddress) {
 					throw new Error('Account cannot be switched to Taproot');
 				}
 
 				const { [get().currentAccount]: currentAccount, ...otherAccounts } = get().accounts;
 				const updatedAccount = { ...currentAccount, type: AccountType.TAPROOT };
+
+				set({
+					accounts: {
+						...otherAccounts,
+						[account.addresses.taprootAddress]: updatedAccount,
+					},
+					currentAccount: account.addresses.taprootAddress,
+				});
+			},
+
+			switchToTaprootLegacy: async () => {
+				const account = get().getCurrentAccount();
+				if (!account || !account.addresses.taprootLegacyAddress) {
+					throw new Error('Account cannot be switched to Taproot Legacy');
+				}
+
+				const { [get().currentAccount]: currentAccount, ...otherAccounts } = get().accounts;
+				const updatedAccount = { ...currentAccount, type: AccountType.TAPROOT_LEGACY };
 
 				set({
 					accounts: {
@@ -274,6 +397,29 @@ export const useAccount = create(
 					passKey: '',
 					salt: '',
 				});
+			},
+
+			removeCurrentAccount: async () => {
+				const currentAddress = get().currentAccount;
+				const { [currentAddress]: _, ...rest } = get().accounts;
+
+				set({
+					accounts: rest,
+					currentAccount: Object.keys(rest)[0] || '',
+					...(Object.keys(rest).length === 0
+						? {
+								passKey: '',
+								salt: '',
+							}
+						: {}),
+				});
+			},
+
+			switchAccount: async (address: string) => {
+				if (!get().accounts[address]) {
+					throw new Error('Account does not exist');
+				}
+				set({ currentAccount: address });
 			},
 		}),
 		{

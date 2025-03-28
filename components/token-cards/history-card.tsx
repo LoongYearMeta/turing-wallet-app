@@ -13,7 +13,6 @@ interface HistoryCardProps {
 }
 
 export const HistoryCard = ({ history }: HistoryCardProps) => {
-
 	const handleCopyId = async () => {
 		await Clipboard.setStringAsync(history.id);
 		Toast.show({

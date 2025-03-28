@@ -6,12 +6,13 @@ import * as tbc from 'tbc-lib-js';
 import { useAccount } from '@/hooks/useAccount';
 import { useUtxo } from '@/hooks/useUtxo';
 import { retrieveKeys } from '@/lib/key';
-import { getTaprootTweakPrivateKey } from '@/lib/taproot';
 import { calculateFee } from '@/lib/util';
 import { StoredUtxo, Transaction } from '@/types';
+import { getTaprootTweakPrivateKey } from '@/lib/taproot-legacy';
+import { fetchUTXOs } from '@/actions/get-utxos';
 
 export const useTbcTransaction = () => {
-	const { isTaprootAccount, getCurrentAccountUtxos, updateCurrentAccountUtxos } = useAccount();
+	const { isTaprootLegacyAccount, getCurrentAccountUtxos, updateCurrentAccountUtxos } = useAccount();
 	const { getUTXOs } = useUtxo();
 
 	const sendTbc = useCallback(
@@ -23,16 +24,15 @@ export const useTbcTransaction = () => {
 		): Promise<Transaction> => {
 			try {
 				const satoshis_amount = Math.floor(tbc_amount * 1e6);
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				let privateKey: tbc.PrivateKey;
-				if (isTaprootAccount()) {
+				if (isTaprootLegacyAccount()) {
 					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
 				} else {
 					privateKey = tbc.PrivateKey.fromString(walletWif);
@@ -56,6 +56,7 @@ export const useTbcTransaction = () => {
 							...utxo,
 							height: 0,
 							isSpented: false,
+							address: address_from,
 						})),
 						satoshis: satoshis_amount,
 					};
@@ -75,6 +76,7 @@ export const useTbcTransaction = () => {
 							...utxo,
 							height: 0,
 							isSpented: false,
+							address: address_from,
 						})),
 						satoshis: satoshis_amount,
 					};
@@ -83,20 +85,19 @@ export const useTbcTransaction = () => {
 				throw new Error(error.message);
 			}
 		},
-		[isTaprootAccount],
+		[isTaprootLegacyAccount],
 	);
 
 	const sendTbc_multiSig_create = useCallback(
 		async (address_from: string, address_to: string, tbc_amount: number, password: string) => {
 			try {
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const script_asm = contract.MultiSig.getMultiSigLockScript(address_from);
 				const umtxos = await contract.API.getUMTXOs(script_asm, tbc_amount + 0.001, 'mainnet');
@@ -122,14 +123,13 @@ export const useTbcTransaction = () => {
 	const sendTbc_multiSig_sign = useCallback(
 		(multiSigAddress: string, multiTxraw: contract.MultiSigTxRaw, password: string): string[] => {
 			try {
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const sigs = contract.MultiSig.signMultiSigTransaction_sendTBC(
 					multiSigAddress,
@@ -173,16 +173,15 @@ export const useTbcTransaction = () => {
 			password: string,
 		): Promise<string> => {
 			try {
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
-				const utxos = await getUTXOs(address_from, 1.001);
+				const utxos = await getUTXOs(address_from, 0.01);
 				const txraw = contract.MultiSig.createMultiSigWallet(
 					address_from,
 					pubKeys,
@@ -195,14 +194,43 @@ export const useTbcTransaction = () => {
 					...utxo,
 					height: 0,
 					isSpented: false,
+					address: address_from,
 				}));
-				const txid = await finish_transaction(txraw, storedUtxos);
-				if (!txid) {
-					throw new Error('Failed to create MultiSig wallet!');
+
+				try {
+					await finish_transaction(txraw, storedUtxos);
+				} catch (error: any) {
+					if (
+						error.message.includes('missing inputs') ||
+						error.message.includes('txn-mempool-conflict')
+					) {
+						const newUtxos = await fetchUTXOs(address_from);
+						await updateCurrentAccountUtxos(newUtxos, address_from);
+
+						const utxos_new = await getUTXOs(address_from, 0.01);
+						const newTxraw = contract.MultiSig.createMultiSigWallet(
+							address_from,
+							pubKeys,
+							sigCount,
+							pubKeys.length,
+							utxos_new,
+							privateKey,
+						);
+						const storedUtxos_new = utxos_new.map((utxo) => ({
+							...utxo,
+							height: 0,
+							isSpented: false,
+							address: address_from,
+						}));
+						await finish_transaction(newTxraw, storedUtxos_new);
+					} else {
+						throw new Error('Failed to broadcast transaction.');
+					}
 				}
+
 				return contract.MultiSig.getMultiSigAddress(pubKeys, sigCount, pubKeys.length);
 			} catch (error: any) {
-				throw new Error(error.message);
+				throw new Error('Failed to create MultiSig wallet!');
 			}
 		},
 		[getUTXOs],
@@ -212,8 +240,9 @@ export const useTbcTransaction = () => {
 		async (txHex: string, utxos: StoredUtxo[]) => {
 			try {
 				const txId = await contract.API.broadcastTXraw(txHex);
+				const address = useAccount.getState().getCurrentAccountAddress();
 				if (txId) {
-					let currentUtxos = getCurrentAccountUtxos();
+					let currentUtxos = getCurrentAccountUtxos(address);
 					const updatedUtxos = currentUtxos!.map((utxo) => {
 						const isSpent = utxos!.some(
 							(spentUtxo) =>
@@ -222,10 +251,8 @@ export const useTbcTransaction = () => {
 						return isSpent ? { ...utxo, isSpented: true } : utxo;
 					});
 
-					await updateCurrentAccountUtxos(updatedUtxos);
+					await updateCurrentAccountUtxos(updatedUtxos, address);
 					return txId;
-				} else {
-					throw new Error('Failed to broadcast transaction.');
 				}
 			} catch (error: any) {
 				throw new Error(error.message);

@@ -20,7 +20,8 @@ import { useTbcTransaction } from '@/hooks/useTbcTransaction';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
 import { formatBalance, formatFee } from '@/lib/util';
-import { getActiveFTs, transferFT, type FT } from '@/utils/sqlite';
+import { getActiveFTs, getFT, removeFT, transferFT, upsertFT, type FT } from '@/utils/sqlite';
+import { fetchUTXOs } from '@/actions/get-utxos';
 
 interface FormData {
 	asset: string;
@@ -44,7 +45,14 @@ interface Asset {
 }
 
 export default function SendPage() {
-	const { getCurrentAccountAddress, getSalt, getPassKey, getCurrentAccountBalance } = useAccount();
+	const {
+		getCurrentAccountAddress,
+		getSalt,
+		getPassKey,
+		getCurrentAccountBalance,
+		updateCurrentAccountUtxos,
+		getAllAccountAddresses,
+	} = useAccount();
 	const { sendTbc, finish_transaction } = useTbcTransaction();
 	const { sendFT } = useFtTransaction();
 	const [formData, setFormData] = useState<FormData>({
@@ -60,6 +68,12 @@ export default function SendPage() {
 	const [assets, setAssets] = useState<Asset[]>([]);
 	const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
 	const [showAssetSelector, setShowAssetSelector] = useState(false);
+	const [pendingTransaction, setPendingTransaction] = useState<{
+		txHex: string;
+		utxos: any[];
+	} | null>(null);
+
+	const currentAddress = getCurrentAccountAddress();
 
 	useEffect(() => {
 		loadAssets();
@@ -68,7 +82,7 @@ export default function SendPage() {
 	const loadAssets = async () => {
 		try {
 			const tbcBalance = getCurrentAccountBalance();
-			const tokens = await getActiveFTs(getCurrentAccountAddress());
+			const tokens = await getActiveFTs(currentAddress);
 
 			const assetList: Asset[] = [
 				{ label: 'TBC', value: 'TBC', balance: tbcBalance?.tbc || 0 },
@@ -186,33 +200,34 @@ export default function SendPage() {
 
 	const calculateEstimatedFee = useCallback(async () => {
 		if (!formData.addressTo || !formData.amount || !selectedAsset) return;
-
 		if (!formData.password || formData.password.length < 6) return;
 
 		const addressError = validateAddress(formData.addressTo);
 		const amountError = validateAmount(formData.amount);
-
 		if (addressError || amountError || formErrors.password) return;
 
 		setIsCalculatingFee(true);
 		try {
+			let result;
 			if (selectedAsset.value === 'TBC') {
-				const result = await sendTbc(
-					getCurrentAccountAddress(),
+				result = await sendTbc(
+					currentAddress,
 					formData.addressTo,
 					Number(formData.amount),
 					formData.password,
 				);
 				setEstimatedFee(result.fee);
+				setPendingTransaction(result);
 			} else {
-				const result = await sendFT(
+				result = await sendFT(
 					selectedAsset.contractId!,
-					getCurrentAccountAddress(),
+					currentAddress,
 					formData.addressTo,
 					Number(formData.amount),
 					formData.password,
 				);
 				setEstimatedFee(result.fee);
+				setPendingTransaction(result);
 			}
 		} catch (error) {
 			if (
@@ -228,6 +243,7 @@ export default function SendPage() {
 				});
 			}
 			setEstimatedFee(null);
+			setPendingTransaction(null);
 		} finally {
 			setIsCalculatingFee(false);
 		}
@@ -238,38 +254,88 @@ export default function SendPage() {
 	}, [formData]);
 
 	const handleSubmit = async () => {
-		if (!selectedAsset) {
+		if (!selectedAsset || !pendingTransaction) {
 			Toast.show({
 				type: 'error',
 				text1: 'Error',
-				text2: 'Please select an asset',
+				text2: 'Please wait for transaction preparation',
 			});
 			return;
 		}
 
 		try {
-			let result;
-			if (selectedAsset.value === 'TBC') {
-				result = await sendTbc(
-					getCurrentAccountAddress(),
-					formData.addressTo,
-					Number(formData.amount),
-					formData.password,
-				);
-				await finish_transaction(result.txHex, result.utxos!);
-			} else {
-				result = await sendFT(
-					selectedAsset.contractId!,
-					getCurrentAccountAddress(),
-					formData.addressTo,
-					Number(formData.amount),
-					formData.password,
-				);
-				const currentAddress = getCurrentAccountAddress();
+			try {
+				await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
+			} catch (error: any) {
+				if (
+					error.message.includes('missing inputs') ||
+					error.message.includes('txn-mempool-conflict')
+				) {
+					const utxos = await fetchUTXOs(currentAddress);
+					await updateCurrentAccountUtxos(utxos, currentAddress);
+					let result;
+					if (selectedAsset.value === 'TBC') {
+						result = await sendTbc(
+							currentAddress,
+							formData.addressTo,
+							Number(formData.amount),
+							formData.password,
+						);
+					} else {
+						result = await sendFT(
+							selectedAsset.contractId!,
+							currentAddress,
+							formData.addressTo,
+							Number(formData.amount),
+							formData.password,
+						);
+					}
+					await finish_transaction(result.txHex, result.utxos!);
+				} else {
+					throw new Error('Failed to broadcast transaction.');
+				}
+			}
 
-				await finish_transaction(result.txHex, result.utxos!);
-				if (formData.addressTo !== currentAddress) {
-					await transferFT(selectedAsset.contractId!, Number(formData.amount), currentAddress);
+			const allAccountAddresses = getAllAccountAddresses();
+
+			if (selectedAsset.value !== 'TBC') {
+				if (formData.addressTo === currentAddress) {
+				} else if (allAccountAddresses.includes(formData.addressTo)) {
+					const receiverToken = await getFT(selectedAsset.contractId!, formData.addressTo);
+
+					if (receiverToken) {
+						await transferFT(
+							selectedAsset.contractId!,
+							Number(formData.amount),
+							formData.addressTo,
+						);
+					} else {
+						const senderToken = await getFT(selectedAsset.contractId!, currentAddress);
+						if (senderToken) {
+							await upsertFT(
+								{
+									id: selectedAsset.contractId!,
+									name: senderToken.name,
+									decimal: senderToken.decimal,
+									amount: Number(formData.amount),
+									symbol: senderToken.symbol,
+									isDeleted: false,
+								},
+								formData.addressTo,
+							);
+						}
+					}
+					await transferFT(selectedAsset.contractId!, -Number(formData.amount), currentAddress);
+					const updatedSenderToken = await getFT(selectedAsset.contractId!, currentAddress);
+					if (updatedSenderToken && updatedSenderToken.amount <= 0) {
+						await removeFT(selectedAsset.contractId!, currentAddress);
+					}
+				} else {
+					await transferFT(selectedAsset.contractId!, -Number(formData.amount), currentAddress);
+					const updatedSenderToken = await getFT(selectedAsset.contractId!, currentAddress);
+					if (updatedSenderToken && updatedSenderToken.amount <= 0) {
+						await removeFT(selectedAsset.contractId!, currentAddress);
+					}
 				}
 			}
 
@@ -417,7 +483,7 @@ export default function SendPage() {
 				visible={showAddressSelector}
 				onClose={() => setShowAddressSelector(false)}
 				onSelect={(address) => handleInputChange('addressTo', address)}
-				userAddress={getCurrentAccountAddress()}
+				userAddress={currentAddress}
 			/>
 
 			<AssetSelector

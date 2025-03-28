@@ -71,8 +71,12 @@ export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuP
 							<View style={styles.iconContainer}>
 								<Ionicons name={getIconName(item.label)} size={20} color="white" />
 							</View>
-							<Text style={styles.menuItemText}>{item.label}</Text>
-							<MaterialIcons name="chevron-right" size={20} color="#999" />
+							<Text style={[
+								styles.menuItemText,
+								
+							]}>
+								{item.label}
+							</Text>
 						</TouchableOpacity>
 					))}
 				</View>
@@ -96,6 +100,8 @@ const getIconName = (label: string): any => {
 			return 'book-outline';
 		case 'Export Mnemonic':
 			return 'key-outline';
+		case 'Sign Out':
+			return 'log-out-outline';
 		default:
 			return 'ellipsis-horizontal';
 	}
@@ -157,9 +163,13 @@ const styles = StyleSheet.create({
 		marginHorizontal: wp(4),
 	},
 	menuItemText: {
+		flex: 1,
 		fontSize: hp(1.4),
 		color: 'white',
 		marginLeft: wp(1.5),
 		textAlignVertical: 'center',
+	},
+	dangerText: {
+		color: '#ff4444',
 	},
 });

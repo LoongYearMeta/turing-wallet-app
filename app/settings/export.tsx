@@ -50,7 +50,7 @@ export default function ExportPage() {
 
 				if (isValid) {
 					const encryptedKeys = getEncryptedKeys();
-					const decryptedKeys = retrieveKeys(password, encryptedKeys!, salt);
+					const decryptedKeys = retrieveKeys(password, encryptedKeys!);
 					setKeys(decryptedKeys);
 				}
 			} catch (error) {

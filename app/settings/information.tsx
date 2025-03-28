@@ -162,7 +162,7 @@ export default function InformationPage() {
 	);
 
 	return (
-		<ScrollView style={styles.container}>
+		<ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
 			{/* 账户信息部分 */}
 			<View style={styles.listContainer}>
 				<View style={styles.listItem}>
@@ -297,7 +297,7 @@ export default function InformationPage() {
 				</View>
 			</View>
 
-			{multiSigAddresses.length > 0 ? (
+			{multiSigAddresses.length > 0 &&
 				multiSigAddresses.map((item) => (
 					<View key={item.multiSig_address} style={styles.multiSigItem}>
 						<TouchableOpacity
@@ -350,18 +350,7 @@ export default function InformationPage() {
 							</View>
 						)}
 					</View>
-				))
-			) : (
-				<View style={styles.emptyState}>
-					<Text style={styles.emptyText}>No MultiSig wallets found</Text>
-					<TouchableOpacity
-						style={[styles.createButton, styles.createMultiSigButton]}
-						onPress={handleCreateMultiSig}
-					>
-						<Text style={styles.createButtonText}>Create MultiSig Wallet</Text>
-					</TouchableOpacity>
-				</View>
-			)}
+				))}
 
 			{/* 修改账户名称模态框 */}
 			<Modal visible={modalVisible} transparent animationType="fade">
@@ -421,17 +410,20 @@ export default function InformationPage() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#fff',
+		backgroundColor: '#f5f5f5',
+	},
+	scrollContent: {
+		padding: wp(4),
+		paddingBottom: hp(4), // 添加底部间距确保内容可以完全滚动
+		flexGrow: 1, // 允许内容拉伸
 	},
 	listContainer: {
-		padding: wp(1),
-		backgroundColor: '#f5f5f5',
-		marginBottom: hp(0.5),
+		marginBottom: hp(2),
 	},
 	multiSigActions: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		gap: wp(1), // 按钮之间的间距
+		gap: wp(1),
 	},
 	listItem: {
 		flexDirection: 'row',
@@ -446,7 +438,7 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-between',
 		paddingHorizontal: wp(4),
 		paddingVertical: hp(1.2),
-		paddingLeft: wp(8), // 增加左侧内边距，使其看起来像子项
+		paddingLeft: wp(8),
 	},
 	multiSigItem: {
 		paddingHorizontal: wp(4),
@@ -638,5 +630,17 @@ const styles = StyleSheet.create({
 		color: '#333',
 		flex: 1,
 		paddingRight: wp(2),
+	},
+	copyButton: {
+		padding: wp(1),
+	},
+	utxoSeparator: {
+		height: 1,
+		backgroundColor: '#e0e0e0',
+		marginTop: hp(1),
+	},
+	headerActions: {
+		flexDirection: 'row',
+		alignItems: 'center',
 	},
 });

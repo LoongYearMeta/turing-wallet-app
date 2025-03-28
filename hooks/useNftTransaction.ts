@@ -6,12 +6,12 @@ import * as tbc from 'tbc-lib-js';
 import { useAccount } from '@/hooks/useAccount';
 import { useUtxo } from '@/hooks/useUtxo';
 import { retrieveKeys } from '@/lib/key';
-import { getTaprootTweakPrivateKey } from '@/lib/taproot';
 import { calculateFee } from '@/lib/util';
 import { Transaction } from '@/types';
+import { getTaprootTweakPrivateKey } from '@/lib/taproot-legacy';
 
 export const useNftTransaction = () => {
-	const { isTaprootAccount } = useAccount();
+	const { isTaprootLegacyAccount } = useAccount();
 	const { getUTXOs } = useUtxo();
 
 	const createCollection = useCallback(
@@ -21,16 +21,15 @@ export const useNftTransaction = () => {
 			password: string,
 		): Promise<Transaction> => {
 			try {
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				let privateKey: tbc.PrivateKey;
-				if (isTaprootAccount()) {
+				if (isTaprootLegacyAccount()) {
 					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
 				} else {
 					privateKey = tbc.PrivateKey.fromString(walletWif);
@@ -49,13 +48,14 @@ export const useNftTransaction = () => {
 						...utxo,
 						height: 0,
 						isSpented: false,
+						address: address_from,
 					})),
 				};
 			} catch (error: any) {
 				throw new Error(error.message);
 			}
 		},
-		[isTaprootAccount, getUTXOs],
+		[isTaprootLegacyAccount, getUTXOs],
 	);
 
 	const createNFT = useCallback(
@@ -66,16 +66,15 @@ export const useNftTransaction = () => {
 			password: string,
 		) => {
 			try {
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				let privateKey: tbc.PrivateKey;
-				if (isTaprootAccount()) {
+				if (isTaprootLegacyAccount()) {
 					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
 				} else {
 					privateKey = tbc.PrivateKey.fromString(walletWif);
@@ -101,13 +100,14 @@ export const useNftTransaction = () => {
 						...utxo,
 						height: 0,
 						isSpented: false,
+						address: address_from,
 					})),
 				};
 			} catch (error: any) {
 				throw new Error(error.message);
 			}
 		},
-		[isTaprootAccount, getUTXOs],
+		[isTaprootLegacyAccount, getUTXOs],
 	);
 
 	const transferNFT = useCallback(
@@ -119,16 +119,15 @@ export const useNftTransaction = () => {
 			password: string,
 		): Promise<Transaction> => {
 			try {
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				let privateKey: tbc.PrivateKey;
-				if (isTaprootAccount()) {
+				if (isTaprootLegacyAccount()) {
 					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
 				} else {
 					privateKey = tbc.PrivateKey.fromString(walletWif);
@@ -170,13 +169,14 @@ export const useNftTransaction = () => {
 						...utxo,
 						height: 0,
 						isSpented: false,
+						address: address_from,
 					})),
 				};
 			} catch (error: any) {
 				throw new Error(error.message);
 			}
 		},
-		[isTaprootAccount, getUTXOs],
+		[isTaprootLegacyAccount, getUTXOs],
 	);
 
 	return {

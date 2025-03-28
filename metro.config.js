@@ -6,7 +6,6 @@ config.resolver.extraNodeModules = {
 	...require('node-libs-react-native'),
 	crypto: require.resolve('crypto-browserify'),
 	stream: require.resolve('stream-browserify'),
-	// buffer: require.resolve('@craftzdog/react-native-buffer'),
 	buffer: require.resolve('buffer'),
 	process: require.resolve('process'),
 	events: require.resolve('events'),

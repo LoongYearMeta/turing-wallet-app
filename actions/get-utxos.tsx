@@ -20,6 +20,7 @@ export async function fetchUTXOs(address: string): Promise<StoredUtxo[]> {
 			satoshis: utxo.value,
 			height: utxo.height,
 			isSpented: false,
+			address: address,
 		}));
 	} catch (error: any) {
 		throw new Error(error.message);

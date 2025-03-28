@@ -3,12 +3,12 @@ export interface PubKey {
 }
 export interface Addresses {
 	tbcAddress: string;
-	taprootAddress?: string;
-	taprootLegacyAddress?: string;
+	taprootAddress: string;
+	taprootLegacyAddress: string;
 }
 export interface Balance {
 	tbc: number;
-	satoshis: number;
+	btc: number;
 }
 
 export interface StoredUtxo {
@@ -17,11 +17,13 @@ export interface StoredUtxo {
 	satoshis: number;
 	height: number;
 	isSpented: boolean;
+	address: string;
 }
 
 export enum AccountType {
 	TBC = 'tbc',
 	TAPROOT = 'taproot',
+	TAPROOT_LEGACY = 'taproot_legacy',
 }
 
 export interface Account {

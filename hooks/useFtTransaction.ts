@@ -7,7 +7,7 @@ import { fetchUTXOs } from '@/actions/get-utxos';
 import { useAccount } from '@/hooks/useAccount';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
 import { retrieveKeys } from '@/lib/key';
-import { getTaprootTweakPrivateKey } from '@/lib/taproot';
+import { getTaprootTweakPrivateKey } from '@/lib/taproot-legacy';
 import { calculateFee } from '@/lib/util';
 import { Transaction } from '@/types';
 import { getMultiSigPubKeys } from '@/utils/sqlite';
@@ -15,7 +15,7 @@ import axios from 'axios';
 
 export const useFtTransaction = () => {
 	const {
-		isTaprootAccount,
+		isTaprootLegacyAccount,
 		updateCurrentAccountUtxos,
 		getCurrentAccountUtxos,
 		getCurrentAccountTbcPubKey,
@@ -31,16 +31,15 @@ export const useFtTransaction = () => {
 			password: string,
 		): Promise<Transaction> => {
 			try {
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				let privateKey: tbc.PrivateKey;
-				if (isTaprootAccount()) {
+				if (isTaprootLegacyAccount()) {
 					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
 				} else {
 					privateKey = tbc.PrivateKey.fromString(walletWif);
@@ -123,6 +122,7 @@ export const useFtTransaction = () => {
 						...u,
 						height: 0,
 						isSpented: false,
+						address: address_from,
 					})),
 				};
 			} catch (error: any) {
@@ -146,20 +146,19 @@ export const useFtTransaction = () => {
 				throw error;
 			}
 		},
-		[isTaprootAccount],
+		[isTaprootLegacyAccount],
 	);
 
 	const mergeFT = useCallback(
 		async (contractId: string, address_from: string, password: string) => {
 			try {
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const Token = new contract.FT(contractId);
 				const TokenInfo = await contract.API.fetchFtInfo(Token.contractTxid);
@@ -182,13 +181,31 @@ export const useFtTransaction = () => {
 							await contract.API.fetchFtPrePreTxData(preTXs[i], ftutxos[i].outputIndex),
 						);
 					}
-					const txHex = Token.mergeFT(privateKey, ftutxos, utxo, preTXs, prepreTxDatas);
+					let txHex = Token.mergeFT(privateKey, ftutxos, utxo, preTXs, prepreTxDatas);
 					if (txHex === true) break;
-					const txId = await contract.API.broadcastTXraw(txHex as string);
+					let txId: string;
+					try {
+						txId = await contract.API.broadcastTXraw(txHex as string);
+					} catch (error: any) {
+						if (
+							error.message.includes('missing inputs') ||
+							error.message.includes('txn-mempool-conflict')
+						) {
+							const newUtxos = await fetchUTXOs(address_from);
+							await updateCurrentAccountUtxos(newUtxos, address_from);
+							const utxo_new = await getUTXO(address_from, 0.01, password);
+							txHex = Token.mergeFT(privateKey, ftutxos, utxo_new, preTXs, prepreTxDatas);
+							txId = await contract.API.broadcastTXraw(txHex as string);
+						} else {
+							throw new Error('Failed to merge FT UTXO!');
+						}
+					}
 					if (!txId) {
 						throw new Error('Failed to merge FT UTXO!');
 					}
-					await new Promise((resolve) => setTimeout(resolve, 3000));
+					if (i < 9) {
+						await new Promise((resolve) => setTimeout(resolve, 3000));
+					}
 				}
 			} catch (error: any) {
 				throw new Error(error.message);
@@ -206,14 +223,13 @@ export const useFtTransaction = () => {
 			password: string,
 		) => {
 			try {
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const script_asm = contract.MultiSig.getMultiSigLockScript(address_from);
 				const umtxo = await contract.API.fetchUMTXO(script_asm, 'mainnet');
@@ -277,14 +293,13 @@ export const useFtTransaction = () => {
 			password: string,
 		): Promise<string[]> => {
 			try {
-				const salt = useAccount.getState().getSalt();
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
 				if (!encryptedKeys) {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys, salt);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const Token = new contract.FT(contractId);
 				const TokenInfo = await contract.API.fetchFtInfo(Token.contractTxid, 'mainnet');
@@ -427,24 +442,30 @@ export const useFtTransaction = () => {
 		): Promise<tbc.Transaction.IUnspentOutput> => {
 			try {
 				const satoshis_amount = Math.floor(tbc_amount * 1e6);
-				let utxos = getCurrentAccountUtxos();
-				utxos = await fetchUTXOs(address);
+				let utxos = getCurrentAccountUtxos(address);
 
 				if (!utxos || utxos.length === 0) {
 					utxos = await fetchUTXOs(address);
-				}
-				let utxo_amount = utxos.reduce((acc, utxo) => acc + utxo.satoshis, 0);
-				if (utxo_amount < satoshis_amount) {
-					utxos = await fetchUTXOs(address);
-					if (!utxos || utxos.length === 0) {
-						throw new Error('The balance in the account is zero.');
-					}
-					await updateCurrentAccountUtxos(utxos);
-					utxo_amount = utxos.reduce((acc, utxo) => acc + utxo.satoshis, 0);
+					await updateCurrentAccountUtxos(utxos, address);
+					let utxo_amount = utxos.reduce((acc, utxo) => acc + utxo.satoshis, 0);
 					if (utxo_amount < satoshis_amount) {
 						throw new Error('Insufficient balance.');
 					}
+				} else {
+					let utxo_amount = utxos.reduce((acc, utxo) => acc + utxo.satoshis, 0);
+					if (utxo_amount < satoshis_amount) {
+						utxos = await fetchUTXOs(address);
+						if (!utxos || utxos.length === 0) {
+							throw new Error('The balance in the account is zero.');
+						}
+						await updateCurrentAccountUtxos(utxos, address);
+						utxo_amount = utxos.reduce((acc, utxo) => acc + utxo.satoshis, 0);
+						if (utxo_amount < satoshis_amount) {
+							throw new Error('Insufficient balance.');
+						}
+					}
 				}
+
 				const scriptPubKey = tbc.Script.buildPublicKeyHashOut(address).toBuffer().toString('hex');
 				utxos.sort((a, b) => a.satoshis - b.satoshis);
 				const largeUTXO = utxos.find((utxo) => utxo.satoshis >= satoshis_amount);
@@ -456,14 +477,33 @@ export const useFtTransaction = () => {
 						script: scriptPubKey,
 					};
 				} else {
-					const {
+					let {
 						txHex,
 						utxos: spentUtxos,
 						satoshis,
 					} = await sendTbc(address, address, tbc_amount, password);
-					const txId = await contract.API.broadcastTXraw(txHex);
+					let txId: string;
+					try {
+						txId = await contract.API.broadcastTXraw(txHex);
+					} catch (error: any) {
+						if (
+							error.message.includes('missing inputs') ||
+							error.message.includes('txn-mempool-conflict')
+						) {
+							const newUtxos = await fetchUTXOs(address);
+							await updateCurrentAccountUtxos(newUtxos, address);
+							const result = await sendTbc(address, address, tbc_amount, password);
+							txHex = result.txHex;
+							spentUtxos = result.utxos;
+							satoshis = result.satoshis;
+							txId = await contract.API.broadcastTXraw(txHex);
+						} else {
+							throw new Error('Failed to broadcast transaction.');
+						}
+					}
+
 					if (txId) {
-						let currentUtxos = getCurrentAccountUtxos();
+						let currentUtxos = getCurrentAccountUtxos(address);
 						const updatedUtxos = currentUtxos!.map((utxo) => {
 							const isSpent = spentUtxos!.some(
 								(spentUtxo) =>
@@ -471,8 +511,6 @@ export const useFtTransaction = () => {
 							);
 							return isSpent ? { ...utxo, isSpented: true } : utxo;
 						});
-
-						await updateCurrentAccountUtxos(updatedUtxos);
 
 						const newUtxo = {
 							txId,
@@ -484,9 +522,10 @@ export const useFtTransaction = () => {
 							...newUtxo,
 							height: 0,
 							isSpented: false,
+							address,
 						};
 
-						await updateCurrentAccountUtxos([...updatedUtxos, storedUtxo]);
+						await updateCurrentAccountUtxos([...updatedUtxos, storedUtxo], address);
 
 						return newUtxo;
 					} else {

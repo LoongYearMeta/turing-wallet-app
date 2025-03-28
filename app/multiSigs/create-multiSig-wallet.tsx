@@ -247,8 +247,8 @@ export default function CreateMultiSigWalletPage() {
 		setIsLoading(true);
 
 		try {
-			const userAddress = getCurrentAccountAddress();
-			if (!userAddress) {
+			const currentAddress = getCurrentAccountAddress();
+			if (!currentAddress) {
 				throw new Error('No account address found');
 			}
 
@@ -272,7 +272,7 @@ export default function CreateMultiSigWalletPage() {
 			const multiSigAddress = await createMultiSigWallet(
 				formData.pubKeys,
 				parseInt(formData.requiredSignatures, 10),
-				userAddress,
+				currentAddress,
 				formData.password,
 			);
 
@@ -282,7 +282,7 @@ export default function CreateMultiSigWalletPage() {
 					pubKeys: formData.pubKeys,
 					isDeleted: false,
 				},
-				userAddress,
+				currentAddress,
 			);
 
 			Toast.show({

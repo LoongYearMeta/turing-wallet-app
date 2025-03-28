@@ -20,6 +20,7 @@ import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
 import { formatFee } from '@/lib/util';
 import { updateNFTTransferTimes, updateNFTUserAddress, removeNFT } from '@/utils/sqlite';
+import { fetchUTXOs } from '@/actions/get-utxos';
 
 interface FormData {
 	addressTo: string;
@@ -32,7 +33,13 @@ interface FormErrors {
 }
 
 const NFTTransferPage = () => {
-	const { getCurrentAccountAddress, getSalt, getPassKey, getAllAccountAddresses } = useAccount();
+	const {
+		getCurrentAccountAddress,
+		getSalt,
+		getPassKey,
+		getAllAccountAddresses,
+		updateCurrentAccountUtxos,
+	} = useAccount();
 	const { finish_transaction } = useTbcTransaction();
 	const { transferNFT } = useNftTransaction();
 	const { id, transferTimes } = useLocalSearchParams<{
@@ -49,6 +56,12 @@ const NFTTransferPage = () => {
 	const [isCalculatingFee, setIsCalculatingFee] = useState(false);
 	const [showAddressSelector, setShowAddressSelector] = useState(false);
 	const [transferTimesCount, setTransferTimesCount] = useState<number>(0);
+	const [pendingTransaction, setPendingTransaction] = useState<{
+		txHex: string;
+		utxos: any[];
+	} | null>(null);
+
+	const currentAddress = getCurrentAccountAddress();
 
 	useEffect(() => {
 		if (transferTimes) {
@@ -140,24 +153,28 @@ const NFTTransferPage = () => {
 		if (!formData.addressTo || !formData.password) return;
 
 		const addressError = validateAddress(formData.addressTo);
-		if (addressError ) return;
+		if (addressError) return;
 
-    const passKey = getPassKey();
+		const passKey = getPassKey();
 		const salt = getSalt();
 		if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
-			return; 
+			return;
 		}
 
 		setIsCalculatingFee(true);
 		try {
 			const result = await transferNFT(
 				id,
-				getCurrentAccountAddress(),
+				currentAddress,
 				formData.addressTo,
 				transferTimesCount,
 				formData.password,
 			);
 			setEstimatedFee(result.fee);
+			setPendingTransaction({
+				txHex: result.txHex || '',
+				utxos: result.utxos || [],
+			});
 		} catch (error) {
 			if (
 				error instanceof Error &&
@@ -172,10 +189,11 @@ const NFTTransferPage = () => {
 				});
 			}
 			setEstimatedFee(null);
+			setPendingTransaction(null);
 		} finally {
 			setIsCalculatingFee(false);
 		}
-	}, [formData, id, transferTimesCount, formErrors.password]);
+	}, [formData, id, transferTimesCount]);
 
 	useEffect(() => {
 		calculateEstimatedFee();
@@ -201,17 +219,41 @@ const NFTTransferPage = () => {
 			return;
 		}
 
-		try {
-			const result = await transferNFT(
-				id,
-				getCurrentAccountAddress(),
-				formData.addressTo,
-				transferTimesCount,
-				formData.password,
-			);
-			const currentAddress = getCurrentAccountAddress();
+		if (!pendingTransaction) {
+			Toast.show({
+				type: 'error',
+				text1: 'Error',
+				text2: 'Please wait for transaction preparation',
+			});
+			return;
+		}
 
-			await finish_transaction(result.txHex, result.utxos!);
+		try {
+			let retried = false;
+			try {
+				await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
+			} catch (error: any) {
+				if (
+					!retried && 
+					(error.message.includes('missing inputs') ||
+					error.message.includes('txn-mempool-conflict'))
+				) {
+					retried = true;
+					const utxos = await fetchUTXOs(currentAddress);
+					await updateCurrentAccountUtxos(utxos, currentAddress);
+
+					const result = await transferNFT(
+						id,
+						currentAddress,
+						formData.addressTo,
+						transferTimesCount,
+						formData.password,
+					);
+					await finish_transaction(result.txHex, result.utxos!);
+				} else {
+					throw new Error('Failed to broadcast transaction.');
+				}
+			}
 
 			if (formData.addressTo === currentAddress) {
 				await updateNFTTransferTimes(id, transferTimesCount + 1);
@@ -233,10 +275,14 @@ const NFTTransferPage = () => {
 
 			router.back();
 		} catch (error) {
+			console.error('Error transferring NFT:', error);
 			Toast.show({
 				type: 'error',
 				text1: 'Error',
-				text2: error instanceof Error ? error.message : 'Failed to transfer NFT',
+				text2:
+					typeof error === 'object' && error !== null && 'message' in error
+						? String(error.message)
+						: 'Failed to transfer NFT',
 			});
 		}
 	};

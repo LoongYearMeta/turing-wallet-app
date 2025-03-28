@@ -29,7 +29,7 @@ interface FTBalanceResponse {
 	ftBalance: number;
 }
 
-export async function getTbcBalance(address: string): Promise<Balance> {
+export async function getTbcBalance(address: string): Promise<number> {
 	const response = await axios.get<BalanceResponse>(
 		`https://turingwallet.xyz/v1/tbc/main/address/${address}/get/balance`,
 	);
@@ -38,12 +38,7 @@ export async function getTbcBalance(address: string): Promise<Balance> {
 		throw new Error('Failed to get balance');
 	}
 
-	const balance: Balance = {
-		satoshis: response.data.data.balance,
-		tbc: response.data.data.balance * 1e-6,
-	};
-
-	return balance;
+	return response.data.data.balance * 1e-6;
 }
 
 export const getExchangeRate = async () => {

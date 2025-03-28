@@ -24,6 +24,7 @@ import { formatFee } from '@/lib/util';
 import { addNFT, getCollection } from '@/utils/sqlite';
 import { theme } from '@/lib/theme';
 import { fetchNFTCounts_byCollection } from '@/actions/get-nfts';
+import { fetchUTXOs } from '@/actions/get-utxos';
 
 interface FormData {
 	name: string;
@@ -52,10 +53,16 @@ const CreateNFTPage = () => {
 	const [isCalculatingFee, setIsCalculatingFee] = useState(false);
 	const [isCreating, setIsCreating] = useState(false);
 	const [collection, setCollection] = useState<any>(null);
+	const [pendingTransaction, setPendingTransaction] = useState<{
+		txHex: string;
+		utxos: any[];
+	} | null>(null);
 
-	const { getCurrentAccountAddress, getSalt, getPassKey } = useAccount();
+	const { getCurrentAccountAddress, getSalt, getPassKey, updateCurrentAccountUtxos } = useAccount();
 	const { createNFT } = useNftTransaction();
 	const { finish_transaction } = useTbcTransaction();
+
+	const currentAddress = getCurrentAccountAddress();
 
 	// 加载合集信息
 	useEffect(() => {
@@ -172,22 +179,25 @@ const CreateNFTPage = () => {
 		const passKey = getPassKey();
 		const salt = getSalt();
 		if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
-			return; 
+			return;
 		}
 
 		setIsCalculatingFee(true);
 		try {
-			const userAddress = getCurrentAccountAddress();
 			const nftData = {
 				nftName: formData.name,
-				symbol: formData.name, // 使用NFT名称作为symbol
+				symbol: formData.name,
 				description: formData.description,
-				attributes: formData.name, // 使用NFT名称作为attributes
+				attributes: formData.name,
 				file: formData.image,
 			};
 
-			const transaction = await createNFT(collectionId, nftData, userAddress, formData.password);
+			const transaction = await createNFT(collectionId, nftData, currentAddress, formData.password);
 			setEstimatedFee(transaction.fee);
+			setPendingTransaction({
+				txHex: transaction.txHex || '',
+				utxos: transaction.utxos || [],
+			});
 		} catch (error) {
 			if (
 				error instanceof Error &&
@@ -202,20 +212,11 @@ const CreateNFTPage = () => {
 				});
 			}
 			setEstimatedFee(null);
+			setPendingTransaction(null);
 		} finally {
 			setIsCalculatingFee(false);
 		}
-	}, [
-		formData,
-		collectionId,
-		validateName,
-		validateDescription,
-		validateImage,
-		getPassKey,
-		getSalt,
-		getCurrentAccountAddress,
-		createNFT,
-	]);
+	}, [formData, collectionId]);
 
 	useEffect(() => {
 		calculateEstimatedFee();
@@ -297,7 +298,6 @@ const CreateNFTPage = () => {
 		}
 	};
 
-	// 创建NFT
 	const handleCreateNFT = async () => {
 		if (
 			!formData.name ||
@@ -310,33 +310,53 @@ const CreateNFTPage = () => {
 			return;
 		}
 
+		if (!pendingTransaction) {
+			Toast.show({
+				type: 'error',
+				text1: 'Error',
+				text2: 'Please wait for transaction preparation',
+			});
+			return;
+		}
+
 		try {
 			setIsCreating(true);
-
-			const userAddress = getCurrentAccountAddress();
-			const nftData = {
-				nftName: formData.name,
-				symbol: formData.name,
-				description: formData.description,
-				attributes: formData.name,
-				file: formData.image,
-			};
-
-			let collectionIndex = 0;
+			let txId: string | undefined;
 			try {
-				collectionIndex = await fetchNFTCounts_byCollection(collectionId);
-			} catch (error) {
-				console.error('Error fetching collection index:', error);
+				txId = await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
+			} catch (error: any) {
+				if (
+					error.message.includes('missing inputs') ||
+					error.message.includes('txn-mempool-conflict')
+				) {
+					const utxos = await fetchUTXOs(currentAddress);
+					await updateCurrentAccountUtxos(utxos, currentAddress);
+
+					const nftData = {
+						nftName: formData.name,
+						symbol: formData.name,
+						description: formData.description,
+						attributes: formData.name,
+						file: formData.image,
+					};
+
+					const transaction = await createNFT(
+						collectionId,
+						nftData,
+						currentAddress,
+						formData.password,
+					);
+					txId = await finish_transaction(transaction.txHex, transaction.utxos!);
+				} else {
+					throw new Error('Failed to broadcast transaction.');
+				}
 			}
 
-			const transaction = await createNFT(collectionId, nftData, userAddress, formData.password);
-
-			const result = await finish_transaction(transaction.txHex, transaction.utxos);
-
-			if (result) {
+			if (txId) {
+				const collectionIndex = await fetchNFTCounts_byCollection(collectionId);
 				await addNFT(
 					{
-						id: result,
+						id: txId,
 						collection_id: collectionId,
 						collection_index: collectionIndex + 1,
 						name: formData.name,
@@ -348,7 +368,7 @@ const CreateNFTPage = () => {
 						collection_name: collection?.name || '',
 						isDeleted: false,
 					},
-					userAddress,
+					currentAddress,
 				);
 
 				Toast.show({
@@ -357,7 +377,6 @@ const CreateNFTPage = () => {
 					text2: 'NFT created successfully',
 				});
 
-				// 返回到合集详情页面
 				router.back();
 			}
 		} catch (error) {
