@@ -71,12 +71,7 @@ export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuP
 							<View style={styles.iconContainer}>
 								<Ionicons name={getIconName(item.label)} size={20} color="white" />
 							</View>
-							<Text style={[
-								styles.menuItemText,
-								
-							]}>
-								{item.label}
-							</Text>
+							<Text style={[styles.menuItemText]}>{item.label}</Text>
 						</TouchableOpacity>
 					))}
 				</View>

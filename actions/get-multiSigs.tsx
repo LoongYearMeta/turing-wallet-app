@@ -13,7 +13,19 @@ export async function fetchMultiSigs(address: string): Promise<MultiSigResponse>
 	const response = await axios.get(
 		`https://turingwallet.xyz/v1/tbc/main/multisig/pubkeys/address/${address}`,
 	);
-	return response.data;
+	const uniqueWallets = new Map();
+
+	response.data.multi_wallet_list
+		.filter((wallet) => wallet.pubkey_list && wallet.pubkey_list.length > 0)
+		.forEach((wallet) => {
+			if (!uniqueWallets.has(wallet.multi_address)) {
+				uniqueWallets.set(wallet.multi_address, wallet);
+			}
+		});
+
+	return {
+		multi_wallet_list: Array.from(uniqueWallets.values()),
+	};
 }
 
 export async function initMultiSigs(address: string): Promise<void> {

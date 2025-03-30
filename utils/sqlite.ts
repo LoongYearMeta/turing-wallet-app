@@ -318,12 +318,12 @@ export async function getNFT(id: string): Promise<NFT | null> {
 
 export async function upsertFT(ft: FT, userAddress: string): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	
-	const existingFT = await db.getFirstAsync(
-		'SELECT * FROM FT WHERE id = ? AND user_address = ?',
-		[ft.id, userAddress]
-	);
-	
+
+	const existingFT = await db.getFirstAsync('SELECT * FROM FT WHERE id = ? AND user_address = ?', [
+		ft.id,
+		userAddress,
+	]);
+
 	if (existingFT) {
 		await db.runAsync(
 			`UPDATE FT SET 
@@ -333,13 +333,13 @@ export async function upsertFT(ft: FT, userAddress: string): Promise<void> {
 			 symbol = ?, 
 			 isDeleted = ? 
 			 WHERE id = ? AND user_address = ?`,
-			[ft.name, ft.decimal, ft.amount, ft.symbol, ft.isDeleted ? 1 : 0, ft.id, userAddress]
+			[ft.name, ft.decimal, ft.amount, ft.symbol, ft.isDeleted ? 1 : 0, ft.id, userAddress],
 		);
 	} else {
 		await db.runAsync(
 			`INSERT INTO FT (id, name, decimal, amount, symbol, user_address, isDeleted)
 			 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			[ft.id, ft.name, ft.decimal, ft.amount, ft.symbol, userAddress, ft.isDeleted ? 1 : 0]
+			[ft.id, ft.name, ft.decimal, ft.amount, ft.symbol, userAddress, ft.isDeleted ? 1 : 0],
 		);
 	}
 }
@@ -575,14 +575,14 @@ export async function getCollectionCount(userAddress: string): Promise<number> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	try {
 		const tableCheck = await db.getAllAsync(
-			"SELECT name FROM sqlite_master WHERE type='table' AND name='Collection'"
+			"SELECT name FROM sqlite_master WHERE type='table' AND name='Collection'",
 		);
-		
+
 		if (tableCheck.length === 0) {
 			console.log('Collection table does not exist, returning 0');
 			return 0;
 		}
-		
+
 		const result = await db.getAllAsync<{ count: number }>(
 			'SELECT COUNT(*) as count FROM Collection WHERE user_address = ? AND isDeleted = 0',
 			[userAddress],
@@ -837,7 +837,7 @@ export async function updateNFTHistory(history: NFTHistory): Promise<void> {
 			history.timestamp,
 			history.contract_id,
 			history.id,
-		]
+		],
 	);
 }
 

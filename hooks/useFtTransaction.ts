@@ -2,6 +2,7 @@ import '@/shim';
 import { useCallback } from 'react';
 import * as contract from 'tbc-contract';
 import * as tbc from 'tbc-lib-js';
+import axios from 'axios';
 
 import { fetchUTXOs } from '@/actions/get-utxos';
 import { useAccount } from '@/hooks/useAccount';
@@ -11,7 +12,6 @@ import { getTaprootTweakPrivateKey } from '@/lib/taproot-legacy';
 import { calculateFee } from '@/lib/util';
 import { Transaction } from '@/types';
 import { getMultiSigPubKeys } from '@/utils/sqlite';
-import axios from 'axios';
 
 export const useFtTransaction = () => {
 	const {
@@ -232,7 +232,7 @@ export const useFtTransaction = () => {
 				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const script_asm = contract.MultiSig.getMultiSigLockScript(address_from);
-				const umtxo = await contract.API.fetchUMTXO(script_asm, 'mainnet');
+				const umtxo = await contract.API.fetchUMTXO(script_asm, 0.01, 'mainnet');
 				const Token = new contract.FT(contractId);
 				const TokenInfo = await contract.API.fetchFtInfo(Token.contractTxid, 'mainnet');
 				Token.initialize(TokenInfo);
@@ -273,7 +273,6 @@ export const useFtTransaction = () => {
 				);
 				const sigs = contract.MultiSig.signMultiSigTransaction_transferFT(
 					address_from,
-					Token,
 					multiSigTxraw,
 					privateKey,
 				);
@@ -307,7 +306,6 @@ export const useFtTransaction = () => {
 
 				return contract.MultiSig.signMultiSigTransaction_transferFT(
 					multiSigAddress,
-					Token,
 					multiSigTxraw,
 					privateKey,
 				);
@@ -411,7 +409,7 @@ export const useFtTransaction = () => {
 						multi_sig_address: address_from,
 						ft_contract_id: contractId,
 						ft_decimal: ft.decimal,
-						balance: amount * Math.pow(10, ft.decimal),
+						balance: Math.floor(amount * Math.pow(10, ft.decimal)),
 						receiver_addresses: [address_to],
 						pubkey_list: pubKeys,
 						signature_data: {

@@ -36,7 +36,7 @@ export const useUtxo = () => {
 						}
 					}
 				}
-				
+
 				const scriptPubKey = tbc.Script.buildPublicKeyHashOut(address).toBuffer().toString('hex');
 				utxos.sort((a, b) => a.satoshis - b.satoshis);
 				const largeUTXO = utxos.find((utxo) => utxo.satoshis >= satoshis_amount);
