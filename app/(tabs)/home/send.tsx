@@ -17,11 +17,14 @@ import { AssetSelector } from '@/components/asset-selector';
 import { useAccount } from '@/hooks/useAccount';
 import { useFtTransaction } from '@/hooks/useFtTransaction';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
+import { useBtcTransaction } from '@/hooks/useBtcTransaction';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
-import { formatBalance, formatFee } from '@/lib/util';
+import { formatBalance, formatFee, formatFee_btc } from '@/lib/util';
 import { getActiveFTs, getFT, removeFT, transferFT, upsertFT, type FT } from '@/utils/sqlite';
 import { fetchUTXOs } from '@/actions/get-utxos';
+import { AccountType } from '@/types';
+import { theme } from '@/lib/theme';
 
 interface FormData {
 	asset: string;
@@ -52,9 +55,20 @@ export default function SendPage() {
 		getCurrentAccountBalance,
 		updateCurrentAccountUtxos,
 		getAllAccountAddresses,
+		getCurrentAccountType,
+		getAddresses,
 	} = useAccount();
 	const { sendTbc, finish_transaction } = useTbcTransaction();
 	const { sendFT } = useFtTransaction();
+	const {
+		createTransaction_taproot,
+		createTransaction_legacy,
+		getFeeRates,
+		calculateTransactionFee,
+		broadcastTransaction,
+		getUTXOsFromBlockstream,
+		selectOptimalUtxos,
+	} = useBtcTransaction();
 	const [formData, setFormData] = useState<FormData>({
 		asset: '',
 		addressTo: '',
@@ -74,6 +88,7 @@ export default function SendPage() {
 	} | null>(null);
 
 	const currentAddress = getCurrentAccountAddress();
+	const accountType = getCurrentAccountType();
 
 	useEffect(() => {
 		loadAssets();
@@ -81,24 +96,30 @@ export default function SendPage() {
 
 	const loadAssets = async () => {
 		try {
-			const tbcBalance = getCurrentAccountBalance();
-			const tokens = await getActiveFTs(currentAddress);
-
-			const assetList: Asset[] = [
-				{ label: 'TBC', value: 'TBC', balance: tbcBalance?.tbc || 0 },
-				...tokens.map((token: FT) => ({
-					label: token.name,
-					value: token.id,
-					balance: token.amount,
-					contractId: token.id,
-				})),
-			];
-			setAssets(assetList);
-
-			const tbcAsset = assetList.find((asset) => asset.value === 'TBC');
-			if (tbcAsset) {
-				setSelectedAsset(tbcAsset);
-				setFormData((prev) => ({ ...prev, asset: 'TBC' }));
+			if (accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY) {
+				const btcBalance = getCurrentAccountBalance();
+				const assetList: Asset[] = [{ label: 'BTC', value: 'BTC', balance: btcBalance?.btc || 0 }];
+				setAssets(assetList);
+				setSelectedAsset(assetList[0]);
+				setFormData((prev) => ({ ...prev, asset: 'BTC' }));
+			} else {
+				const tbcBalance = getCurrentAccountBalance();
+				const tokens = await getActiveFTs(currentAddress);
+				const assetList: Asset[] = [
+					{ label: 'TBC', value: 'TBC', balance: tbcBalance?.tbc || 0 },
+					...tokens.map((token: FT) => ({
+						label: token.name,
+						value: token.id,
+						balance: token.amount,
+						contractId: token.id,
+					})),
+				];
+				setAssets(assetList);
+				const tbcAsset = assetList.find((asset) => asset.value === 'TBC');
+				if (tbcAsset) {
+					setSelectedAsset(tbcAsset);
+					setFormData((prev) => ({ ...prev, asset: 'TBC' }));
+				}
 			}
 		} catch (error) {
 			console.error('Failed to load assets:', error);
@@ -108,10 +129,26 @@ export default function SendPage() {
 	const validateAddress = (address: string) => {
 		if (!address) return 'Address is required';
 		if (!/^[a-zA-Z0-9]+$/.test(address)) return 'Invalid address';
-		if (address.startsWith('1')) {
-			if (address.length !== 33 && address.length !== 34) return 'Invalid address';
+
+		if (accountType === AccountType.TAPROOT_LEGACY) {
+			if (!address.startsWith('1') || (address.length !== 33 && address.length !== 34)) {
+				return 'Invalid legacy address format';
+			}
+		} else if (accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY) {
+			if (
+				!(
+					(address.startsWith('1') && address.length === 34) ||
+					(address.startsWith('bc1p') && address.length === 62)
+				)
+			) {
+				return 'Invalid address format';
+			}
 		} else {
-			if (address.length !== 33) return 'Invalid address';
+			if (address.startsWith('1')) {
+				if (address.length !== 33 && address.length !== 34) return 'Invalid address';
+			} else {
+				if (address.length !== 34) return 'Invalid address';
+			}
 		}
 		return '';
 	};
@@ -209,25 +246,56 @@ export default function SendPage() {
 		setIsCalculatingFee(true);
 		try {
 			let result;
-			if (selectedAsset.value === 'TBC') {
-				result = await sendTbc(
-					currentAddress,
-					formData.addressTo,
+			if (accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY) {
+				const utxos = await getUTXOsFromBlockstream(currentAddress);
+				const feeRates = await getFeeRates();
+				const { selectedUtxos, totalInputAmount } = selectOptimalUtxos(
+					utxos,
 					Number(formData.amount),
-					formData.password,
+					feeRates.medium,
 				);
-				setEstimatedFee(result.fee);
-				setPendingTransaction(result);
+				const txHex =
+					accountType === AccountType.TAPROOT
+						? await createTransaction_taproot(
+								formData.addressTo,
+								Number(formData.amount),
+								feeRates.medium,
+								selectedUtxos,
+								totalInputAmount,
+								formData.password,
+							)
+						: await createTransaction_legacy(
+								formData.addressTo,
+								Number(formData.amount),
+								feeRates.medium,
+								selectedUtxos,
+								totalInputAmount,
+								formData.password,
+							);
+				const feeInfo = calculateTransactionFee(txHex, totalInputAmount);
+				setEstimatedFee(feeInfo.fee);
+				setPendingTransaction({ txHex, utxos: selectedUtxos });
 			} else {
-				result = await sendFT(
-					selectedAsset.contractId!,
-					currentAddress,
-					formData.addressTo,
-					Number(formData.amount),
-					formData.password,
-				);
-				setEstimatedFee(result.fee);
-				setPendingTransaction(result);
+				if (selectedAsset.value === 'TBC') {
+					result = await sendTbc(
+						currentAddress,
+						formData.addressTo,
+						Number(formData.amount),
+						formData.password,
+					);
+					setEstimatedFee(result.fee);
+					setPendingTransaction(result);
+				} else {
+					result = await sendFT(
+						selectedAsset.contractId!,
+						currentAddress,
+						formData.addressTo,
+						Number(formData.amount),
+						formData.password,
+					);
+					setEstimatedFee(result.fee);
+					setPendingTransaction(result);
+				}
 			}
 		} catch (error) {
 			if (
@@ -264,77 +332,86 @@ export default function SendPage() {
 		}
 
 		try {
-			try {
-				await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
-			} catch (error: any) {
-				if (
-					error.message.includes('missing inputs') ||
-					error.message.includes('txn-mempool-conflict')
-				) {
-					const utxos = await fetchUTXOs(currentAddress);
-					await updateCurrentAccountUtxos(utxos, currentAddress);
-					let result;
-					if (selectedAsset.value === 'TBC') {
-						result = await sendTbc(
-							currentAddress,
-							formData.addressTo,
-							Number(formData.amount),
-							formData.password,
-						);
-					} else {
-						result = await sendFT(
-							selectedAsset.contractId!,
-							currentAddress,
-							formData.addressTo,
-							Number(formData.amount),
-							formData.password,
-						);
-					}
-					await finish_transaction(result.txHex, result.utxos!);
-				} else {
-					throw new Error('Failed to broadcast transaction.');
-				}
-			}
-
-			const allAccountAddresses = getAllAccountAddresses();
-
-			if (selectedAsset.value !== 'TBC') {
-				if (formData.addressTo === currentAddress) {
-				} else if (allAccountAddresses.includes(formData.addressTo)) {
-					const receiverToken = await getFT(selectedAsset.contractId!, formData.addressTo);
-
-					if (receiverToken) {
-						await transferFT(
-							selectedAsset.contractId!,
-							Number(formData.amount),
-							formData.addressTo,
-						);
-					} else {
-						const senderToken = await getFT(selectedAsset.contractId!, currentAddress);
-						if (senderToken) {
-							await upsertFT(
-								{
-									id: selectedAsset.contractId!,
-									name: senderToken.name,
-									decimal: senderToken.decimal,
-									amount: Number(formData.amount),
-									symbol: senderToken.symbol,
-									isDeleted: false,
-								},
+			if (accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY) {
+				const txid = await broadcastTransaction(pendingTransaction.txHex);
+				console.log('txid', txid);
+			} else {
+				try {
+					await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
+				} catch (error: any) {
+					if (
+						error.message.includes('missing inputs') ||
+						error.message.includes('txn-mempool-conflict')
+					) {
+						const utxos = await fetchUTXOs(currentAddress);
+						await updateCurrentAccountUtxos(utxos, currentAddress);
+						let result;
+						if (selectedAsset.value === 'TBC') {
+							result = await sendTbc(
+								currentAddress,
 								formData.addressTo,
+								Number(formData.amount),
+								formData.password,
+							);
+						} else {
+							result = await sendFT(
+								selectedAsset.contractId!,
+								currentAddress,
+								formData.addressTo,
+								Number(formData.amount),
+								formData.password,
 							);
 						}
+						await finish_transaction(result.txHex, result.utxos!);
+					} else {
+						throw new Error('Failed to broadcast transaction.');
 					}
-					await transferFT(selectedAsset.contractId!, -Number(formData.amount), currentAddress);
-					const updatedSenderToken = await getFT(selectedAsset.contractId!, currentAddress);
-					if (updatedSenderToken && updatedSenderToken.amount <= 0) {
-						await removeFT(selectedAsset.contractId!, currentAddress);
-					}
-				} else {
-					await transferFT(selectedAsset.contractId!, -Number(formData.amount), currentAddress);
-					const updatedSenderToken = await getFT(selectedAsset.contractId!, currentAddress);
-					if (updatedSenderToken && updatedSenderToken.amount <= 0) {
-						await removeFT(selectedAsset.contractId!, currentAddress);
+				}
+
+				const allAccountAddresses = getAllAccountAddresses();
+
+				if (selectedAsset.value !== 'TBC') {
+					if (formData.addressTo === currentAddress) {
+					} else if (
+						allAccountAddresses.includes(formData.addressTo) ||
+						getAddresses().tbcAddress === formData.addressTo ||
+						getAddresses().taprootLegacyAddress === formData.addressTo
+					) {
+						const receiverToken = await getFT(selectedAsset.contractId!, formData.addressTo);
+
+						if (receiverToken) {
+							await transferFT(
+								selectedAsset.contractId!,
+								Number(formData.amount),
+								formData.addressTo,
+							);
+						} else {
+							const senderToken = await getFT(selectedAsset.contractId!, currentAddress);
+							if (senderToken) {
+								await upsertFT(
+									{
+										id: selectedAsset.contractId!,
+										name: senderToken.name,
+										decimal: senderToken.decimal,
+										amount: Number(formData.amount),
+										symbol: senderToken.symbol,
+										isDeleted: false,
+									},
+									formData.addressTo,
+								);
+							}
+						}
+						await transferFT(selectedAsset.contractId!, -Number(formData.amount), currentAddress);
+						const updatedSenderToken = await getFT(selectedAsset.contractId!, currentAddress);
+						if (updatedSenderToken && updatedSenderToken.amount <= 0) {
+							await removeFT(selectedAsset.contractId!, currentAddress);
+						}
+					} else {
+						await transferFT(selectedAsset.contractId!, -Number(formData.amount), currentAddress);
+						const updatedSenderToken = await getFT(selectedAsset.contractId!, currentAddress);
+						if (updatedSenderToken && updatedSenderToken.amount <= 0) {
+							await removeFT(selectedAsset.contractId!, currentAddress);
+						}
 					}
 				}
 			}
@@ -344,6 +421,7 @@ export default function SendPage() {
 				text1: 'Success',
 				text2: 'Transaction sent successfully',
 			});
+
 			router.back();
 		} catch (error) {
 			console.error('Transaction failed:', error);
@@ -360,13 +438,19 @@ export default function SendPage() {
 			<View style={styles.inputGroup}>
 				<View style={styles.labelRow}>
 					<Text style={styles.label}>Asset</Text>
-					<TouchableOpacity onPress={() => setShowAssetSelector(true)}>
-						<MaterialIcons name="account-balance-wallet" size={20} color="#333" />
-					</TouchableOpacity>
+					{(accountType === AccountType.TBC || accountType === AccountType.TAPROOT_LEGACY) && (
+						<TouchableOpacity onPress={() => setShowAssetSelector(true)}>
+							<MaterialIcons name="account-balance-wallet" size={24} color={theme.colors.primary} />
+						</TouchableOpacity>
+					)}
 				</View>
 				{selectedAsset && (
 					<View style={styles.selectedAssetWrapper}>
-						<TouchableOpacity onPress={() => setShowAssetSelector(true)} style={{ flex: 1 }}>
+						<TouchableOpacity
+							onPress={() => setShowAssetSelector(true)}
+							style={{ flex: 1 }}
+							disabled={accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY}
+						>
 							<Text style={styles.selectedAssetText}>
 								{selectedAsset.label}: {formatBalance(selectedAsset.balance)}
 							</Text>
@@ -459,7 +543,11 @@ export default function SendPage() {
 						<ActivityIndicator size="small" color="#666" />
 					) : (
 						estimatedFee !== null && (
-							<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
+							<Text style={styles.feeAmount}>
+								{accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY
+									? `${formatFee_btc(estimatedFee)} BTC`
+									: `${formatFee(estimatedFee)} TBC`}
+							</Text>
 						)
 					)}
 				</View>

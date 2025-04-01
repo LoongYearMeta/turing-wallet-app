@@ -21,6 +21,13 @@ export default function HomeLayout() {
 				}}
 			/>
 			<Stack.Screen
+				name="history"
+				options={{
+					headerTitle: 'Transaction History',
+					headerShown: true,
+				}}
+			/>
+			<Stack.Screen
 				name="token/token-transfer"
 				options={{
 					headerTitle: 'Transfer Token',

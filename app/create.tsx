@@ -105,7 +105,14 @@ const CreatePage = () => {
 					throw new Error('Failed to generate keys');
 				}
 
-				const { encryptedKeys, tbcAddress, pubKey, taprootAddress, taprootLegacyAddress, legacyAddress } = result;
+				const {
+					encryptedKeys,
+					tbcAddress,
+					pubKey,
+					taprootAddress,
+					taprootLegacyAddress,
+					legacyAddress,
+				} = result;
 
 				const accountsCount = getAccountsCount();
 				const newAccount: Account = {
@@ -147,8 +154,6 @@ const CreatePage = () => {
 					legacyAddress,
 				} = result;
 
-				await setPassKeyAndSalt(passKey, salt);
-
 				const accountsCount = getAccountsCount();
 				const newAccount: Account = {
 					accountName: `Wallet ${accountsCount + 1}`,
@@ -169,7 +174,7 @@ const CreatePage = () => {
 					paymentUtxos: [],
 					type: AccountType.TBC,
 				};
-
+				await setPassKeyAndSalt(passKey, salt);
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
 			}
@@ -218,8 +223,8 @@ const CreatePage = () => {
 						<View style={styles.form}>
 							{!initialHasAccount && (
 								<Text style={styles.description}>
-									Please set a password to protect your wallet. Once you forget it, you can set a new
-									one by resetting and re-importing your wallet.
+									Please set a password to protect your wallet. Once you forget it, you can set a
+									new one by resetting and re-importing your wallet.
 								</Text>
 							)}
 

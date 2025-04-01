@@ -58,36 +58,35 @@ export const BalanceCard = () => {
 				setIsLoading(true);
 				try {
 					const address = getCurrentAccountAddress();
-					if (!address) {
-						throw new Error('No address found');
-					}
+					if (!address) return;
 
 					if (displayBtc) {
 						const [balanceData, priceInfo] = await Promise.all([
-							get_BTC_AddressBalance(address),
-							getBTCPriceInfo(),
+							get_BTC_AddressBalance(address).catch(() => ({ total: balance?.btc ?? 0 })),
+							getBTCPriceInfo().catch(() => ({ 
+								currentPrice: rate,
+								priceChangePercent24h: changePercent
+							}))
 						]);
 
 						await updateCurrentAccountBtcBalance(balanceData.total);
 						setRate(priceInfo.currentPrice);
 						setChangePercent(priceInfo.priceChangePercent24h);
 					} else {
-						const [balanceData, { rate, changePercent }] = await Promise.all([
-							getTbcBalance(address),
-							getExchangeRate(),
+						const [balanceData, rateData] = await Promise.all([
+							getTbcBalance(address).catch(() => balance?.tbc ?? 0),
+							getExchangeRate().catch(() => ({ 
+								rate: rate,
+								changePercent: changePercent
+							}))
 						]);
 
 						await updateCurrentAccountTbcBalance(balanceData);
-						setRate(rate);
-						setChangePercent(changePercent);
+						setRate(rateData.rate);
+						setChangePercent(rateData.changePercent);
 					}
 				} catch (error) {
 					console.error('Failed to fetch balance data:', error);
-					Toast.show({
-						type: 'error',
-						text1: 'Error',
-						text2: error instanceof Error ? error.message : 'Failed to fetch data',
-					});
 				} finally {
 					setIsLoading(false);
 				}

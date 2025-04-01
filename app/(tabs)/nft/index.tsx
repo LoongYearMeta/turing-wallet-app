@@ -117,14 +117,11 @@ const CollectionsTab = () => {
 		}, [loadCollections]),
 	);
 
-	// 添加对账户类型变化的监听
 	useEffect(() => {
 		if (disableCollection) {
-			// 如果是禁用类型的账户，清空合集数据
 			setCollections([]);
 			setLoading(false);
 		} else {
-			// 如果是允许的账户类型，重新加载数据
 			loadCollections();
 		}
 	}, [disableCollection, loadCollections]);

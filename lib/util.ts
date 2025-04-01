@@ -46,3 +46,8 @@ export const formatPubKey = (pubKey: string): string => {
 export const formatDate = (timestamp: number) => {
 	return new Date(timestamp * 1000).toLocaleString();
 };
+
+export function selectAddress(addresses: string[]): string {
+	const multiSigAddress = addresses.find((addr) => addr.length === 34 && !addr.startsWith('1'));
+	return multiSigAddress || addresses[0] || '';
+}

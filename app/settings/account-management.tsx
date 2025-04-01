@@ -41,7 +41,18 @@ export default function AccountManagementPage() {
 				const nextAccount =
 					accountAddresses[currentIndex + 1] || accountAddresses[currentIndex - 1];
 
-				await deleteAccountData(deleteAddress);
+				const accountToDelete = accounts[deleteAddress];
+				const addressesToDelete = [
+					accountToDelete.addresses.tbcAddress,
+					accountToDelete.addresses.taprootAddress,
+					accountToDelete.addresses.taprootLegacyAddress,
+					accountToDelete.addresses.legacyAddress,
+				].filter(Boolean); 
+
+				for (const addr of addressesToDelete) {
+					await deleteAccountData(addr);
+				}
+
 				await removeAccount(deleteAddress);
 
 				if (nextAccount) {
@@ -52,7 +63,18 @@ export default function AccountManagementPage() {
 					router.replace('/');
 				}
 			} else {
-				await deleteAccountData(deleteAddress);
+				const accountToDelete = accounts[deleteAddress];
+				const addressesToDelete = [
+					accountToDelete.addresses.tbcAddress,
+					accountToDelete.addresses.taprootAddress,
+					accountToDelete.addresses.taprootLegacyAddress,
+					accountToDelete.addresses.legacyAddress,
+				].filter(Boolean);
+
+				for (const addr of addressesToDelete) {
+					await deleteAccountData(addr);
+				}
+
 				await removeAccount(deleteAddress);
 			}
 		} catch (error) {

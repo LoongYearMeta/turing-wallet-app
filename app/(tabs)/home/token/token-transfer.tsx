@@ -41,6 +41,7 @@ const TokenTransferPage = () => {
 		getPassKey,
 		getAllAccountAddresses,
 		updateCurrentAccountUtxos,
+		getAddresses,
 	} = useAccount();
 	const { finish_transaction } = useTbcTransaction();
 	const { sendFT } = useFtTransaction();
@@ -82,7 +83,7 @@ const TokenTransferPage = () => {
 				return 'Invalid address';
 			}
 		} else {
-			if (address.length !== 33) {
+			if (address.length !== 34) {
 				return 'Invalid address';
 			}
 		}
@@ -279,7 +280,11 @@ const TokenTransferPage = () => {
 			const allAccountAddresses = getAllAccountAddresses();
 
 			if (formData.addressTo === currentAddress) {
-			} else if (allAccountAddresses.includes(formData.addressTo)) {
+			} else if (
+				allAccountAddresses.includes(formData.addressTo) ||
+				getAddresses().tbcAddress === formData.addressTo ||
+				getAddresses().taprootLegacyAddress === formData.addressTo
+			) {
 				const receiverToken = await getFT(contractId, formData.addressTo);
 
 				if (receiverToken) {

@@ -101,7 +101,14 @@ const RestoreByPriKeyPage = () => {
 					throw new Error('Invalid private key');
 				}
 
-				const { encryptedKeys, tbcAddress, pubKey, taprootAddress, taprootLegacyAddress, legacyAddress } = result;
+				const {
+					encryptedKeys,
+					tbcAddress,
+					pubKey,
+					taprootAddress,
+					taprootLegacyAddress,
+					legacyAddress,
+				} = result;
 
 				const accountsCount = getAccountsCount();
 				const newAccount: Account = {
@@ -145,8 +152,6 @@ const RestoreByPriKeyPage = () => {
 					legacyAddress,
 				} = result;
 
-				await setPassKeyAndSalt(passKey, salt);
-
 				const accountsCount = getAccountsCount();
 				const newAccount: Account = {
 					accountName: `Wallet ${accountsCount + 1}`,
@@ -170,6 +175,7 @@ const RestoreByPriKeyPage = () => {
 
 				await initializeWalletData(tbcAddress);
 				await initializeWalletData(taprootLegacyAddress);
+				await setPassKeyAndSalt(passKey, salt);
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
 			}

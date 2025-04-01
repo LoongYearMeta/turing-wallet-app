@@ -16,7 +16,7 @@ import { Navbar } from '@/components/ui/navbar';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { useAccount } from '@/hooks/useAccount';
 import { hp } from '@/lib/common';
-import {
+import { 
 	getActiveFTs,
 	getAllFTPublics,
 	removeFTPublic,
@@ -52,6 +52,16 @@ export default function HomePage() {
 			}
 		}
 	}, [disableTokens, activeTab]);
+
+	useFocusEffect(
+		useCallback(() => {
+			if (activeTab === 'owned') {
+				loadOwnedTokens();
+			} else {
+				loadAddedTokens();
+			}
+		}, [activeTab])
+	);
 
 	const loadOwnedTokens = async () => {
 		try {

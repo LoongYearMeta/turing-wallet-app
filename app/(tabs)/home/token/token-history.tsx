@@ -6,7 +6,7 @@ import { Menu, MenuItem } from 'react-native-material-menu';
 import Toast from 'react-native-toast-message';
 
 import { syncFTHistory } from '@/actions/get-ft-history';
-import { HistoryCard } from '@/components/token-cards/history-card';
+import { HistoryCard } from '@/components/token-cards/token-history-card';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';

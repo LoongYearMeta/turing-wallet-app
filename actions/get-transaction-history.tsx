@@ -6,6 +6,7 @@ import {
 	getTransactionHistoryCount,
 	updateTransactionHistory,
 } from '@/utils/sqlite';
+import { selectAddress } from '@/lib/util';
 
 interface TransactionHistoryResponse {
 	address: string;
@@ -54,17 +55,21 @@ export async function initTransactionHistory(address: string): Promise<void> {
 			const response = await fetchTransactionHistory(address, page);
 
 			for (const tx of response.result) {
+				const [sendAddress, receiveAddress] =
+					tx.tx_type === 'P2MS'
+						? [selectAddress(tx.sender_addresses), selectAddress(tx.recipient_addresses)]
+						: [tx.sender_addresses[0] || '', tx.recipient_addresses[0] || ''];
+
 				const history = {
 					id: tx.tx_hash,
-					send_address: tx.sender_addresses[0] || '',
-					receive_address: tx.recipient_addresses[0] || '',
+					send_address: sendAddress,
+					receive_address: receiveAddress,
 					fee: parseFloat(tx.fee),
 					timestamp: tx.time_stamp,
 					type: tx.tx_type,
 					balance_change: parseFloat(tx.balance_change),
 				};
-
-				await addTransactionHistory(history, address);
+				await addTransactionHistory(history, address, 'tbc');
 			}
 		}
 	} catch (error) {
@@ -75,8 +80,7 @@ export async function initTransactionHistory(address: string): Promise<void> {
 export async function syncTransactionHistory(address: string): Promise<void> {
 	try {
 		const { totalCount } = await getTransactionHistoryInfo(address);
-		const dbCount = await getTransactionHistoryCount(address);
-
+		const dbCount = await getTransactionHistoryCount(address, 'tbc');
 		if (dbCount === totalCount) {
 			return;
 		}
@@ -85,10 +89,8 @@ export async function syncTransactionHistory(address: string): Promise<void> {
 		while (true) {
 			const response = await fetchTransactionHistory(address, page);
 			let foundExistingWithSameTimestamp = false;
-
 			for (const tx of response.result) {
 				const existingTx = await getTransactionHistoryById(tx.tx_hash);
-
 				if (existingTx && existingTx.timestamp && existingTx.timestamp === tx.time_stamp) {
 					foundExistingWithSameTimestamp = true;
 					break;
@@ -102,17 +104,21 @@ export async function syncTransactionHistory(address: string): Promise<void> {
 					continue;
 				}
 
+				const [sendAddress, receiveAddress] =
+					tx.tx_type === 'P2MS'
+						? [selectAddress(tx.sender_addresses), selectAddress(tx.recipient_addresses)]
+						: [tx.sender_addresses[0] || '', tx.recipient_addresses[0] || ''];
+
 				const history = {
 					id: tx.tx_hash,
-					send_address: tx.sender_addresses[0] || '',
-					receive_address: tx.recipient_addresses[0] || '',
+					send_address: sendAddress,
+					receive_address: receiveAddress,
 					fee: parseFloat(tx.fee),
 					timestamp: tx.time_stamp || currentTimestamp,
 					type: tx.tx_type,
 					balance_change: parseFloat(tx.balance_change),
 				};
-
-				await addTransactionHistory(history, address);
+				await addTransactionHistory(history, address, 'tbc');
 			}
 
 			if (foundExistingWithSameTimestamp || response.result.length < 10) {

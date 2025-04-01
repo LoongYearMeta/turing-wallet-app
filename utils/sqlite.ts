@@ -120,7 +120,8 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				timestamp INTEGER,
 				type TEXT,
 				balance_change REAL,
-				user_address TEXT
+				user_address TEXT,
+				account_type TEXT
 			);
 			CREATE TABLE IF NOT EXISTS NFT_History (
 				id TEXT PRIMARY KEY,
@@ -398,12 +399,21 @@ export async function softDeleteFT(id: string, userAddress: string): Promise<voi
 export async function addTransactionHistory(
 	history: TransactionHistory,
 	userAddress: string,
+	accountType: 'tbc' | 'taproot' | 'legacy',
 ): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
 		`INSERT OR REPLACE INTO TransactionHistory (
-			id, send_address, receive_address, fee, timestamp, type, balance_change, user_address
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+			id,
+			send_address,
+			receive_address,
+			fee,
+			timestamp,
+			type,
+			balance_change,
+			user_address,
+			account_type
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		[
 			history.id,
 			history.send_address,
@@ -413,6 +423,7 @@ export async function addTransactionHistory(
 			history.type,
 			history.balance_change,
 			userAddress,
+			accountType,
 		],
 	);
 }
@@ -420,11 +431,12 @@ export async function addTransactionHistory(
 export async function getTransactionHistoryByType(
 	type: string,
 	userAddress: string,
+	accountType: 'tbc' | 'taproot' | 'taproot_legacy' | 'legacy',
 ): Promise<TransactionHistory[]> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getAllAsync(
-		'SELECT * FROM TransactionHistory WHERE type = ? AND user_address = ? ORDER BY timestamp DESC',
-		[type, userAddress],
+		'SELECT * FROM TransactionHistory WHERE type = ? AND user_address = ? AND account_type = ? ORDER BY timestamp DESC',
+		[type, userAddress, accountType],
 	);
 }
 
@@ -554,12 +566,15 @@ export async function getMultiSigPubKeys(multiSigAddress: string): Promise<strin
 	}
 }
 
-export async function getTransactionHistoryCount(userAddress: string): Promise<number> {
+export async function getTransactionHistoryCount(
+	userAddress: string,
+	accountType: 'tbc' | 'taproot' | 'taproot_legacy' | 'legacy',
+): Promise<number> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	try {
 		const result = await db.getAllAsync<{ count: number }>(
-			'SELECT COUNT(*) as count FROM TransactionHistory WHERE user_address = ?',
-			[userAddress],
+			'SELECT COUNT(*) as count FROM TransactionHistory WHERE user_address = ? AND account_type = ?',
+			[userAddress, accountType],
 		);
 		if (result && result.length > 0) {
 			return result[0].count;
@@ -674,15 +689,27 @@ export async function getAllFTPublics(): Promise<FTPublic[]> {
 
 export async function deleteAccountData(address: string): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	await db.execAsync(`
-		DELETE FROM TransactionHistory WHERE user_address = '${address}';
-		DELETE FROM NFT_History WHERE contract_id IN (SELECT id FROM NFT WHERE user_address = '${address}');
-		DELETE FROM FT_History WHERE contract_id IN (SELECT id FROM FT WHERE user_address = '${address}');
-		DELETE FROM NFT WHERE user_address = '${address}';
-		DELETE FROM FT WHERE user_address = '${address}';
-		DELETE FROM Collection WHERE user_address = '${address}';
-		DELETE FROM MultiSig WHERE user_address = '${address}';
-	`);
+	await db.runAsync(`DELETE FROM TransactionHistory WHERE user_address = ?`, [address]);
+
+	await db.runAsync(
+		`DELETE FROM NFT_History 
+		 WHERE contract_id IN (SELECT id FROM NFT WHERE user_address = ?)`,
+		[address],
+	);
+
+	await db.runAsync(
+		`DELETE FROM FT_History 
+		 WHERE contract_id IN (SELECT id FROM FT WHERE user_address = ?)`,
+		[address],
+	);
+
+	await db.runAsync(`DELETE FROM NFT WHERE user_address = ?`, [address]);
+
+	await db.runAsync(`DELETE FROM FT WHERE user_address = ?`, [address]);
+
+	await db.runAsync(`DELETE FROM Collection WHERE user_address = ?`, [address]);
+
+	await db.runAsync(`DELETE FROM MultiSig WHERE user_address = ?`, [address]);
 }
 
 export async function getAllMultiSigAddresses(userAddress: string): Promise<string[]> {
@@ -754,7 +781,7 @@ export async function updateFTHistory(history: FTHistory): Promise<void> {
 export async function updateTransactionHistory(history: TransactionHistory): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
-		`UPDATE transaction_history SET 
+		`UPDATE TransactionHistory SET 
 		 send_address = ?, 
 		 receive_address = ?, 
 		 fee = ?, 

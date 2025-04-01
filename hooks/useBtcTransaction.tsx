@@ -72,9 +72,10 @@ export const useBtcTransaction = () => {
 	const selectOptimalUtxos = useCallback(
 		(
 			utxos: UTXO[],
-			amountSatoshis: number,
+			amount_btc: number,
 			feeRateSatoshisPerByte: number,
 		): { selectedUtxos: UTXO[]; totalInputAmount: number } => {
+			const amountSatoshis = Math.floor(amount_btc * Math.pow(10, 8));
 			const sortedUtxos = [...utxos].sort((a, b) => b.value - a.value);
 			const singleLargeUtxo = sortedUtxos.find((utxo) => {
 				const estimatedSize = 1 * 180 + 2 * 34 + 10;
@@ -115,9 +116,10 @@ export const useBtcTransaction = () => {
 	const createTransaction_taproot = useCallback(
 		async (
 			recipientAddress: string,
-			amountSatoshis: number,
+			amount_btc: number,
 			feeRateSatoshisPerByte: number,
 			utxos: UTXO[],
+			totalInputAmount: number,
 			password: string,
 		): Promise<string> => {
 			const network = bitcoin.networks.bitcoin;
@@ -130,15 +132,11 @@ export const useBtcTransaction = () => {
 			const { walletWif } = retrieveKeys(password, encryptedKeys);
 			const keyPair = createFromWIF(walletWif);
 
-			const { selectedUtxos, totalInputAmount } = selectOptimalUtxos(
-				utxos,
-				amountSatoshis,
-				feeRateSatoshisPerByte,
-			);
+			const amountSatoshis = Math.floor(amount_btc * Math.pow(10, 8));
 
 			const psbt = new bitcoin.Psbt({ network });
 
-			for (const utxo of selectedUtxos) {
+			for (const utxo of utxos) {
 				try {
 					psbt.addInput({
 						hash: utxo.txid,
@@ -155,7 +153,7 @@ export const useBtcTransaction = () => {
 				value: amountSatoshis,
 			});
 
-			const estimatedSize = selectedUtxos.length * 180 + 2 * 34 + 10;
+			const estimatedSize = utxos.length * 180 + 2 * 34 + 10;
 			let estimatedFee = Math.ceil(estimatedSize * feeRateSatoshisPerByte);
 
 			const maxFeeRatio = 0.5;
@@ -187,7 +185,92 @@ export const useBtcTransaction = () => {
 				});
 			}
 
-			for (let i = 0; i < selectedUtxos.length; i++) {
+			for (let i = 0; i < utxos.length; i++) {
+				psbt.signInput(i, keyPair);
+			}
+
+			psbt.finalizeAllInputs();
+
+			const tx = psbt.extractTransaction();
+
+			return tx.toHex();
+		},
+		[getTxHexBuffer, selectOptimalUtxos],
+	);
+
+	const createTransaction_legacy = useCallback(
+		async (
+			recipientAddress: string,
+			amount_btc: number,
+			feeRateSatoshisPerByte: number,
+			utxos: UTXO[],
+			totalInputAmount: number,
+			password: string,
+		): Promise<string> => {
+			const network = bitcoin.networks.bitcoin;
+			const encryptedKeys = useAccount.getState().getEncryptedKeys();
+
+			if (!encryptedKeys) {
+				throw new Error('No keys found');
+			}
+
+			const { walletWif } = retrieveKeys(password, encryptedKeys);
+			const keyPair = createFromWIF(walletWif);
+
+			const amountSatoshis = Math.floor(amount_btc * Math.pow(10, 8));
+
+			const psbt = new bitcoin.Psbt({ network });
+
+			for (const utxo of utxos) {
+				try {
+					psbt.addInput({
+						hash: utxo.txid,
+						index: utxo.vout,
+						nonWitnessUtxo: await getTxHexBuffer(utxo.txid),
+					});
+				} catch (error: any) {
+					throw new Error(`${error.message}`);
+				}
+			}
+
+			psbt.addOutput({
+				address: recipientAddress,
+				value: amountSatoshis,
+			});
+
+			const estimatedSize = utxos.length * 180 + 2 * 34 + 10;
+			let estimatedFee = Math.ceil(estimatedSize * feeRateSatoshisPerByte);
+
+			const maxFeeRatio = 0.5;
+			let actualFeeRate = feeRateSatoshisPerByte;
+
+			if (estimatedFee > amountSatoshis * maxFeeRatio) {
+				actualFeeRate = Math.max(1, Math.floor(feeRateSatoshisPerByte / 2));
+
+				const newEstimatedFee = Math.ceil(estimatedSize * actualFeeRate);
+
+				estimatedFee = newEstimatedFee;
+			}
+
+			const changeAmount = totalInputAmount - amountSatoshis - estimatedFee;
+
+			if (changeAmount < 0) {
+				throw new Error(`Insufficient funds`);
+			}
+
+			if (changeAmount > 546) {
+				const changeAddress = bitcoin.payments.p2pkh({
+					pubkey: keyPair.publicKey,
+					network,
+				}).address!;
+
+				psbt.addOutput({
+					address: changeAddress,
+					value: changeAmount,
+				});
+			}
+
+			for (let i = 0; i < utxos.length; i++) {
 				psbt.signInput(i, keyPair);
 			}
 
@@ -248,5 +331,7 @@ export const useBtcTransaction = () => {
 		createTransaction_taproot,
 		calculateTransactionFee,
 		broadcastTransaction,
+		createTransaction_legacy,
+		selectOptimalUtxos,
 	};
 };

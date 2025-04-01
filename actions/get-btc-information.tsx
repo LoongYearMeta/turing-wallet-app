@@ -31,7 +31,7 @@ export async function get_BTC_AddressBalance(address: string): Promise<{
 	}
 }
 
-export async function get_BTC_TransactionHistory(
+async function get_BTC_TransactionHistory(
 	address: string,
 	limit: number = 30,
 ): Promise<
@@ -132,29 +132,7 @@ export async function getBTCPriceInfo(): Promise<{
 	}
 }
 
-export async function init_BTC_TransactionHistory(address: string): Promise<void> {
-	try {
-		const transactions = await get_BTC_TransactionHistory(address);
-
-		for (const tx of transactions) {
-			const history = {
-				id: tx.txid,
-				send_address: tx.senders[0],
-				receive_address: tx.recipients[0],
-				fee: tx.fee * Math.pow(10, -8),
-				timestamp: tx.timestamp || Math.floor(Date.now() / 1000),
-				type: 'P2TR',
-				balance_change: tx.amount * Math.pow(10, -8),
-			};
-
-			await addTransactionHistory(history, address);
-		}
-	} catch (error) {
-		throw new Error('Failed to initialize BTC transaction history');
-	}
-}
-
-export async function sync_BTC_TransactionHistory(address: string): Promise<void> {
+export async function sync_Taproot_TransactionHistory(address: string): Promise<void> {
 	try {
 		const transactions = await get_BTC_TransactionHistory(address);
 		const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -184,7 +162,44 @@ export async function sync_BTC_TransactionHistory(address: string): Promise<void
 				balance_change: tx.amount * Math.pow(10, -8),
 			};
 
-			await addTransactionHistory(history, address);
+			await addTransactionHistory(history, address, 'taproot');
+		}
+	} catch (error) {
+		throw new Error('Failed to sync BTC transaction history');
+	}
+}
+
+export async function sync_Legacy_TransactionHistory(address: string): Promise<void> {
+	try {
+		const transactions = await get_BTC_TransactionHistory(address);
+		const currentTimestamp = Math.floor(Date.now() / 1000);
+
+		for (const tx of transactions) {
+			const existingTx = await getTransactionHistoryById(tx.txid);
+
+			if (existingTx && existingTx.timestamp === tx.timestamp) {
+				break;
+			}
+
+			if (existingTx) {
+				await updateTransactionHistory({
+					...existingTx,
+					timestamp: tx.timestamp || currentTimestamp,
+				});
+				continue;
+			}
+
+			const history = {
+				id: tx.txid,
+				send_address: tx.senders[0],
+				receive_address: tx.recipients[0],
+				fee: tx.fee * Math.pow(10, -8),
+				timestamp: tx.timestamp || currentTimestamp,
+				type: 'P2PKH',
+				balance_change: tx.amount * Math.pow(10, -8),
+			};
+
+			await addTransactionHistory(history, address, 'legacy');
 		}
 	} catch (error) {
 		throw new Error('Failed to sync BTC transaction history');

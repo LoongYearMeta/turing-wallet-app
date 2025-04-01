@@ -23,7 +23,6 @@ import { generateKeysEncrypted_byMnemonic, verifyPassword, verifyMnemonic } from
 import { theme } from '@/lib/theme';
 import { Account, AccountType } from '@/types';
 import { initializeWalletData } from '@/lib/init';
-import { fetchUTXOs } from '@/actions/get-utxos';
 import { MnemonicInput } from '@/components/ui/mnemonic-input';
 
 enum Tag {
@@ -196,8 +195,6 @@ const RestorePage = () => {
 					legacyAddress,
 				} = result;
 
-				await setPassKeyAndSalt(passKey, salt);
-
 				const accountsCount = getAccountsCount();
 				const newAccount: Account = {
 					accountName: `Wallet ${accountsCount + 1}`,
@@ -220,6 +217,7 @@ const RestorePage = () => {
 				};
 				await initializeWalletData(tbcAddress);
 				await initializeWalletData(taprootLegacyAddress);
+				await setPassKeyAndSalt(passKey, salt);
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
 			}
