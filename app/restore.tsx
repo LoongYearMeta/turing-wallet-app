@@ -19,9 +19,12 @@ import { Input } from '@/components/ui/input';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
-import { generateKeysEncrypted_byMnemonic, verifyPassword } from '@/lib/key';
+import { generateKeysEncrypted_byMnemonic, verifyPassword, verifyMnemonic } from '@/lib/key';
 import { theme } from '@/lib/theme';
 import { Account, AccountType } from '@/types';
+import { initializeWalletData } from '@/lib/init';
+import { fetchUTXOs } from '@/actions/get-utxos';
+import { MnemonicInput } from '@/components/ui/mnemonic-input';
 
 enum Tag {
 	Turing = 'turing',
@@ -31,7 +34,7 @@ enum Tag {
 }
 
 const RestorePage = () => {
-	const { getPassKey, getSalt } = useAccount();
+	const { getPassKey, getSalt, updateCurrentAccountUtxos } = useAccount();
 	const passKey = getPassKey();
 	const salt = getSalt();
 	const hasExistingAccount = passKey && salt;
@@ -95,16 +98,37 @@ const RestorePage = () => {
 			}
 			setPassword(confirmPassword);
 		} else {
-			if (!mnemonic || !password || !confirmPassword) {
-				showToast('error', 'Please fill in all fields');
+			if (!mnemonic.trim()) {
+				showToast('error', 'Please enter your mnemonic phrase');
 				setIsSubmitting(false);
 				return;
 			}
+
+			const mnemonicWords = mnemonic.trim().split(/\s+/);
+			if (mnemonicWords.length !== 12) {
+				showToast('error', 'Mnemonic phrase must be exactly 12 words');
+				setIsSubmitting(false);
+				return;
+			}
+
+			if (!verifyMnemonic(mnemonic.trim())) {
+				showToast('error', 'Invalid mnemonic phrase');
+				setIsSubmitting(false);
+				return;
+			}
+
+			if (!password || !confirmPassword) {
+				showToast('error', 'Please fill in all password fields');
+				setIsSubmitting(false);
+				return;
+			}
+
 			if (!validatePassword(password)) {
 				showToast('error', 'Password must be 6-15 characters and contain only letters and numbers');
 				setIsSubmitting(false);
 				return;
 			}
+
 			if (password !== confirmPassword) {
 				showToast('error', 'Passwords do not match');
 				setIsSubmitting(false);
@@ -121,7 +145,14 @@ const RestorePage = () => {
 					throw new Error('Failed to generate keys');
 				}
 
-				const { encryptedKeys, tbcAddress, pubKey, taprootAddress, taprootLegacyAddress } = result;
+				const {
+					encryptedKeys,
+					tbcAddress,
+					pubKey,
+					taprootAddress,
+					taprootLegacyAddress,
+					legacyAddress,
+				} = result;
 
 				const accountsCount = getAccountsCount();
 				const newAccount: Account = {
@@ -130,6 +161,7 @@ const RestorePage = () => {
 						tbcAddress,
 						taprootAddress,
 						taprootLegacyAddress,
+						legacyAddress,
 					},
 					encryptedKeys,
 					balance: {
@@ -143,6 +175,8 @@ const RestorePage = () => {
 					type: AccountType.TBC,
 				};
 
+				await initializeWalletData(tbcAddress);
+				await initializeWalletData(taprootLegacyAddress);
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
 			} else {
@@ -159,6 +193,7 @@ const RestorePage = () => {
 					pubKey,
 					taprootAddress,
 					taprootLegacyAddress,
+					legacyAddress,
 				} = result;
 
 				await setPassKeyAndSalt(passKey, salt);
@@ -170,6 +205,7 @@ const RestorePage = () => {
 						tbcAddress,
 						taprootAddress,
 						taprootLegacyAddress,
+						legacyAddress,
 					},
 					encryptedKeys,
 					balance: {
@@ -182,12 +218,14 @@ const RestorePage = () => {
 					paymentUtxos: [],
 					type: AccountType.TBC,
 				};
-
+				await initializeWalletData(tbcAddress);
+				await initializeWalletData(taprootLegacyAddress);
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
 			}
 
-			router.replace('/');
+			router.replace('/(tabs)/home');
+			showToast('success', 'Wallet restored successfully!');
 		} catch (error: any) {
 			showToast('error', error.message);
 		} finally {
@@ -204,47 +242,68 @@ const RestorePage = () => {
 		loading && styles.buttonLoading,
 	];
 
+	const handleClearAll = () => {
+		setMnemonic('');
+	};
+
 	return (
 		<ScreenWrapper bg={'white'}>
 			<StatusBar style="auto" />
-			<View style={styles.container}>
-				<ScrollView style={styles.content}>
-					<Text style={styles.welcomeText}>Restore Wallet</Text>
-					<View style={styles.form}>
-						{!hasExistingAccount && (
+			{loading ? (
+				<View style={styles.loadingContent}>
+					<ActivityIndicator size="large" color={theme.colors.primary} />
+					<Text style={styles.loadingText}>
+						Restoring your data from blockchain, please wait...
+					</Text>
+				</View>
+			) : (
+				<ScrollView
+					style={styles.content}
+					showsVerticalScrollIndicator={false}
+					contentContainerStyle={styles.contentContainer}
+					bounces={true}
+				>
+					<View style={styles.container}>
+						<View>
+							<Text style={styles.welcomeText}>Restore Wallet</Text>
+						</View>
+						<View style={styles.form}>
 							<Text style={styles.description}>
-								Please enter your mnemonic phrase and set a password to restore your wallet.
+								Please enter your mnemonic phrase to restore your wallet.
 							</Text>
-						)}
 
-						{!hasExistingAccount && (
-							<>
-								<View style={styles.inputGroup}>
+							<View style={styles.inputGroup}>
+								<View style={styles.labelContainer}>
 									<Text style={styles.label}>Mnemonic Phrase</Text>
-									<Input
-										icon={<MaterialIcons name="vpn-key" size={26} color={theme.colors.text} />}
-										placeholder="Enter your mnemonic phrase"
-										value={mnemonic}
-										onChangeText={setMnemonic}
-										editable={!isButtonDisabled}
-										multiline
-									/>
+									{mnemonic && (
+										<TouchableOpacity onPress={handleClearAll} disabled={isButtonDisabled}>
+											<MaterialIcons name="close" size={20} color={theme.colors.text} />
+										</TouchableOpacity>
+									)}
 								</View>
+								<MnemonicInput
+									value={mnemonic}
+									onChangeText={setMnemonic}
+									editable={!isButtonDisabled}
+									onClearAll={handleClearAll}
+								/>
+							</View>
 
-								<View style={styles.inputGroup}>
-									<Text style={styles.label}>Wallet Type</Text>
-									<Pressable
-										style={styles.pickerButton}
-										onPress={() => setPickerVisible(true)}
-										disabled={isButtonDisabled}
-									>
-										<Text style={styles.pickerButtonText}>
-											{walletTypes.find((type) => type.value === selectedTag)?.label}
-										</Text>
-										<MaterialIcons name="arrow-drop-down" size={24} color={theme.colors.text} />
-									</Pressable>
-								</View>
+							<View style={styles.inputGroup}>
+								<Text style={styles.label}>Derivation Path</Text>
+								<Pressable
+									style={styles.pickerButton}
+									onPress={() => setPickerVisible(true)}
+									disabled={isButtonDisabled}
+								>
+									<Text style={styles.pickerButtonText}>
+										{walletTypes.find((type) => type.value === selectedTag)?.label}
+									</Text>
+									<MaterialIcons name="arrow-drop-down" size={24} color={theme.colors.text} />
+								</Pressable>
+							</View>
 
+							{!hasExistingAccount && (
 								<View style={styles.inputGroup}>
 									<Text style={styles.label}>Password</Text>
 									<Input
@@ -256,44 +315,33 @@ const RestorePage = () => {
 										editable={!isButtonDisabled}
 									/>
 								</View>
-							</>
-						)}
+							)}
 
-						<View style={styles.inputGroup}>
-							<Text style={styles.label}>
-								{hasExistingAccount ? 'Password' : 'Confirm Password'}
-							</Text>
-							<Input
-								icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
-								secureTextEntry
-								placeholder={hasExistingAccount ? 'Enter your password' : 'Confirm your password'}
-								value={confirmPassword}
-								onChangeText={setConfirmPassword}
-								editable={!isButtonDisabled}
-							/>
+							<View style={styles.inputGroup}>
+								<Text style={styles.label}>Confirm Password</Text>
+								<Input
+									icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
+									secureTextEntry
+									placeholder={hasExistingAccount ? 'Enter your password' : 'Confirm your password'}
+									value={confirmPassword}
+									onChangeText={setConfirmPassword}
+									editable={!isButtonDisabled}
+								/>
+							</View>
 						</View>
+
+						<TouchableOpacity
+							style={buttonStyle}
+							onPress={onSubmit}
+							disabled={isButtonDisabled}
+							activeOpacity={0.5}
+							pressRetentionOffset={{ top: 10, left: 10, bottom: 10, right: 10 }}
+						>
+							<Text style={styles.buttonText}>Restore wallet</Text>
+						</TouchableOpacity>
 					</View>
 				</ScrollView>
-
-				<View style={styles.bottomContainer}>
-					<TouchableOpacity
-						style={buttonStyle}
-						onPress={onSubmit}
-						disabled={isButtonDisabled}
-						activeOpacity={0.5}
-						pressRetentionOffset={{ top: 10, left: 10, bottom: 10, right: 10 }}
-					>
-						{loading ? (
-							<View style={styles.loadingContainer}>
-								<ActivityIndicator color="white" size="small" />
-								<Text style={styles.buttonText}>Restoring wallet...</Text>
-							</View>
-						) : (
-							<Text style={styles.buttonText}>Restore wallet</Text>
-						)}
-					</TouchableOpacity>
-				</View>
-			</View>
+			)}
 
 			<Modal
 				visible={isPickerVisible}
@@ -330,29 +378,30 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		paddingHorizontal: wp(5),
-		justifyContent: 'space-between',
 	},
 	content: {
 		flex: 1,
+	},
+	contentContainer: {
+		paddingTop: hp(4),
 	},
 	welcomeText: {
 		fontSize: hp(2.8),
 		fontWeight: '700',
 		color: theme.colors.text,
-		marginTop: hp(4),
 		marginBottom: hp(2),
 	},
 	form: {
-		gap: 25,
+		gap: hp(2),
 	},
 	description: {
 		fontSize: hp(1.5),
 		color: theme.colors.text,
-		marginBottom: hp(2),
+		marginBottom: hp(0.3),
 	},
 	inputGroup: {
-		gap: hp(1),
-		marginBottom: hp(2),
+		gap: hp(0.5),
+		marginBottom: hp(1),
 	},
 	label: {
 		fontSize: hp(1.6),
@@ -376,8 +425,9 @@ const styles = StyleSheet.create({
 		color: theme.colors.text,
 	},
 	bottomContainer: {
-		gap: hp(3),
-		marginBottom: hp(4),
+		paddingHorizontal: wp(2),
+		paddingBottom: hp(4),
+		backgroundColor: 'white',
 	},
 	disabledButton: {
 		opacity: 0.7,
@@ -390,6 +440,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		borderRadius: theme.radius.xl,
 		borderCurve: 'continuous',
+		marginTop: hp(3),
 	},
 	buttonSubmitting: {
 		backgroundColor: '#999',
@@ -430,6 +481,36 @@ const styles = StyleSheet.create({
 	selectedOption: {
 		color: theme.colors.primary,
 		fontWeight: '600',
+	},
+	mnemonicInput: {
+		height: hp(12),
+		paddingTop: 12,
+		textAlignVertical: 'top',
+	},
+	mnemonicInputContainer: {
+		height: hp(12),
+		alignItems: 'flex-start',
+		paddingVertical: 12,
+	},
+	labelContainer: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		marginLeft: wp(2),
+		marginRight: wp(2),
+	},
+	loadingContent: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+		gap: hp(3),
+		marginTop: hp(10),
+	},
+	loadingText: {
+		fontSize: hp(1.8),
+		color: theme.colors.text,
+		textAlign: 'center',
+		marginHorizontal: wp(10),
 	},
 });
 

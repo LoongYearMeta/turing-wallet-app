@@ -119,18 +119,14 @@ export default function RootLayout() {
 
 	useEffect(() => {
 		const timeout = setTimeout(() => {
-			console.log('Timeout reached, forcing splash screen hide');
-			SplashScreen.hideAsync().catch(err => 
-				console.error('Error hiding splash screen after timeout:', err)
+			SplashScreen.hideAsync().catch((err) =>
+				console.error('Error hiding splash screen after timeout:', err),
 			);
 		}, 3000);
 
 		if (fontsLoaded) {
-			console.log('Fonts loaded, hiding splash screen');
 			clearTimeout(timeout);
-			SplashScreen.hideAsync().catch(err => 
-				console.error('Error hiding splash screen:', err)
-			);
+			SplashScreen.hideAsync().catch((err) => console.error('Error hiding splash screen:', err));
 		}
 
 		return () => clearTimeout(timeout);
@@ -162,14 +158,15 @@ export default function RootLayout() {
 				>
 					<Stack.Screen name="index" options={{ headerShown: false }} />
 					<Stack.Screen name="login" options={{ headerShown: false }} />
-					<Stack.Screen 
-						name="create" 
-						options={{ 
+					<Stack.Screen
+						name="create"
+						options={{
 							headerShown: false,
 							gestureEnabled: true,
-						}} 
+						}}
 					/>
 					<Stack.Screen name="restore" options={{ headerShown: false }} />
+					<Stack.Screen name="restore-by-priKey" options={{ headerShown: false }} />
 					<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 					<Stack.Screen name="settings" options={{ headerShown: false }} />
 					<Stack.Screen name="multiSigs" options={{ headerShown: false }} />

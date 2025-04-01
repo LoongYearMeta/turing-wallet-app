@@ -18,7 +18,6 @@ export default function AccountManagementPage() {
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [deleteAddress, setDeleteAddress] = useState('');
 	const [switchAccountsModalVisible, setSwitchAccountsModalVisible] = useState(false);
-	const [switchAddress, setSwitchAddress] = useState('');
 	const [switchTypeModalVisible, setSwitchTypeModalVisible] = useState(false);
 
 	const handleLongPress = (address: string) => {
@@ -69,6 +68,8 @@ export default function AccountManagementPage() {
 				return 'Taproot';
 			case AccountType.TAPROOT_LEGACY:
 				return 'Taproot Legacy';
+			case AccountType.LEGACY:
+				return 'Legacy';
 			default:
 				return 'Unknown';
 		}

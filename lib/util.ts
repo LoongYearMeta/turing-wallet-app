@@ -7,6 +7,11 @@ export const formatFee = (satoshis: number): string => {
 	return tbc.toFixed(6);
 };
 
+export const formatFee_btc = (satoshis: number): string => {
+	const btc = satoshis * 1e-8;
+	return btc.toFixed(8);
+};
+
 export function calculateFee(txHex: string) {
 	const byteLength = getTxHexByteLength(txHex);
 	const fullChunks = Math.floor(byteLength / 1000);
@@ -22,6 +27,10 @@ export const formatLongString = (str: string, showLength: number = 8): string =>
 
 export const formatBalance = (value: number): string => {
 	return value.toFixed(6);
+};
+
+export const formatBalance_btc = (value: number): string => {
+	return value.toFixed(8);
 };
 
 export const formatContractId = (id: string, showLength: number = 10): string => {

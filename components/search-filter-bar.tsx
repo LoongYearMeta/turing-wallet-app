@@ -15,6 +15,8 @@ interface SearchFilterBarProps {
 	onSort?: (option: SortOption) => void;
 	onRefresh: () => void;
 	onAddToken?: () => void;
+	disableAddToken?: boolean;
+	disableAllActions?: boolean;
 }
 
 export const SearchFilterBar = ({
@@ -23,6 +25,8 @@ export const SearchFilterBar = ({
 	onSort,
 	onRefresh,
 	onAddToken,
+	disableAddToken,
+	disableAllActions,
 }: SearchFilterBarProps) => {
 	const [searchText, setSearchText] = useState('');
 	const [menuVisible, setMenuVisible] = useState(false);
@@ -71,17 +75,50 @@ export const SearchFilterBar = ({
 					</TouchableOpacity>
 				</View>
 				<View style={styles.actions}>
-					<TouchableOpacity onPress={() => setAddModalVisible(true)} style={styles.actionButton}>
-						<MaterialIcons name="add" size={24} color="#666" />
+					<TouchableOpacity
+						style={[
+							styles.actionButton,
+							(disableAllActions || disableAddToken) && styles.disabledButton,
+						]}
+						onPress={() => setAddModalVisible(true)}
+						disabled={disableAllActions || disableAddToken}
+					>
+						<MaterialIcons
+							name="add"
+							size={24}
+							color={(disableAllActions || disableAddToken) ? "#999" : "#333"}
+						/>
 					</TouchableOpacity>
-					<TouchableOpacity onPress={onRefresh} style={styles.actionButton}>
-						<MaterialIcons name="refresh" size={24} color="#666" />
+					<TouchableOpacity 
+						style={[
+							styles.actionButton,
+							disableAllActions && styles.disabledButton
+						]}
+						onPress={onRefresh}
+						disabled={disableAllActions}
+					>
+						<MaterialIcons 
+							name="refresh" 
+							size={24} 
+							color={disableAllActions ? "#999" : "#666"} 
+						/>
 					</TouchableOpacity>
 					<Menu
 						visible={menuVisible}
 						anchor={
-							<TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.actionButton}>
-								<MaterialIcons name="sort" size={24} color="#666" />
+							<TouchableOpacity 
+								style={[
+									styles.actionButton,
+									disableAllActions && styles.disabledButton
+								]}
+								onPress={() => setMenuVisible(true)}
+								disabled={disableAllActions}
+							>
+								<MaterialIcons 
+									name="sort" 
+									size={24} 
+									color={disableAllActions ? "#999" : "#666"} 
+								/>
 							</TouchableOpacity>
 						}
 						onRequestClose={() => setMenuVisible(false)}
@@ -224,5 +261,8 @@ const styles = StyleSheet.create({
 	menuItemText: {
 		color: '#333',
 		fontSize: hp(1.6),
+	},
+	disabledButton: {
+		opacity: 0.5,
 	},
 });

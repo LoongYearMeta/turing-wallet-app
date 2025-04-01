@@ -12,7 +12,8 @@ import { getTaprootTweakPrivateKey } from '@/lib/taproot-legacy';
 import { fetchUTXOs } from '@/actions/get-utxos';
 
 export const useTbcTransaction = () => {
-	const { isTaprootLegacyAccount, getCurrentAccountUtxos, updateCurrentAccountUtxos } = useAccount();
+	const { isTaprootLegacyAccount, getCurrentAccountUtxos, updateCurrentAccountUtxos } =
+		useAccount();
 	const { getUTXOs } = useUtxo();
 
 	const sendTbc = useCallback(

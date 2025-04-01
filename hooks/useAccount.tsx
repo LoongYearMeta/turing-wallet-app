@@ -32,13 +32,16 @@ interface AccountStore extends AccountState {
 	getCurrentTbcAddress: () => string | null;
 	getCurrentTaprootAddress: () => string | null;
 	getCurrentTaprootLegacyAddress: () => string | null;
+	getCurrentLegacyAddress: () => string | null;
 	getAddresses: () => Addresses;
 	isTaprootAccount: () => boolean;
 	isTaprootLegacyAccount: () => boolean;
 	isTbcAccount: () => boolean;
+	isLegacyAccount: () => boolean;
 	canSwitchToTaproot: () => boolean;
 	canSwitchToTaprootLegacy: () => boolean;
 	canSwitchToTbc: () => boolean;
+	canSwitchToLegacy: () => boolean;
 
 	updateCurrentAccountName: (name: string) => Promise<void>;
 	updateCurrentAccountTbcBalance: (tbcBalance: number) => Promise<void>;
@@ -49,6 +52,7 @@ interface AccountStore extends AccountState {
 	switchToTaproot: () => Promise<void>;
 	switchToTaprootLegacy: () => Promise<void>;
 	switchToTBC: () => Promise<void>;
+	switchToLegacy: () => Promise<void>;
 
 	setPassKeyAndSalt: (passKey: string, salt: string) => Promise<void>;
 	getSalt: () => string;
@@ -80,7 +84,9 @@ export const useAccount = create(
 						? data.addresses.taprootAddress
 						: data.type === AccountType.TAPROOT_LEGACY
 							? data.addresses.taprootLegacyAddress
-							: data.addresses.tbcAddress;
+							: data.type === AccountType.LEGACY
+								? data.addresses.legacyAddress
+								: data.addresses.tbcAddress;
 
 				if (!addressToCheck) {
 					throw new Error('Incorrect address');
@@ -90,10 +96,22 @@ export const useAccount = create(
 					throw new Error('Account already exists');
 				}
 
+				const addresses: Addresses = {
+					tbcAddress: data.addresses.tbcAddress || '',
+					taprootAddress: data.addresses.taprootAddress || '',
+					taprootLegacyAddress: data.addresses.taprootLegacyAddress || '',
+					legacyAddress: data.addresses.legacyAddress || '',
+				};
+
+				const accountData: Account = {
+					...data,
+					addresses,
+				};
+
 				set({
 					accounts: {
 						...currentAccounts,
-						[addressToCheck]: data,
+						[addressToCheck]: accountData,
 					},
 					currentAccount: addressToCheck,
 				});
@@ -198,7 +216,7 @@ export const useAccount = create(
 				const account = get().getCurrentAccount();
 				return account
 					? account.addresses
-					: { tbcAddress: '', taprootAddress: '', taprootLegacyAddress: '' };
+					: { tbcAddress: '', taprootAddress: '', taprootLegacyAddress: '', legacyAddress: '' };
 			},
 
 			isTaprootAccount: () => {
@@ -420,6 +438,38 @@ export const useAccount = create(
 					throw new Error('Account does not exist');
 				}
 				set({ currentAccount: address });
+			},
+
+			getCurrentLegacyAddress: () => {
+				const account = get().getCurrentAccount();
+				return account ? account.addresses.legacyAddress : null;
+			},
+
+			isLegacyAccount: () => {
+				return get().getCurrentAccountType() === AccountType.LEGACY;
+			},
+
+			canSwitchToLegacy: () => {
+				const account = get().getCurrentAccount();
+				return !!account?.addresses.legacyAddress;
+			},
+
+			switchToLegacy: async () => {
+				const account = get().getCurrentAccount();
+				if (!account || !account.addresses.legacyAddress) {
+					throw new Error('Account cannot be switched to Legacy');
+				}
+
+				const { [get().currentAccount]: currentAccount, ...otherAccounts } = get().accounts;
+				const updatedAccount = { ...currentAccount, type: AccountType.LEGACY };
+
+				set({
+					accounts: {
+						...otherAccounts,
+						[account.addresses.legacyAddress]: updatedAccount,
+					},
+					currentAccount: account.addresses.legacyAddress,
+				});
 			},
 		}),
 		{

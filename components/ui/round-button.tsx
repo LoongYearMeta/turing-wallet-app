@@ -6,16 +6,35 @@ interface RoundButtonProps {
 	icon: keyof typeof MaterialIcons.glyphMap;
 	label: string;
 	onPress?: () => void;
+	disabled?: boolean;
+	style?: any;
 }
 
-export const RoundButton = forwardRef<View, RoundButtonProps>(({ icon, label, onPress }, ref) => {
+export const RoundButton = forwardRef<View, RoundButtonProps>(({ icon, label, onPress, disabled, style }, ref) => {
 	return (
-		<Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
+		<Pressable 
+			onPress={onPress} 
+			disabled={disabled}
+			style={({ pressed }) => [
+				disabled && { opacity: 0.5 },
+				pressed && styles.pressed,
+				style,
+			]}
+		>
 			<View ref={ref} style={styles.container}>
 				<View style={styles.iconContainer}>
-					<MaterialIcons name={icon} size={18} color="white" />
+					<MaterialIcons 
+						name={icon} 
+						size={18} 
+						color={disabled ? "#999" : "white"} 
+					/>
 				</View>
-				<Text style={styles.label}>{label}</Text>
+				<Text style={[
+					styles.label,
+					disabled && { color: '#999' }
+				]}>
+					{label}
+				</Text>
 			</View>
 		</Pressable>
 	);

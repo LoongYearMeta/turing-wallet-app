@@ -40,6 +40,11 @@ export const AddAddressModal = ({ visible, onClose, onAddSuccess }: AddAddressMo
 				setError('Invalid address');
 				return false;
 			}
+		} else if (address.startsWith('bc1p')) {
+			if (address.length !== 62) {
+				setError('Invalid address');
+				return false;
+			}
 		} else {
 			if (address.length !== 33) {
 				setError('Invalid address');

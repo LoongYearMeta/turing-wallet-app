@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
 	ActivityIndicator,
 	FlatList,
@@ -24,20 +24,26 @@ import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
-import { Collection, NFT, getActiveNFTs, getAllCollections, softDeleteCollection, softDeleteNFT } from '@/utils/sqlite';
+import {
+	Collection,
+	NFT,
+	getActiveNFTs,
+	getAllCollections,
+	softDeleteCollection,
+	softDeleteNFT,
+} from '@/utils/sqlite';
 import { syncNFTs } from '@/actions/get-nfts';
 import { RestoreNFTModal } from '@/components/restore-nft-modal';
+import { AccountType } from '@/types';
 
 const NFTPage = () => {
 	const [activeTab, setActiveTab] = useState<'collections' | 'nfts'>('collections');
 	const screenWidth = Dimensions.get('window').width;
 	const panX = React.useRef(new Animated.Value(0)).current;
 
-	// 处理标签切换
 	const handleTabChange = (tab: 'collections' | 'nfts') => {
-		console.log('Switching to tab:', tab);
 		setActiveTab(tab);
-		
+
 		Animated.timing(panX, {
 			toValue: tab === 'collections' ? 0 : -screenWidth,
 			duration: 300,
@@ -53,9 +59,7 @@ const NFTPage = () => {
 					style={[styles.tabButton, activeTab === 'collections' && styles.activeTabButton]}
 					onPress={() => handleTabChange('collections')}
 				>
-					<Text
-						style={[styles.tabText, activeTab === 'collections' && styles.activeTabText]}
-					>
+					<Text style={[styles.tabText, activeTab === 'collections' && styles.activeTabText]}>
 						Collections
 					</Text>
 				</TouchableOpacity>
@@ -63,20 +67,11 @@ const NFTPage = () => {
 					style={[styles.tabButton, activeTab === 'nfts' && styles.activeTabButton]}
 					onPress={() => handleTabChange('nfts')}
 				>
-					<Text
-						style={[styles.tabText, activeTab === 'nfts' && styles.activeTabText]}
-					>
-						NFTs
-					</Text>
+					<Text style={[styles.tabText, activeTab === 'nfts' && styles.activeTabText]}>NFTs</Text>
 				</TouchableOpacity>
 			</View>
-			
-			<Animated.View 
-				style={[
-					styles.tabContentContainer,
-					{ transform: [{ translateX: panX }] }
-				]}
-			>
+
+			<Animated.View style={[styles.tabContentContainer, { transform: [{ translateX: panX }] }]}>
 				<View style={[styles.tabContent, { width: screenWidth }]}>
 					<CollectionsTab />
 				</View>
@@ -93,23 +88,28 @@ const CollectionsTab = () => {
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
 	const [searchText, setSearchText] = useState('');
-	const { getCurrentAccountAddress } = useAccount();
+	const { getCurrentAccountAddress, getCurrentAccountType } = useAccount();
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [restoreModalVisible, setRestoreModalVisible] = useState(false);
 	const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
+	const accountType = getCurrentAccountType();
+	const disableCollection =
+		accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY;
 
 	const loadCollections = useCallback(async () => {
 		try {
-			setLoading(true);
-			const userAddress = getCurrentAccountAddress();
-			const userCollections = await getAllCollections(userAddress);
-			setCollections(userCollections);
+			if (!disableCollection) {
+				setLoading(true);
+				const userAddress = getCurrentAccountAddress();
+				const userCollections = await getAllCollections(userAddress);
+				setCollections(userCollections);
+			}
 		} catch (error) {
 			console.error('Failed to load collections:', error);
 		} finally {
 			setLoading(false);
 		}
-	}, [getCurrentAccountAddress]);
+	}, [getCurrentAccountAddress, disableCollection]);
 
 	useFocusEffect(
 		useCallback(() => {
@@ -117,11 +117,23 @@ const CollectionsTab = () => {
 		}, [loadCollections]),
 	);
 
+	// 添加对账户类型变化的监听
+	useEffect(() => {
+		if (disableCollection) {
+			// 如果是禁用类型的账户，清空合集数据
+			setCollections([]);
+			setLoading(false);
+		} else {
+			// 如果是允许的账户类型，重新加载数据
+			loadCollections();
+		}
+	}, [disableCollection, loadCollections]);
+
 	const handleRefresh = async () => {
 		try {
 			setRefreshing(true);
 			const userAddress = getCurrentAccountAddress();
-	
+
 			await syncCollections(userAddress);
 			await loadCollections();
 			Toast.show({
@@ -147,20 +159,20 @@ const CollectionsTab = () => {
 
 	const confirmDeleteCollection = async () => {
 		if (!selectedCollection) return;
-		
+
 		try {
 			await softDeleteCollection(selectedCollection.id);
 			Toast.show({
 				type: 'success',
-				text1: 'Collection deleted',
+				text1: 'Collection hidden',
 			});
 			loadCollections();
 		} catch (error) {
-			console.error('Failed to delete collection:', error);
+			console.error('Failed to hide collection:', error);
 			Toast.show({
 				type: 'error',
 				text1: 'Error',
-				text2: 'Failed to delete collection',
+				text2: 'Failed to hide collection',
 			});
 		} finally {
 			setDeleteModalVisible(false);
@@ -171,19 +183,19 @@ const CollectionsTab = () => {
 	const filteredCollections = collections.filter(
 		(collection) =>
 			collection.name.toLowerCase().startsWith(searchText.toLowerCase()) ||
-			collection.id.toLowerCase().startsWith(searchText.toLowerCase())
+			collection.id.toLowerCase().startsWith(searchText.toLowerCase()),
 	);
 
 	const renderCollectionItem = ({ item }: { item: Collection }) => (
-		<TouchableOpacity 
+		<TouchableOpacity
 			style={styles.collectionItem}
 			onPress={() => router.push(`/(tabs)/nft/collection/collection-detail?id=${item.id}`)}
 		>
 			<Image source={{ uri: item.icon }} style={styles.image} resizeMode="cover" />
-			<TouchableOpacity 
+			<TouchableOpacity
 				style={styles.deleteButton}
 				onPress={(e) => {
-					e.stopPropagation(); // 防止触发父元素的onPress
+					e.stopPropagation();
 					handleDeleteCollection(item);
 				}}
 			>
@@ -221,28 +233,34 @@ const CollectionsTab = () => {
 					)}
 				</View>
 				<View style={styles.actionButtons}>
-					<TouchableOpacity 
-						style={styles.actionButton} 
+					<TouchableOpacity
+						style={[styles.actionButton, disableCollection && styles.disabledButton]}
 						onPress={handleRefresh}
-						disabled={refreshing}
+						disabled={disableCollection || refreshing}
 					>
 						{refreshing ? (
-							<ActivityIndicator size="small" color="#333" />
+							<ActivityIndicator size="small" color={disableCollection ? '#999' : '#333'} />
 						) : (
-							<MaterialIcons name="refresh" size={24} color="#333" />
+							<MaterialIcons name="refresh" size={24} color={disableCollection ? '#999' : '#333'} />
 						)}
 					</TouchableOpacity>
-					<TouchableOpacity 
-						style={styles.actionButton}
+					<TouchableOpacity
+						style={[styles.actionButton, disableCollection && styles.disabledButton]}
 						onPress={() => setRestoreModalVisible(true)}
+						disabled={disableCollection}
 					>
-						<MaterialIcons name="visibility" size={24} color="#333" />
+						<MaterialIcons
+							name="visibility"
+							size={24}
+							color={disableCollection ? '#999' : '#333'}
+						/>
 					</TouchableOpacity>
-					<TouchableOpacity 
-						style={styles.actionButton}
+					<TouchableOpacity
+						style={[styles.actionButton, disableCollection && styles.disabledButton]}
 						onPress={() => router.push('/(tabs)/nft/collection/create-collection')}
+						disabled={disableCollection}
 					>
-						<MaterialIcons name="add" size={24} color="#333" />
+						<MaterialIcons name="add" size={24} color={disableCollection ? '#999' : '#333'} />
 					</TouchableOpacity>
 				</View>
 			</View>
@@ -292,29 +310,45 @@ const NFTsTab = () => {
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
 	const [searchText, setSearchText] = useState('');
-	const { getCurrentAccountAddress } = useAccount();
+	const { getCurrentAccountAddress, getCurrentAccountType } = useAccount();
 	const [restoreModalVisible, setRestoreModalVisible] = useState(false);
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [selectedNFT, setSelectedNFT] = useState<NFT | null>(null);
+	const accountType = getCurrentAccountType();
+	const disableNFT = accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY;
 
 	const loadNFTs = useCallback(async () => {
 		try {
-			setLoading(true);
-			const userAddress = getCurrentAccountAddress();
-			const userNFTs = await getActiveNFTs(userAddress);
-			setNfts(userNFTs);
+			if (!disableNFT) {
+				setLoading(true);
+				const userAddress = getCurrentAccountAddress();
+				const userNFTs = await getActiveNFTs(userAddress);
+				setNfts(userNFTs);
+			}
 		} catch (error) {
 			console.error('Failed to load NFTs:', error);
 		} finally {
 			setLoading(false);
 		}
-	}, [getCurrentAccountAddress]);
+	}, [getCurrentAccountAddress, disableNFT]);
 
 	useFocusEffect(
 		useCallback(() => {
-			loadNFTs(); // 只加载本地数据，不执行 syncNFTs
+			loadNFTs();
 		}, [loadNFTs]),
 	);
+
+	// 添加对账户类型变化的监听
+	useEffect(() => {
+		if (disableNFT) {
+			// 如果是禁用类型的账户，清空 NFT 数据
+			setNfts([]);
+			setLoading(false);
+		} else {
+			// 如果是允许的账户类型，重新加载数据
+			loadNFTs();
+		}
+	}, [disableNFT, loadNFTs]);
 
 	const handleRefresh = async () => {
 		try {
@@ -346,20 +380,20 @@ const NFTsTab = () => {
 
 	const confirmDeleteNFT = async () => {
 		if (!selectedNFT) return;
-		
+
 		try {
 			await softDeleteNFT(selectedNFT.id);
 			Toast.show({
 				type: 'success',
-				text1: 'NFT deleted',
+				text1: 'NFT hidden',
 			});
 			loadNFTs();
 		} catch (error) {
-			console.error('Failed to delete NFT:', error);
+			console.error('Failed to hide NFT:', error);
 			Toast.show({
 				type: 'error',
 				text1: 'Error',
-				text2: 'Failed to delete NFT',
+				text2: 'Failed to hide NFT',
 			});
 		} finally {
 			setDeleteModalVisible(false);
@@ -374,15 +408,15 @@ const NFTsTab = () => {
 	);
 
 	const renderNFTItem = ({ item }: { item: NFT }) => (
-		<TouchableOpacity 
+		<TouchableOpacity
 			style={styles.collectionItem}
 			onPress={() => router.push(`/(tabs)/nft/nft-detail?id=${item.id}`)}
 		>
 			<Image source={{ uri: item.icon }} style={styles.image} resizeMode="cover" />
-			<TouchableOpacity 
+			<TouchableOpacity
 				style={styles.deleteButton}
 				onPress={(e) => {
-					e.stopPropagation(); // 防止触发父元素的onPress
+					e.stopPropagation();
 					handleDeleteNFT(item);
 				}}
 			>
@@ -420,14 +454,27 @@ const NFTsTab = () => {
 					)}
 				</View>
 				<View style={styles.actionButtons}>
-					<TouchableOpacity onPress={handleRefresh} style={styles.actionButton}>
-						<MaterialIcons name="refresh" size={24} color={theme.colors.primary} />
-					</TouchableOpacity>
-					<TouchableOpacity 
-						onPress={() => setRestoreModalVisible(true)} 
-						style={styles.actionButton}
+					<TouchableOpacity
+						style={[styles.actionButton, disableNFT && styles.disabledButton]}
+						onPress={handleRefresh}
+						disabled={disableNFT}
 					>
-						<MaterialIcons name="visibility" size={24} color={theme.colors.primary} />
+						<MaterialIcons
+							name="refresh"
+							size={24}
+							color={disableNFT ? '#999' : theme.colors.primary}
+						/>
+					</TouchableOpacity>
+					<TouchableOpacity
+						style={[styles.actionButton, disableNFT && styles.disabledButton]}
+						onPress={() => setRestoreModalVisible(true)}
+						disabled={disableNFT}
+					>
+						<MaterialIcons
+							name="visibility"
+							size={24}
+							color={disableNFT ? '#999' : theme.colors.primary}
+						/>
 					</TouchableOpacity>
 				</View>
 			</View>
@@ -608,6 +655,9 @@ const styles = StyleSheet.create({
 	},
 	tabContent: {
 		flex: 1,
+	},
+	disabledButton: {
+		opacity: 0.5,
 	},
 });
 

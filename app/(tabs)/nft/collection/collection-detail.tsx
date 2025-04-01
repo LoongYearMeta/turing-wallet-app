@@ -95,15 +95,15 @@ const CollectionDetailPage = () => {
 			await softDeleteNFT(selectedNFT.id);
 			Toast.show({
 				type: 'success',
-				text1: 'NFT deleted',
+				text1: 'NFT hidden',
 			});
 			loadCollectionAndNFTs();
 		} catch (error) {
-			console.error('Failed to delete NFT:', error);
+			console.error('Failed to hide NFT:', error);
 			Toast.show({
 				type: 'error',
 				text1: 'Error',
-				text2: 'Failed to delete NFT',
+				text2: 'Failed to hide NFT',
 			});
 		} finally {
 			setDeleteModalVisible(false);
@@ -220,11 +220,11 @@ const CollectionDetailPage = () => {
 								<TouchableOpacity 
 									style={styles.deleteButton}
 									onPress={(e) => {
-										e.stopPropagation(); // 防止触发父元素的onPress
+										e.stopPropagation();
 										handleDeleteNFT(nft);
 									}}
 								>
-									<MaterialIcons name="delete" size={24} color="#fff" />
+									<MaterialIcons name="visibility-off" size={24} color="#fff" />
 								</TouchableOpacity>
 								<Text style={styles.nftName} numberOfLines={1}>
 									{nft.name}
@@ -243,8 +243,8 @@ const CollectionDetailPage = () => {
 
 			<ConfirmModal
 				visible={deleteModalVisible}
-				title="Delete NFT"
-				message={`Are you sure you want to delete "${selectedNFT?.name}"? You can restore it anytime.`}
+				title="Hide NFT"
+				message={`Are you sure you want to hide "${selectedNFT?.name}"? You can restore it anytime.`}
 				onConfirm={confirmDeleteNFT}
 				onCancel={() => {
 					setDeleteModalVisible(false);

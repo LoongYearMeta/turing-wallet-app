@@ -20,6 +20,7 @@ import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
 import { getActiveMultiSigs, softDeleteMultiSig } from '@/utils/sqlite';
+import { AccountType } from '@/types';
 
 interface MultiSigAddress {
 	multiSig_address: string;
@@ -33,11 +34,17 @@ export default function InformationPage() {
 		getCurrentAccountName,
 		updateCurrentAccountName,
 		getAddresses,
+		getCurrentAccountType,
 	} = useAccount();
 	const address = getCurrentAccountAddress();
 	const publicKey = getCurrentAccountTbcPubKey();
 	const username = getCurrentAccountName();
 	const addresses = getAddresses();
+	const accountType = getCurrentAccountType();
+	const disableMultiSig =
+		accountType === AccountType.TAPROOT ||
+		accountType === AccountType.TAPROOT_LEGACY ||
+		accountType === AccountType.LEGACY;
 
 	const [modalVisible, setModalVisible] = useState(false);
 	const [newUsername, setNewUsername] = useState(username);
@@ -50,13 +57,19 @@ export default function InformationPage() {
 	const [multiSigToDelete, setMultiSigToDelete] = useState<string | null>(null);
 
 	useEffect(() => {
-		loadMultiSigAddresses();
-	}, []);
+		if (disableMultiSig) {
+			setMultiSigAddresses([]);
+		} else {
+			loadMultiSigAddresses();
+		}
+	}, [disableMultiSig]);
 
-	const loadMultiSigAddresses = async () => {
+	const loadMultiSigAddresses = useCallback(async () => {
 		try {
-			const multiSigs = await getActiveMultiSigs(address);
-			setMultiSigAddresses(multiSigs);
+			if (!disableMultiSig) {
+				const multiSigs = await getActiveMultiSigs(address);
+				setMultiSigAddresses(multiSigs);
+			}
 		} catch (error) {
 			console.error('Failed to load MultiSig addresses:', error);
 			Toast.show({
@@ -65,7 +78,7 @@ export default function InformationPage() {
 				text2: 'Failed to load MultiSig addresses',
 			});
 		}
-	};
+	}, [address, disableMultiSig]);
 
 	const handleCopy = async (text: string, label: string) => {
 		await Clipboard.setStringAsync(text);
@@ -94,7 +107,7 @@ export default function InformationPage() {
 		});
 	};
 
-	const handleRestoreMultiSig = async (multiSigAddress: string) => {
+	const handleRestoreMultiSig = async () => {
 		Toast.show({
 			type: 'success',
 			text1: 'MultiSig address restored successfully',
@@ -105,7 +118,7 @@ export default function InformationPage() {
 	const handleRefreshMultiSigs = async () => {
 		try {
 			await syncMultiSigs(address);
-			await loadMultiSigAddresses(); // 刷新列表
+			await loadMultiSigAddresses();
 			Toast.show({
 				type: 'success',
 				text1: 'MultiSig wallets synced successfully',
@@ -158,7 +171,7 @@ export default function InformationPage() {
 	useFocusEffect(
 		useCallback(() => {
 			loadMultiSigAddresses();
-		}, []),
+		}, [loadMultiSigAddresses]),
 	);
 
 	return (
@@ -209,6 +222,9 @@ export default function InformationPage() {
 										<MaterialIcons name="content-copy" size={16} color={theme.colors.primary} />
 									</TouchableOpacity>
 								</View>
+								<Text style={styles.addressDescription}>
+									Use this address to trade TBC, TBC721, TBC20 assets and connect to DApps. You can also create MultiSig wallets with this address for more secure storage of your TBC and TBC20 assets
+								</Text>
 							</View>
 						</View>
 					</>
@@ -230,6 +246,33 @@ export default function InformationPage() {
 										<MaterialIcons name="content-copy" size={16} color={theme.colors.primary} />
 									</TouchableOpacity>
 								</View>
+								<Text style={styles.addressDescription}>
+									Use this address to trade BTC
+								</Text>
+							</View>
+						</View>
+					</>
+				)}
+
+				{addresses?.legacyAddress && (
+					<>
+						<View style={styles.addressItem}>
+							<View style={styles.itemLeft}>
+								<Text style={styles.addressLabel}>Legacy address</Text>
+								<View style={styles.valueWithCopy}>
+									<Text style={styles.addressValue} numberOfLines={1} ellipsizeMode="middle">
+										{addresses.legacyAddress}
+									</Text>
+									<TouchableOpacity
+										style={styles.inlineCopyButton}
+										onPress={() => handleCopy(addresses.legacyAddress!, 'Legacy Address')}
+									>
+										<MaterialIcons name="content-copy" size={16} color={theme.colors.primary} />
+									</TouchableOpacity>
+								</View>
+								<Text style={styles.addressDescription}>
+									Use this address to trade BTC
+								</Text>
 							</View>
 						</View>
 					</>
@@ -253,6 +296,9 @@ export default function InformationPage() {
 										<MaterialIcons name="content-copy" size={16} color={theme.colors.primary} />
 									</TouchableOpacity>
 								</View>
+								<Text style={styles.addressDescription}>
+									Use this address to trade TBC, TBC721, TBC20 assets. If you use inscription cross-chain @https://bitbus.net/, you will receive corresponding TBC20 assets at this address
+								</Text>
 							</View>
 						</View>
 					</>
@@ -281,18 +327,39 @@ export default function InformationPage() {
 			{/* 多签钱包部分 */}
 			<View style={styles.sectionHeader}>
 				<Text style={styles.sectionTitle}>MultiSig Wallets</Text>
-				<View style={styles.multiSigActions}>
-					<TouchableOpacity style={styles.actionButton} onPress={handleCreateMultiSig}>
-						<MaterialIcons name="add" size={24} color={theme.colors.primary} />
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.actionButton} onPress={handleRefreshMultiSigs}>
-						<MaterialIcons name="sync" size={24} color={theme.colors.primary} />
+				<View style={styles.headerActions}>
+					<TouchableOpacity
+						style={[styles.actionButton, disableMultiSig && styles.disabledButton]}
+						onPress={handleCreateMultiSig}
+						disabled={disableMultiSig}
+					>
+						<MaterialIcons
+							name="add"
+							size={24}
+							color={disableMultiSig ? '#999' : theme.colors.primary}
+						/>
 					</TouchableOpacity>
 					<TouchableOpacity
-						style={styles.actionButton}
-						onPress={() => setMultiSigModalVisible(true)}
+						style={[styles.actionButton, disableMultiSig && styles.disabledButton]}
+						onPress={handleRefreshMultiSigs}
+						disabled={disableMultiSig}
 					>
-						<MaterialIcons name="visibility" size={22} color={theme.colors.primary} />
+						<MaterialIcons
+							name="sync"
+							size={24}
+							color={disableMultiSig ? '#999' : theme.colors.primary}
+						/>
+					</TouchableOpacity>
+					<TouchableOpacity
+						style={[styles.actionButton, disableMultiSig && styles.disabledButton]}
+						onPress={() => setMultiSigModalVisible(true)}
+						disabled={disableMultiSig}
+					>
+						<MaterialIcons
+							name="visibility"
+							size={22}
+							color={disableMultiSig ? '#999' : theme.colors.primary}
+						/>
 					</TouchableOpacity>
 				</View>
 			</View>
@@ -418,7 +485,7 @@ const styles = StyleSheet.create({
 		flexGrow: 1, // 允许内容拉伸
 	},
 	listContainer: {
-		marginBottom: hp(2),
+		marginBottom: hp(1),
 	},
 	multiSigActions: {
 		flexDirection: 'row',
@@ -499,7 +566,6 @@ const styles = StyleSheet.create({
 		paddingHorizontal: wp(4),
 		paddingVertical: hp(1),
 		marginBottom: hp(0.2),
-		marginTop: hp(0.5),
 	},
 	sectionTitle: {
 		fontSize: hp(1.8),
@@ -642,5 +708,14 @@ const styles = StyleSheet.create({
 	headerActions: {
 		flexDirection: 'row',
 		alignItems: 'center',
+	},
+	disabledButton: {
+		opacity: 0.5,
+	},
+	addressDescription: {
+		fontSize: hp(1.4),
+		color: '#666',
+		marginTop: hp(0.5),
+		lineHeight: hp(1.8),
 	},
 });

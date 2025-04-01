@@ -50,18 +50,24 @@ export default function ExportPage() {
 
 				if (isValid) {
 					const encryptedKeys = getEncryptedKeys();
-					const decryptedKeys = retrieveKeys(password, encryptedKeys!);
-					setKeys(decryptedKeys);
+					if (encryptedKeys) {
+						const decryptedKeys = retrieveKeys(password, encryptedKeys);
+						if (decryptedKeys.walletWif) {
+							setKeys(decryptedKeys);
+						} else {
+							throw new Error('Failed to decrypt keys');
+						}
+					}
 				}
 			} catch (error) {
-				console.error('Password validation error:', error);
 				setFormErrors((prev) => ({
 					...prev,
 					password: 'Incorrect password',
 				}));
 				setIsPasswordValid(false);
+				setKeys({ walletWif: '' });
 			}
-		}, 1500),
+		}, 500),
 		[getPassKey, getSalt, getEncryptedKeys],
 	);
 

@@ -4,7 +4,7 @@ import * as tbc from 'tbc-lib-js';
 
 import { decrypt, deriveKey, encrypt, generateRandomSalt } from '@/lib/crypto';
 import { Keys } from '@/types';
-import { createFromWIF, getTaprootAddress } from '@/lib/taproot';
+import { createFromWIF, getTaprootAndLegacyAddress } from '@/lib/taproot';
 import { getTaprootLegacyAddress } from './taproot-legacy';
 
 enum Tag {
@@ -20,13 +20,8 @@ export const generateKeysEncrypted_byMnemonic = (
 	tag: Tag,
 	salt?: string,
 ) => {
-	if (!mnemonic) {
-		const entropy = generateRandomSalt(16);
-		mnemonic = bip39.entropyToMnemonic(entropy);
-	} else {
-		if (!tbc.Mnemonic.isValid(mnemonic)) {
-			throw new Error('Invalid mnemonic');
-		}
+	if (!tbc.Mnemonic.isValid(mnemonic)) {
+		throw new Error('Invalid mnemonic');
 	}
 
 	let walletDerivation: string;
@@ -53,7 +48,9 @@ export const generateKeysEncrypted_byMnemonic = (
 	const encryptedKeys = encrypt(JSON.stringify(keys), password);
 	const pubKey = tbc.PrivateKey.fromWIF(keys.walletWif).toPublicKey().toString();
 	const tbcAddress = tbc.PrivateKey.fromWIF(keys.walletWif).toAddress().toString();
-	const taprootAddress = getTaprootAddress(createFromWIF(keys.walletWif));
+	const { legacyAddress, taprootAddress } = getTaprootAndLegacyAddress(
+		createFromWIF(keys.walletWif),
+	);
 	const taprootLegacyAddress = getTaprootLegacyAddress(taprootAddress);
 	return {
 		salt,
@@ -62,6 +59,7 @@ export const generateKeysEncrypted_byMnemonic = (
 		tbcAddress,
 		taprootAddress,
 		taprootLegacyAddress,
+		legacyAddress,
 		pubKey,
 	};
 };
@@ -84,7 +82,9 @@ export const generateKeysEncrypted_mnemonic = (password: string, salt?: string) 
 	const encryptedKeys = encrypt(JSON.stringify(keys), password);
 	const pubKey = tbc.PrivateKey.fromWIF(keys.walletWif).toPublicKey().toString();
 	const tbcAddress = tbc.PrivateKey.fromWIF(keys.walletWif).toAddress().toString();
-	const taprootAddress = getTaprootAddress(createFromWIF(keys.walletWif));
+	const { legacyAddress, taprootAddress } = getTaprootAndLegacyAddress(
+		createFromWIF(keys.walletWif),
+	);
 	const taprootLegacyAddress = getTaprootLegacyAddress(taprootAddress);
 	return {
 		salt,
@@ -93,6 +93,7 @@ export const generateKeysEncrypted_mnemonic = (password: string, salt?: string) 
 		tbcAddress,
 		taprootAddress,
 		taprootLegacyAddress,
+		legacyAddress,
 		pubKey,
 	};
 };
@@ -107,8 +108,11 @@ export const generateKeysEncrypted_wif = (password: string, wif: string, salt?: 
 	const encryptedKeys = encrypt(JSON.stringify(keys), password);
 	const pubKey = tbc.PrivateKey.fromWIF(keys.walletWif).toPublicKey().toString();
 	const tbcAddress = tbc.PrivateKey.fromWIF(keys.walletWif).toAddress().toString();
-	const taprootAddress = getTaprootAddress(keys.walletWif);
+	const { legacyAddress, taprootAddress } = getTaprootAndLegacyAddress(
+		createFromWIF(keys.walletWif),
+	);
 	const taprootLegacyAddress = getTaprootLegacyAddress(taprootAddress);
+
 	return {
 		salt,
 		passKey,
@@ -116,6 +120,7 @@ export const generateKeysEncrypted_wif = (password: string, wif: string, salt?: 
 		tbcAddress,
 		taprootAddress,
 		taprootLegacyAddress,
+		legacyAddress,
 		pubKey,
 	};
 };
@@ -145,14 +150,17 @@ export const verifyPassword = (password: string, passKey: string, salt: string):
 		const derivedKey = deriveKey(password, salt);
 		return derivedKey === passKey;
 	} catch (error) {
-		console.debug('Password verification warning:', error);
 		return false;
 	}
 };
 
 export const retrieveKeys = (password: string, encryptedKeys: string): Keys => {
 	try {
-		return JSON.parse(decrypt(encryptedKeys, password));
+		const decrypted = decrypt(encryptedKeys, password);
+		if (!decrypted) {
+			throw new Error('Decryption failed');
+		}
+		return JSON.parse(decrypted);
 	} catch (error) {
 		console.debug('Key retrieval warning:', error);
 		return { walletWif: '' };
@@ -161,4 +169,8 @@ export const retrieveKeys = (password: string, encryptedKeys: string): Keys => {
 
 export const verifyPubKey = (pubKey: string): boolean => {
 	return tbc.PublicKey.isValid(pubKey);
+};
+
+export const verifyMnemonic = (mnemonic: string): boolean => {
+	return tbc.Mnemonic.isValid(mnemonic);
 };

@@ -27,7 +27,7 @@ export const useNftTransaction = () => {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys);
+				const { walletWif } = retrieveKeys(password, encryptedKeys,);
 				let privateKey: tbc.PrivateKey;
 				if (isTaprootLegacyAccount()) {
 					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
@@ -72,7 +72,7 @@ export const useNftTransaction = () => {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys);
+				const { walletWif } = retrieveKeys(password, encryptedKeys,);
 				let privateKey: tbc.PrivateKey;
 				if (isTaprootLegacyAccount()) {
 					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
@@ -125,7 +125,7 @@ export const useNftTransaction = () => {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys);
+				const { walletWif } = retrieveKeys(password, encryptedKeys,);
 				let privateKey: tbc.PrivateKey;
 				if (isTaprootLegacyAccount()) {
 					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));

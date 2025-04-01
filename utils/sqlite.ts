@@ -579,7 +579,6 @@ export async function getCollectionCount(userAddress: string): Promise<number> {
 		);
 
 		if (tableCheck.length === 0) {
-			console.log('Collection table does not exist, returning 0');
 			return 0;
 		}
 
@@ -589,7 +588,6 @@ export async function getCollectionCount(userAddress: string): Promise<number> {
 		);
 		if (result && result.length > 0) {
 			const count = result[0].count;
-			console.log('Collection count:', count);
 			return count;
 		}
 		return 0;

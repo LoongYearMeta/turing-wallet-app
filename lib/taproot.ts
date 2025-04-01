@@ -12,12 +12,11 @@ export function createFromWIF(wif: string): any {
 		const network = bitcoin.networks.bitcoin;
 		return ECPair.fromWIF(wif, network);
 	} catch (error) {
-		console.error('Failed to create from WIF:', error);
 		throw error;
 	}
 }
 
-export function getTaprootAddress(keyPair: any) {
+export function getTaprootAndLegacyAddress(keyPair: any) {
 	try {
 		const network = bitcoin.networks.bitcoin;
 		const pubkey = Buffer.from(keyPair.publicKey.subarray(1, 33));
@@ -26,16 +25,28 @@ export function getTaprootAddress(keyPair: any) {
 			throw new Error('Invalid public key');
 		}
 
+		const legacyAddress = bitcoin.payments.p2pkh({
+			pubkey: keyPair.publicKey,
+			network,
+		}).address;
+
 		const taprootAddress = bitcoin.payments.p2tr({
 			internalPubkey: pubkey,
 			network,
 		}).address;
 
+		if (!legacyAddress) {
+			throw new Error('Failed to generate legacy address');
+		}
+
 		if (!taprootAddress) {
 			throw new Error('Failed to generate taproot address');
 		}
 
-		return taprootAddress;
+		return {
+			taprootAddress,
+			legacyAddress,
+		};
 	} catch (error) {
 		console.error('Failed to get taproot address:', error);
 		throw error;

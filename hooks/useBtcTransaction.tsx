@@ -112,7 +112,7 @@ export const useBtcTransaction = () => {
 		[],
 	);
 
-	const createTransaction = useCallback(
+	const createTransaction_taproot = useCallback(
 		async (
 			recipientAddress: string,
 			amountSatoshis: number,
@@ -245,7 +245,7 @@ export const useBtcTransaction = () => {
 	return {
 		getUTXOsFromBlockstream,
 		getFeeRates,
-		createTransaction,
+		createTransaction_taproot,
 		calculateTransactionFee,
 		broadcastTransaction,
 	};

@@ -7,6 +7,8 @@ import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
 import { AccountType } from '@/types';
+import { fetchUTXOs } from '@/actions/get-utxos';
+import { initializeWalletData } from '@/lib/init';
 
 interface SwitchTypeModalProps {
 	visible: boolean;
@@ -20,9 +22,11 @@ export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
 		switchToTBC,
 		switchToTaproot,
 		switchToTaprootLegacy,
+		switchToLegacy,
 		canSwitchToTbc,
 		canSwitchToTaproot,
 		canSwitchToTaprootLegacy,
+		canSwitchToLegacy,
 	} = useAccount();
 
 	const addresses = getAddresses();
@@ -39,6 +43,9 @@ export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
 					break;
 				case AccountType.TAPROOT_LEGACY:
 					await switchToTaprootLegacy();
+					break;
+				case AccountType.LEGACY:
+					await switchToLegacy();
 					break;
 			}
 			onClose();
@@ -95,6 +102,22 @@ export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
 							</Text>
 						</View>
 						{currentType === AccountType.TAPROOT_LEGACY && (
+							<MaterialIcons name="check" size={20} color={theme.colors.primary} />
+						)}
+					</TouchableOpacity>
+				)}
+				{canSwitchToLegacy() && (
+					<TouchableOpacity
+						style={[styles.item, currentType === AccountType.LEGACY && styles.currentItem]}
+						onPress={() => handleSwitch(AccountType.LEGACY)}
+					>
+						<View style={styles.itemLeft}>
+							<Text style={styles.itemType}>Legacy</Text>
+							<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
+								{addresses.legacyAddress}
+							</Text>
+						</View>
+						{currentType === AccountType.LEGACY && (
 							<MaterialIcons name="check" size={20} color={theme.colors.primary} />
 						)}
 					</TouchableOpacity>

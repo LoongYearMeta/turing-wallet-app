@@ -29,13 +29,9 @@ export default function AddressBookScreen() {
 	const loadAddresses = async () => {
 		try {
 			const bookAddresses = await getAllAddressesFromBook();
-			
-			// 获取当前账户地址
 			const currentAddress = getCurrentAccountAddress();
-			
-			// 检查当前地址是否已在地址簿中
+
 			if (!bookAddresses.includes(currentAddress)) {
-				// 将当前地址添加到地址列表的开头
 				setAddresses([currentAddress, ...bookAddresses]);
 			} else {
 				setAddresses(bookAddresses);

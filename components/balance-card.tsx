@@ -7,21 +7,36 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
 import { getExchangeRate, getTbcBalance } from '@/actions/get-balance';
+import { get_BTC_AddressBalance, getBTCPriceInfo } from '@/actions/get-btc-information';
 import { RoundButton } from '@/components/ui/round-button';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
-import { formatBalance } from '@/lib/util';
+import { formatBalance, formatBalance_btc } from '@/lib/util';
+import { AccountType } from '@/types';
 
 export const BalanceCard = () => {
-	const { getCurrentAccountAddress, getCurrentAccountBalance, updateCurrentAccountTbcBalance } =
-		useAccount();
+	const {
+		getCurrentAccountAddress,
+		getCurrentAccountBalance,
+		updateCurrentAccountTbcBalance,
+		updateCurrentAccountBtcBalance,
+		getCurrentAccountType,
+	} = useAccount();
+
 	const balance = getCurrentAccountBalance();
 	const address = getCurrentAccountAddress();
+	const accountType = getCurrentAccountType();
 	const [rate, setRate] = useState(0);
 	const [changePercent, setChangePercent] = useState(0);
 	const [isLoading, setIsLoading] = useState(false);
 
-	const totalAssets = (balance?.tbc ?? 0) * rate;
+	const disableMultiSig =
+		accountType === AccountType.TAPROOT ||
+		accountType === AccountType.TAPROOT_LEGACY ||
+		accountType === AccountType.LEGACY;
+	const displayBtc = accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY;
+	const displayBalance = displayBtc ? (balance?.btc ?? 0) : (balance?.tbc ?? 0);
+	const totalAssets = displayBalance * rate;
 
 	const handleCopyAddress = async () => {
 		if (address) {
@@ -42,16 +57,30 @@ export const BalanceCard = () => {
 
 				setIsLoading(true);
 				try {
-					const { rate, changePercent } = await getExchangeRate();
-					setRate(rate);
-					setChangePercent(changePercent);
-
 					const address = getCurrentAccountAddress();
 					if (!address) {
 						throw new Error('No address found');
 					}
-					const balanceData = await getTbcBalance(address);
-					await updateCurrentAccountTbcBalance(balanceData);
+
+					if (displayBtc) {
+						const [balanceData, priceInfo] = await Promise.all([
+							get_BTC_AddressBalance(address),
+							getBTCPriceInfo(),
+						]);
+
+						await updateCurrentAccountBtcBalance(balanceData.total);
+						setRate(priceInfo.currentPrice);
+						setChangePercent(priceInfo.priceChangePercent24h);
+					} else {
+						const [balanceData, { rate, changePercent }] = await Promise.all([
+							getTbcBalance(address),
+							getExchangeRate(),
+						]);
+
+						await updateCurrentAccountTbcBalance(balanceData);
+						setRate(rate);
+						setChangePercent(changePercent);
+					}
 				} catch (error) {
 					console.error('Failed to fetch balance data:', error);
 					Toast.show({
@@ -66,14 +95,17 @@ export const BalanceCard = () => {
 
 			fetchData();
 		}
-	}, [isFocused]);
+	}, [isFocused, displayBtc]);
 
 	return (
 		<View style={styles.container}>
 			<View style={styles.header}>
 				<View style={styles.leftContent}>
-					<Text style={styles.title}>TBC Balance</Text>
-					<Text style={styles.balance}>{formatBalance(balance?.tbc ?? 0)} TBC</Text>
+					<Text style={styles.title}>{displayBtc ? 'BTC Balance' : 'TBC Balance'}</Text>
+					<Text style={styles.balance}>
+						{displayBtc ? formatBalance_btc(displayBalance) : formatBalance(displayBalance)}{' '}
+						{displayBtc ? 'BTC' : 'TBC'}
+					</Text>
 					<View style={styles.rateContainer}>
 						<Text style={styles.rateText}>${rate}</Text>
 						<View style={styles.changeContainer}>
@@ -111,9 +143,13 @@ export const BalanceCard = () => {
 				<Link href="/(tabs)/home/history" asChild>
 					<RoundButton icon="history" label="History" />
 				</Link>
-				<Link href="/(tabs)/home/multiSig" asChild>
-					<RoundButton icon="people" label="MultiSig" />
-				</Link>
+				{disableMultiSig ? (
+					<RoundButton icon="people" label="MultiSig" disabled={true} />
+				) : (
+					<Link href="/(tabs)/home/multiSig" asChild>
+						<RoundButton icon="people" label="MultiSig" />
+					</Link>
+				)}
 			</View>
 		</View>
 	);
@@ -208,5 +244,8 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-around',
 		alignItems: 'center',
 		paddingTop: 10,
+	},
+	disabledButton: {
+		opacity: 0.5,
 	},
 });

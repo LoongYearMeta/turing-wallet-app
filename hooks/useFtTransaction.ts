@@ -37,7 +37,7 @@ export const useFtTransaction = () => {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys);
+				const { walletWif } = retrieveKeys(password, encryptedKeys,);
 				let privateKey: tbc.PrivateKey;
 				if (isTaprootLegacyAccount()) {
 					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
@@ -158,7 +158,7 @@ export const useFtTransaction = () => {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys);
+				const { walletWif } = retrieveKeys(password, encryptedKeys,);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const Token = new contract.FT(contractId);
 				const TokenInfo = await contract.API.fetchFtInfo(Token.contractTxid);
@@ -229,7 +229,7 @@ export const useFtTransaction = () => {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys);
+				const { walletWif } = retrieveKeys(password, encryptedKeys,);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const script_asm = contract.MultiSig.getMultiSigLockScript(address_from);
 				const umtxo = await contract.API.fetchUMTXO(script_asm, 0.01, 'mainnet');
@@ -298,7 +298,7 @@ export const useFtTransaction = () => {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys);
+				const { walletWif } = retrieveKeys(password, encryptedKeys,);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const Token = new contract.FT(contractId);
 				const TokenInfo = await contract.API.fetchFtInfo(Token.contractTxid, 'mainnet');

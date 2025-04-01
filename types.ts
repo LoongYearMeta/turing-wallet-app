@@ -4,6 +4,7 @@ export interface PubKey {
 export interface Addresses {
 	tbcAddress: string;
 	taprootAddress: string;
+	legacyAddress: string;
 	taprootLegacyAddress: string;
 }
 export interface Balance {
@@ -24,6 +25,7 @@ export enum AccountType {
 	TBC = 'tbc',
 	TAPROOT = 'taproot',
 	TAPROOT_LEGACY = 'taproot_legacy',
+	LEGACY = 'legacy',
 }
 
 export interface Account {

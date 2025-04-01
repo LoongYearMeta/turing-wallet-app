@@ -1,7 +1,7 @@
 import '@/shim';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
@@ -24,6 +24,7 @@ import {
 	type FT,
 	type FTPublic,
 } from '@/utils/sqlite';
+import { AccountType } from '@/types';
 
 type TabType = 'owned' | 'added';
 
@@ -32,25 +33,32 @@ export default function HomePage() {
 	const [ownedTokens, setOwnedTokens] = useState<FT[]>([]);
 	const [addedTokens, setAddedTokens] = useState<FTPublic[]>([]);
 	const [searchText, setSearchText] = useState('');
-	const { getCurrentAccountAddress } = useAccount();
+	const { getCurrentAccountAddress, getCurrentAccountType } = useAccount();
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [tokenToDelete, setTokenToDelete] = useState<FT | FTPublic | null>(null);
 	const [addModalVisible, setAddModalVisible] = useState(false);
+	const accountType = getCurrentAccountType();
+	const disableTokens = accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY;
 
-	useFocusEffect(
-		useCallback(() => {
+	useEffect(() => {
+		if (disableTokens) {
+			setOwnedTokens([]);
+			setAddedTokens([]);
+		} else {
 			if (activeTab === 'owned') {
 				loadOwnedTokens();
-			} else if (activeTab === 'added' && addedTokens.length === 0) {
+			} else {
 				loadAddedTokens();
 			}
-		}, [activeTab, addedTokens.length]),
-	);
+		}
+	}, [disableTokens, activeTab]);
 
 	const loadOwnedTokens = async () => {
 		try {
-			const tokens = await getActiveFTs(getCurrentAccountAddress());
-			setOwnedTokens(tokens);
+			if (!disableTokens) {
+				const tokens = await getActiveFTs(getCurrentAccountAddress());
+				setOwnedTokens(tokens);
+			}
 		} catch (error) {
 			console.error('Failed to load owned tokens:', error);
 		}
@@ -58,8 +66,10 @@ export default function HomePage() {
 
 	const loadAddedTokens = async () => {
 		try {
-			const tokens = await getAllFTPublics();
-			setAddedTokens(tokens);
+			if (!disableTokens) {
+				const tokens = await getAllFTPublics();
+				setAddedTokens(tokens);
+			}
 		} catch (error) {
 			console.error('Failed to load added tokens:', error);
 		}
@@ -150,18 +160,34 @@ export default function HomePage() {
 				await removeFTPublic(tokenToDelete.id);
 				await loadAddedTokens();
 			}
-			Toast.show({
-				type: 'success',
-				text1: 'Success',
-				text2: 'Token deleted successfully',
-			});
+			if ('amount' in tokenToDelete) {
+				Toast.show({
+					type: 'success',
+					text1: 'Success',
+					text2: 'Token hidden successfully',
+				});
+			} else {
+				Toast.show({
+					type: 'success',
+					text1: 'Success',
+					text2: 'Token deleted successfully',
+				});
+			}
 		} catch (error) {
-			console.error('Failed to delete token:', error);
-			Toast.show({
-				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to delete token',
-			});
+			console.error('Failed to hide token:', error);
+			if ('amount' in tokenToDelete) {
+				Toast.show({
+					type: 'error',
+					text1: 'Error',
+					text2: 'Failed to hide token',
+				});
+			} else {
+				Toast.show({
+					type: 'error',
+					text1: 'Error',
+					text2: 'Failed to delete token',
+				});
+			}
 		} finally {
 			setDeleteModalVisible(false);
 			setTokenToDelete(null);
@@ -219,6 +245,8 @@ export default function HomePage() {
 						onSort={handleSort}
 						onRefresh={handleRefresh}
 						onAddToken={handleAddToken}
+						disableAddToken={disableTokens}
+						disableAllActions={disableTokens}
 					/>
 					{activeTab === 'owned'
 						? filteredOwnedTokens.map((token) => (

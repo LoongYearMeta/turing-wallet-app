@@ -8,6 +8,7 @@ import {
 	Text,
 	TouchableOpacity,
 	View,
+	ScrollView,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 
@@ -24,7 +25,7 @@ const CreatePage = () => {
 	const { getPassKey, getSalt } = useAccount();
 	const passKey = getPassKey();
 	const salt = getSalt();
-	const hasExistingAccount = passKey && salt;
+	const initialHasAccount = React.useRef(passKey && salt).current;
 
 	const [password, setPassword] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
@@ -62,46 +63,49 @@ const CreatePage = () => {
 	};
 
 	const validateAndSubmitForm = async () => {
-		if (hasExistingAccount) {
-			if (!confirmPassword) {
-				showToast('error', 'Please enter your password');
-				setIsSubmitting(false);
-				return;
-			}
-			if (!verifyPassword(confirmPassword, passKey, salt)) {
-				showToast('error', 'Incorrect password');
-				setIsSubmitting(false);
-				return;
-			}
-			setPassword(confirmPassword);
-		} else {
-			if (!password || !confirmPassword) {
-				showToast('error', 'Please fill in all fields');
-				setIsSubmitting(false);
-				return;
-			}
-			if (!validatePassword(password)) {
-				showToast('error', 'Password must be 6-15 characters and contain only letters and numbers');
-				setIsSubmitting(false);
-				return;
-			}
-			if (password !== confirmPassword) {
-				showToast('error', 'Passwords do not match');
-				setIsSubmitting(false);
-				return;
-			}
-		}
-
 		try {
+			if (initialHasAccount) {
+				if (!confirmPassword) {
+					showToast('error', 'Please enter your password');
+					setIsSubmitting(false);
+					return;
+				}
+				if (!verifyPassword(confirmPassword, passKey, salt)) {
+					showToast('error', 'Incorrect password');
+					setIsSubmitting(false);
+					return;
+				}
+				setPassword(confirmPassword);
+			} else {
+				if (!password || !confirmPassword) {
+					showToast('error', 'Please fill in all fields');
+					setIsSubmitting(false);
+					return;
+				}
+				if (!validatePassword(password)) {
+					showToast(
+						'error',
+						'Password must be 6-15 characters and contain only letters and numbers',
+					);
+					setIsSubmitting(false);
+					return;
+				}
+				if (password !== confirmPassword) {
+					showToast('error', 'Passwords do not match');
+					setIsSubmitting(false);
+					return;
+				}
+			}
+
 			setLoading(true);
 
-			if (hasExistingAccount) {
+			if (initialHasAccount) {
 				const result = generateKeysEncrypted_mnemonic(password, salt);
 				if (!result) {
 					throw new Error('Failed to generate keys');
 				}
 
-				const { encryptedKeys, tbcAddress, pubKey, taprootAddress, taprootLegacyAddress } = result;
+				const { encryptedKeys, tbcAddress, pubKey, taprootAddress, taprootLegacyAddress, legacyAddress } = result;
 
 				const accountsCount = getAccountsCount();
 				const newAccount: Account = {
@@ -110,6 +114,7 @@ const CreatePage = () => {
 						tbcAddress,
 						taprootAddress,
 						taprootLegacyAddress,
+						legacyAddress,
 					},
 					encryptedKeys,
 					balance: {
@@ -139,6 +144,7 @@ const CreatePage = () => {
 					pubKey,
 					taprootAddress,
 					taprootLegacyAddress,
+					legacyAddress,
 				} = result;
 
 				await setPassKeyAndSalt(passKey, salt);
@@ -150,6 +156,7 @@ const CreatePage = () => {
 						tbcAddress,
 						taprootAddress,
 						taprootLegacyAddress,
+						legacyAddress,
 					},
 					encryptedKeys,
 					balance: {
@@ -164,20 +171,17 @@ const CreatePage = () => {
 				};
 
 				await addAccount(newAccount);
-
 				await setCurrentAccount(tbcAddress);
 			}
 
-			await new Promise((resolve) => setTimeout(resolve, 100));
+			router.replace('/(tabs)/home');
 			showToast('success', 'Wallet created successfully!');
-			setTimeout(() => {
-				router.replace('/(tabs)/home');
-			}, 1500);
 		} catch (error) {
 			console.error('Error creating wallet:', error);
 			showToast('error', 'Failed to create wallet. Please try again.');
-			setIsSubmitting(false);
+		} finally {
 			setLoading(false);
+			setIsSubmitting(false);
 		}
 	};
 
@@ -192,71 +196,74 @@ const CreatePage = () => {
 	return (
 		<ScreenWrapper bg={'white'}>
 			<StatusBar style="dark" />
-			<View style={styles.container}>
-				<View style={styles.content}>
-					<View>
-						<Text style={styles.welcomeText}>
-							{hasExistingAccount ? 'Confirm Password' : 'Set your password'}
-						</Text>
-					</View>
-
-					<View style={styles.form}>
-						{!hasExistingAccount && (
-							<Text style={styles.description}>
-								Please set a password to protect your wallet. Once you forget it, you can set a new
-								one by resetting and re-importing your wallet.
+			{loading ? (
+				<View style={styles.loadingContent}>
+					<ActivityIndicator size="large" color={theme.colors.primary} />
+					<Text style={styles.loadingText}>Creating your wallet, please wait...</Text>
+				</View>
+			) : (
+				<ScrollView
+					style={styles.content}
+					showsVerticalScrollIndicator={false}
+					contentContainerStyle={styles.contentContainer}
+					bounces={true}
+				>
+					<View style={styles.container}>
+						<View>
+							<Text style={styles.welcomeText}>
+								{initialHasAccount ? 'Confirm Password' : 'Set your password'}
 							</Text>
-						)}
+						</View>
 
-						{!hasExistingAccount ? (
+						<View style={styles.form}>
+							{!initialHasAccount && (
+								<Text style={styles.description}>
+									Please set a password to protect your wallet. Once you forget it, you can set a new
+									one by resetting and re-importing your wallet.
+								</Text>
+							)}
+
+							{!initialHasAccount ? (
+								<View style={styles.inputGroup}>
+									<Text style={styles.label}>Password</Text>
+									<Input
+										icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
+										secureTextEntry
+										placeholder="Set your password"
+										value={password}
+										onChangeText={setPassword}
+										editable={!isButtonDisabled}
+									/>
+								</View>
+							) : null}
+
 							<View style={styles.inputGroup}>
-								<Text style={styles.label}>Password</Text>
+								<Text style={styles.label}>
+									{initialHasAccount ? 'Password' : 'Confirm Password'}
+								</Text>
 								<Input
 									icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
 									secureTextEntry
-									placeholder="Set your password"
-									value={password}
-									onChangeText={setPassword}
+									placeholder={initialHasAccount ? 'Enter your password' : 'Confirm your password'}
+									value={confirmPassword}
+									onChangeText={setConfirmPassword}
 									editable={!isButtonDisabled}
 								/>
 							</View>
-						) : null}
-
-						<View style={styles.inputGroup}>
-							<Text style={styles.label}>
-								{hasExistingAccount ? 'Password' : 'Confirm Password'}
-							</Text>
-							<Input
-								icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
-								secureTextEntry
-								placeholder={hasExistingAccount ? 'Enter your password' : 'Confirm your password'}
-								value={confirmPassword}
-								onChangeText={setConfirmPassword}
-								editable={!isButtonDisabled}
-							/>
 						</View>
-					</View>
-				</View>
 
-				<View style={styles.bottomContainer}>
-					<TouchableOpacity
-						style={buttonStyle}
-						onPress={onSubmit}
-						disabled={isButtonDisabled}
-						activeOpacity={0.5}
-						pressRetentionOffset={{ top: 10, left: 10, bottom: 10, right: 10 }}
-					>
-						{loading ? (
-							<View style={styles.loadingContainer}>
-								<ActivityIndicator color="white" size="small" />
-								<Text style={styles.buttonText}>Creating wallet...</Text>
-							</View>
-						) : (
+						<TouchableOpacity
+							style={buttonStyle}
+							onPress={onSubmit}
+							disabled={isButtonDisabled}
+							activeOpacity={0.5}
+							pressRetentionOffset={{ top: 10, left: 10, bottom: 10, right: 10 }}
+						>
 							<Text style={styles.buttonText}>Create account</Text>
-						)}
-					</TouchableOpacity>
-				</View>
-			</View>
+						</TouchableOpacity>
+					</View>
+				</ScrollView>
+			)}
 		</ScreenWrapper>
 	);
 };
@@ -265,19 +272,21 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		paddingHorizontal: wp(5),
-		justifyContent: 'space-between',
 	},
 	content: {
-		gap: 30,
+		flex: 1,
+	},
+	contentContainer: {
 		paddingTop: hp(4),
 	},
 	welcomeText: {
 		fontSize: hp(2.8),
 		fontWeight: '700',
 		color: theme.colors.text,
+		marginBottom: hp(2),
 	},
 	form: {
-		gap: 25,
+		gap: hp(2),
 	},
 	input: {
 		flexDirection: 'row',
@@ -301,8 +310,9 @@ const styles = StyleSheet.create({
 		letterSpacing: 0.5,
 	},
 	bottomContainer: {
-		gap: hp(3),
-		marginBottom: hp(4),
+		paddingHorizontal: wp(2),
+		paddingBottom: hp(4),
+		backgroundColor: 'white',
 	},
 	footer: {
 		flexDirection: 'row',
@@ -339,6 +349,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		borderRadius: theme.radius.xl,
 		borderCurve: 'continuous',
+		marginTop: hp(3),
 	},
 	buttonSubmitting: {
 		backgroundColor: '#999',
@@ -351,11 +362,17 @@ const styles = StyleSheet.create({
 		color: 'white',
 		fontWeight: '700',
 	},
-	loadingContainer: {
-		flexDirection: 'row',
-		alignItems: 'center',
+	loadingContent: {
+		flex: 1,
 		justifyContent: 'center',
-		gap: wp(2),
+		alignItems: 'center',
+		gap: hp(3),
+	},
+	loadingText: {
+		fontSize: hp(1.8),
+		color: theme.colors.text,
+		textAlign: 'center',
+		marginHorizontal: wp(10),
 	},
 });
 
