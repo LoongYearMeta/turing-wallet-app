@@ -14,8 +14,8 @@ import Toast from 'react-native-toast-message';
 
 import { syncTransactionHistory } from '@/actions/get-transaction-history';
 import {
-	sync_Taproot_TransactionHistory,
 	sync_Legacy_TransactionHistory,
+	sync_Taproot_TransactionHistory,
 } from '@/actions/get-btc-information';
 import { TransactionHistoryCard } from '@/components/transaction-cards/transaction-history-card';
 import { useAccount } from '@/hooks/useAccount';
@@ -47,10 +47,10 @@ const HistoryPage = () => {
 				return ['P2PKH', 'TBC20', 'TBC721', 'TBC MS'];
 			case AccountType.TAPROOT_LEGACY:
 				return ['P2PKH', 'TBC20', 'TBC721'];
-			case AccountType.TAPROOT:
-				return ['P2TR'];
 			case AccountType.LEGACY:
 				return ['P2PKH'];
+			case AccountType.TAPROOT:
+				return ['P2TR'];
 			default:
 				return ['P2PKH'];
 		}

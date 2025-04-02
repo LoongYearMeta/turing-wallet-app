@@ -138,7 +138,7 @@ export async function sync_Taproot_TransactionHistory(address: string): Promise<
 		const currentTimestamp = Math.floor(Date.now() / 1000);
 
 		for (const tx of transactions) {
-			const existingTx = await getTransactionHistoryById(tx.txid);
+			const existingTx = await getTransactionHistoryById(tx.txid, address);
 
 			if (existingTx && existingTx.timestamp === tx.timestamp) {
 				break;
@@ -148,7 +148,7 @@ export async function sync_Taproot_TransactionHistory(address: string): Promise<
 				await updateTransactionHistory({
 					...existingTx,
 					timestamp: tx.timestamp || currentTimestamp,
-				});
+				}, address);
 				continue;
 			}
 
@@ -175,7 +175,7 @@ export async function sync_Legacy_TransactionHistory(address: string): Promise<v
 		const currentTimestamp = Math.floor(Date.now() / 1000);
 
 		for (const tx of transactions) {
-			const existingTx = await getTransactionHistoryById(tx.txid);
+			const existingTx = await getTransactionHistoryById(tx.txid, address);
 
 			if (existingTx && existingTx.timestamp === tx.timestamp) {
 				break;
@@ -185,7 +185,7 @@ export async function sync_Legacy_TransactionHistory(address: string): Promise<v
 				await updateTransactionHistory({
 					...existingTx,
 					timestamp: tx.timestamp || currentTimestamp,
-				});
+				}, address);
 				continue;
 			}
 

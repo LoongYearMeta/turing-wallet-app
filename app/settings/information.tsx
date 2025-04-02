@@ -223,7 +223,9 @@ export default function InformationPage() {
 									</TouchableOpacity>
 								</View>
 								<Text style={styles.addressDescription}>
-									Use this address to trade TBC, TBC721, TBC20 assets and connect to DApps. You can also create MultiSig wallets with this address for more secure storage of your TBC and TBC20 assets
+									Use this address to trade TBC, TBC721, TBC20 assets and connect to DApps. You can
+									also create MultiSig wallets with this address for more secure storage of your TBC
+									and TBC20 assets
 								</Text>
 							</View>
 						</View>
@@ -246,9 +248,7 @@ export default function InformationPage() {
 										<MaterialIcons name="content-copy" size={16} color={theme.colors.primary} />
 									</TouchableOpacity>
 								</View>
-								<Text style={styles.addressDescription}>
-									Use this address to trade BTC
-								</Text>
+								<Text style={styles.addressDescription}>Use this address to trade BTC</Text>
 							</View>
 						</View>
 					</>
@@ -270,9 +270,7 @@ export default function InformationPage() {
 										<MaterialIcons name="content-copy" size={16} color={theme.colors.primary} />
 									</TouchableOpacity>
 								</View>
-								<Text style={styles.addressDescription}>
-									Use this address to trade BTC
-								</Text>
+								<Text style={styles.addressDescription}>Use this address to trade BTC</Text>
 							</View>
 						</View>
 					</>
@@ -297,7 +295,9 @@ export default function InformationPage() {
 									</TouchableOpacity>
 								</View>
 								<Text style={styles.addressDescription}>
-									Use this address to trade TBC, TBC721, TBC20 assets. If you use inscription cross-chain @https://bitbus.net/, you will receive corresponding TBC20 assets at this address
+									Use this address to trade TBC, TBC721, TBC20 assets. If you use inscription
+									cross-chain @https://bitbus.net/, you will receive corresponding TBC and TBC20
+									assets at this address
 								</Text>
 							</View>
 						</View>

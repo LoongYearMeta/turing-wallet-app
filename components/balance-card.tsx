@@ -63,10 +63,10 @@ export const BalanceCard = () => {
 					if (displayBtc) {
 						const [balanceData, priceInfo] = await Promise.all([
 							get_BTC_AddressBalance(address).catch(() => ({ total: balance?.btc ?? 0 })),
-							getBTCPriceInfo().catch(() => ({ 
+							getBTCPriceInfo().catch(() => ({
 								currentPrice: rate,
-								priceChangePercent24h: changePercent
-							}))
+								priceChangePercent24h: changePercent,
+							})),
 						]);
 
 						await updateCurrentAccountBtcBalance(balanceData.total);
@@ -75,10 +75,10 @@ export const BalanceCard = () => {
 					} else {
 						const [balanceData, rateData] = await Promise.all([
 							getTbcBalance(address).catch(() => balance?.tbc ?? 0),
-							getExchangeRate().catch(() => ({ 
+							getExchangeRate().catch(() => ({
 								rate: rate,
-								changePercent: changePercent
-							}))
+								changePercent: changePercent,
+							})),
 						]);
 
 						await updateCurrentAccountTbcBalance(balanceData);
@@ -145,7 +145,7 @@ export const BalanceCard = () => {
 				{disableMultiSig ? (
 					<RoundButton icon="people" label="MultiSig" disabled={true} />
 				) : (
-					<Link href="/(tabs)/home/multiSig" asChild>
+					<Link href="/multiSigs/multiSig-transactions" asChild>
 						<RoundButton icon="people" label="MultiSig" />
 					</Link>
 				)}

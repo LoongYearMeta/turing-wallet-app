@@ -113,6 +113,7 @@ const styles = StyleSheet.create({
 		textAlign: 'right',
 		lineHeight: hp(2.2),
 		textAlignVertical: 'center',
+		paddingTop: hp(0.1),
 	},
 	input: {
 		flex: 1,
@@ -124,7 +125,6 @@ const styles = StyleSheet.create({
 		textAlign: 'left',
 		textAlignVertical: 'center',
 		height: '100%',
-		paddingBottom: hp(0.4),
 	},
 	disabledInput: {
 		opacity: 0.5,

@@ -20,7 +20,7 @@ import { useTbcTransaction } from '@/hooks/useTbcTransaction';
 import { useBtcTransaction } from '@/hooks/useBtcTransaction';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
-import { formatBalance, formatFee, formatFee_btc } from '@/lib/util';
+import { formatBalance, formatFee, formatFee_btc, formatBalance_btc } from '@/lib/util';
 import { getActiveFTs, getFT, removeFT, transferFT, upsertFT, type FT } from '@/utils/sqlite';
 import { fetchUTXOs } from '@/actions/get-utxos';
 import { AccountType } from '@/types';
@@ -46,6 +46,13 @@ interface Asset {
 	balance: number;
 	contractId?: string;
 }
+
+const formatDisplayAddress = (address: string) => {
+	if (address.startsWith('bc1p')) {
+		return `${address.slice(0, 20)}...${address.slice(-20)}`;
+	}
+	return address;
+};
 
 export default function SendPage() {
 	const {
@@ -98,7 +105,13 @@ export default function SendPage() {
 		try {
 			if (accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY) {
 				const btcBalance = getCurrentAccountBalance();
-				const assetList: Asset[] = [{ label: 'BTC', value: 'BTC', balance: btcBalance?.btc || 0 }];
+				const assetList: Asset[] = [
+					{
+						label: 'BTC',
+						value: 'BTC',
+						balance: Number(btcBalance?.btc || 0),
+					},
+				];
 				setAssets(assetList);
 				setSelectedAsset(assetList[0]);
 				setFormData((prev) => ({ ...prev, asset: 'BTC' }));
@@ -333,8 +346,7 @@ export default function SendPage() {
 
 		try {
 			if (accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY) {
-				const txid = await broadcastTransaction(pendingTransaction.txHex);
-				console.log('txid', txid);
+				await broadcastTransaction(pendingTransaction.txHex);
 			} else {
 				try {
 					await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
@@ -452,7 +464,10 @@ export default function SendPage() {
 							disabled={accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY}
 						>
 							<Text style={styles.selectedAssetText}>
-								{selectedAsset.label}: {formatBalance(selectedAsset.balance)}
+								{selectedAsset.label}:{' '}
+								{selectedAsset.value === 'BTC'
+									? formatBalance_btc(selectedAsset.balance)
+									: formatBalance(selectedAsset.balance)}
 							</Text>
 						</TouchableOpacity>
 					</View>
@@ -469,13 +484,26 @@ export default function SendPage() {
 				</View>
 				<View style={styles.inputWrapper}>
 					<TextInput
-						style={[styles.input, formErrors.addressTo && styles.inputError]}
+						style={[
+							styles.input,
+							formErrors.addressTo && styles.inputError,
+							formData.addressTo.length > 0 && { color: 'transparent' },
+						]}
 						value={formData.addressTo}
 						onChangeText={(text) => handleInputChange('addressTo', text)}
 						placeholder="Enter recipient address"
 						autoCapitalize="none"
 						autoCorrect={false}
 					/>
+					{formData.addressTo.length > 0 && (
+						<View
+							style={[styles.addressPreviewContainer, formErrors.addressTo && styles.inputError]}
+						>
+							<Text style={styles.addressPreview} numberOfLines={1}>
+								{formatDisplayAddress(formData.addressTo)}
+							</Text>
+						</View>
+					)}
 					{formData.addressTo.length > 0 && (
 						<TouchableOpacity
 							style={styles.clearButton}
@@ -701,5 +729,18 @@ const styles = StyleSheet.create({
 	},
 	inputError: {
 		borderColor: '#ff4444',
+	},
+	addressPreviewContainer: {
+		position: 'absolute',
+		left: 0,
+		right: 0,
+		top: 0,
+		bottom: 0,
+		justifyContent: 'center',
+		paddingHorizontal: wp(3),
+	},
+	addressPreview: {
+		fontSize: hp(1.6),
+		color: '#333',
 	},
 });

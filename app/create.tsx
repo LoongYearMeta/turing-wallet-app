@@ -204,7 +204,14 @@ const CreatePage = () => {
 			{loading ? (
 				<View style={styles.loadingContent}>
 					<ActivityIndicator size="large" color={theme.colors.primary} />
-					<Text style={styles.loadingText}>Creating your wallet, please wait...</Text>
+					<Text style={styles.loadingText}>
+						{initialHasAccount
+							? 'Creating additional wallet, please wait...'
+							: 'Creating your first wallet, please wait...'}
+					</Text>
+					<Text style={styles.loadingSubText}>
+						This may take a few moments while we generate your secure wallet.
+					</Text>
 				</View>
 			) : (
 				<ScrollView
@@ -371,11 +378,19 @@ const styles = StyleSheet.create({
 		flex: 1,
 		justifyContent: 'center',
 		alignItems: 'center',
-		gap: hp(3),
+		gap: hp(2),
+		marginTop: hp(10),
 	},
 	loadingText: {
 		fontSize: hp(1.8),
 		color: theme.colors.text,
+		textAlign: 'center',
+		marginHorizontal: wp(10),
+		fontWeight: '600',
+	},
+	loadingSubText: {
+		fontSize: hp(1.6),
+		color: theme.colors.text + '80',
 		textAlign: 'center',
 		marginHorizontal: wp(10),
 	},

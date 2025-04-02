@@ -18,6 +18,22 @@ export default function MultiSigssLayout() {
 					headerBackVisible: true,
 				}}
 			/>
+			<Stack.Screen
+				name="multiSig-transactions"
+				options={{
+					headerTitle: 'MultiSig Transactions',
+					headerTitleStyle: styles.headerTitle,
+					headerBackVisible: true,
+				}}
+			/>
+			<Stack.Screen
+				name="initiate-multiSig-transaction"
+				options={{
+					headerTitle: 'Initiate a new multiSig transaction',
+					headerTitleStyle: styles.headerTitle,
+					headerBackVisible: true,
+				}}
+			/>
 		</Stack>
 	);
 }

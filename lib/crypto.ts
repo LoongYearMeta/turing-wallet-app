@@ -13,7 +13,7 @@ export const deriveKey = (password: string, salt: string): string => {
 	try {
 		const key = CryptoJS.PBKDF2(password, salt, {
 			keySize: 256 / 32,
-			iterations: 1000,
+			iterations: 10000,
 		});
 		return key.toString();
 	} catch (error) {

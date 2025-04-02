@@ -88,6 +88,8 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				isDeleted INTEGER DEFAULT 0,
 				user_address TEXT
 			);
+			CREATE INDEX IF NOT EXISTS idx_collection_user ON Collection(user_address, isDeleted);
+
 			CREATE TABLE IF NOT EXISTS NFT (
 				id TEXT PRIMARY KEY,
 				collection_id TEXT,
@@ -102,6 +104,9 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				isDeleted INTEGER DEFAULT 0,
 				user_address TEXT
 			);
+			CREATE INDEX IF NOT EXISTS idx_nft_collection ON NFT(collection_id, isDeleted);
+			CREATE INDEX IF NOT EXISTS idx_nft_user ON NFT(user_address, isDeleted);
+
 			CREATE TABLE IF NOT EXISTS FT (
 				id TEXT,
 				name TEXT,
@@ -112,8 +117,11 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				user_address TEXT,
 				PRIMARY KEY (id, user_address)
 			);
+			CREATE INDEX IF NOT EXISTS idx_ft_user ON FT(user_address, isDeleted);
+			CREATE INDEX IF NOT EXISTS idx_ft_name ON FT(name, user_address, isDeleted);
+
 			CREATE TABLE IF NOT EXISTS TransactionHistory (
-				id TEXT PRIMARY KEY,
+				id TEXT,
 				send_address TEXT,
 				receive_address TEXT,
 				fee REAL,
@@ -121,8 +129,12 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				type TEXT,
 				balance_change REAL,
 				user_address TEXT,
-				account_type TEXT
+				account_type TEXT,
+				PRIMARY KEY (id, user_address)
 			);
+			CREATE INDEX IF NOT EXISTS idx_tx_user_type ON TransactionHistory(user_address, account_type, timestamp DESC);
+			CREATE INDEX IF NOT EXISTS idx_tx_timestamp ON TransactionHistory(timestamp DESC);
+
 			CREATE TABLE IF NOT EXISTS NFT_History (
 				id TEXT PRIMARY KEY,
 				send_address TEXT,
@@ -130,6 +142,8 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				timestamp INTEGER,
 				contract_id TEXT
 			);
+			CREATE INDEX IF NOT EXISTS idx_nft_history_contract ON NFT_History(contract_id, timestamp DESC);
+
 			CREATE TABLE IF NOT EXISTS FT_History (
 				id TEXT PRIMARY KEY,
 				send_address TEXT,
@@ -139,12 +153,16 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				contract_id TEXT,
 				balance_change REAL
 			);
+			CREATE INDEX IF NOT EXISTS idx_ft_history_contract ON FT_History(contract_id, timestamp DESC);
+
 			CREATE TABLE IF NOT EXISTS MultiSig (
 				multiSig_address TEXT PRIMARY KEY,
 				pubKeys TEXT,
 				isDeleted INTEGER DEFAULT 0,
 				user_address TEXT
 			);
+			CREATE INDEX IF NOT EXISTS idx_multisig_user ON MultiSig(user_address, isDeleted);
+
 			CREATE TABLE IF NOT EXISTS FT_Public (
 				id TEXT PRIMARY KEY,
 				name TEXT NOT NULL,
@@ -153,6 +171,8 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				supply REAL NOT NULL,
 				holds_count INTEGER NOT NULL
 			);
+			CREATE INDEX IF NOT EXISTS idx_ft_public_name ON FT_Public(name);
+
 			CREATE TABLE IF NOT EXISTS AddressBook (
 				address TEXT PRIMARY KEY
 			);
@@ -490,9 +510,15 @@ export async function getFTHistoryByContractId(contractId: string): Promise<FTHi
 	);
 }
 
-export async function getTransactionHistoryById(id: string): Promise<TransactionHistory | null> {
+export async function getTransactionHistoryById(
+	id: string, 
+	userAddress: string
+): Promise<TransactionHistory | null> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	return await db.getFirstAsync('SELECT * FROM TransactionHistory WHERE id = ?', [id]);
+	return await db.getFirstAsync(
+		'SELECT * FROM TransactionHistory WHERE id = ? AND user_address = ?', 
+		[id, userAddress]
+	);
 }
 
 export async function getNFTHistoryById(id: string): Promise<NFTHistory | null> {
@@ -778,7 +804,10 @@ export async function updateFTHistory(history: FTHistory): Promise<void> {
 	);
 }
 
-export async function updateTransactionHistory(history: TransactionHistory): Promise<void> {
+export async function updateTransactionHistory(
+	history: TransactionHistory, 
+	userAddress: string
+): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
 		`UPDATE TransactionHistory SET 
@@ -788,7 +817,7 @@ export async function updateTransactionHistory(history: TransactionHistory): Pro
 		 timestamp = ?, 
 		 type = ?,
 		 balance_change = ? 
-		 WHERE id = ?`,
+		 WHERE id = ? AND user_address = ?`,
 		[
 			history.send_address,
 			history.receive_address,
@@ -797,6 +826,7 @@ export async function updateTransactionHistory(history: TransactionHistory): Pro
 			history.type,
 			history.balance_change,
 			history.id,
+			userAddress
 		],
 	);
 }

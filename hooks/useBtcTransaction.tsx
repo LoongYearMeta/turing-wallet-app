@@ -1,3 +1,4 @@
+import '@/shim';
 import { useCallback } from 'react';
 import * as bitcoin from 'bitcoinjs-lib';
 import axios from 'axios';
@@ -132,19 +133,28 @@ export const useBtcTransaction = () => {
 			const { walletWif } = retrieveKeys(password, encryptedKeys);
 			const keyPair = createFromWIF(walletWif);
 
+			const internalPubkey = Buffer.from(keyPair.publicKey.subarray(1, 33));
 			const amountSatoshis = Math.floor(amount_btc * Math.pow(10, 8));
 
 			const psbt = new bitcoin.Psbt({ network });
 
 			for (const utxo of utxos) {
 				try {
+					const txHex = await getTxHexBuffer(utxo.txid);
+					const tx = bitcoin.Transaction.fromBuffer(txHex);
+					const output = tx.outs[utxo.vout];
+
 					psbt.addInput({
 						hash: utxo.txid,
 						index: utxo.vout,
-						nonWitnessUtxo: await getTxHexBuffer(utxo.txid),
+						witnessUtxo: {
+							script: output.script,
+							value: output.value,
+						},
+						tapInternalKey: internalPubkey,
 					});
 				} catch (error: any) {
-					throw new Error(`${error.message}`);
+					throw new Error(`Failed to add transaction input: ${error.message}`);
 				}
 			}
 
@@ -153,7 +163,7 @@ export const useBtcTransaction = () => {
 				value: amountSatoshis,
 			});
 
-			const estimatedSize = utxos.length * 180 + 2 * 34 + 10;
+			const estimatedSize = utxos.length * 150 + 2 * 34 + 10;
 			let estimatedFee = Math.ceil(estimatedSize * feeRateSatoshisPerByte);
 
 			const maxFeeRatio = 0.5;
@@ -161,21 +171,18 @@ export const useBtcTransaction = () => {
 
 			if (estimatedFee > amountSatoshis * maxFeeRatio) {
 				actualFeeRate = Math.max(1, Math.floor(feeRateSatoshisPerByte / 2));
-
 				const newEstimatedFee = Math.ceil(estimatedSize * actualFeeRate);
-
 				estimatedFee = newEstimatedFee;
 			}
 
 			const changeAmount = totalInputAmount - amountSatoshis - estimatedFee;
-
 			if (changeAmount < 0) {
 				throw new Error(`Insufficient funds`);
 			}
 
 			if (changeAmount > 546) {
-				const changeAddress = bitcoin.payments.p2pkh({
-					pubkey: keyPair.publicKey,
+				const changeAddress = bitcoin.payments.p2tr({
+					internalPubkey: internalPubkey,
 					network,
 				}).address!;
 
@@ -185,15 +192,24 @@ export const useBtcTransaction = () => {
 				});
 			}
 
-			for (let i = 0; i < utxos.length; i++) {
-				psbt.signInput(i, keyPair);
+			try {
+				const tweakedSigner = keyPair.tweak(bitcoin.crypto.taggedHash('TapTweak', internalPubkey));
+
+				for (let i = 0; i < utxos.length; i++) {
+					try {
+						await psbt.signInputAsync(i, tweakedSigner);
+					} catch (error: any) {
+						console.error(`Error signing input ${i}:`, error);
+						throw new Error(`Failed to sign input ${i}: ${error.message}`);
+					}
+				}
+				psbt.finalizeAllInputs();
+				const tx = psbt.extractTransaction();
+				return tx.toHex();
+			} catch (error: any) {
+				console.error('Tweak error:', error);
+				throw new Error(`Failed to tweak signer: ${error.message}`);
 			}
-
-			psbt.finalizeAllInputs();
-
-			const tx = psbt.extractTransaction();
-
-			return tx.toHex();
 		},
 		[getTxHexBuffer, selectOptimalUtxos],
 	);
@@ -316,6 +332,7 @@ export const useBtcTransaction = () => {
 
 		try {
 			const response = await axios.post(`${baseUrl}/tx`, txHex);
+			console.log('txid:', response.data);
 			return response.data;
 		} catch (error) {
 			if (axios.isAxiosError(error) && error.response) {
