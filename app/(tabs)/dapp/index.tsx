@@ -12,6 +12,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Navbar } from '@/components/ui/navbar';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { wp, hp } from '@/lib/common';
+import { router } from 'expo-router';
 
 interface DApp {
 	id: string;
@@ -76,6 +77,13 @@ const dapps: DApp[] = [
 export default function DAppPage() {
 	const [searchText, setSearchText] = useState('');
 
+	const handleDAppPress = (dapp: DApp) => {
+		router.push({
+			pathname: '/dapp/webview',
+			params: { url: dapp.url, name: dapp.name },
+		});
+	};
+
 	const filteredDapps = dapps.filter(
 		(dapp) =>
 			dapp.name.toLowerCase().startsWith(searchText.toLowerCase()) ||
@@ -107,7 +115,11 @@ export default function DAppPage() {
 					<View style={styles.listContainer}>
 						{filteredDapps.length > 0 ? (
 							filteredDapps.map((dapp) => (
-								<TouchableOpacity key={dapp.id} style={styles.dappItem}>
+								<TouchableOpacity
+									key={dapp.id}
+									style={styles.dappItem}
+									onPress={() => handleDAppPress(dapp)}
+								>
 									<Image source={dapp.icon} style={styles.icon} />
 									<View style={styles.dappInfo}>
 										<Text style={styles.name}>{dapp.name}</Text>
