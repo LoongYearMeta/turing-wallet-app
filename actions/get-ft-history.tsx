@@ -1,5 +1,4 @@
-import axios from 'axios';
-
+import { api } from '@/lib/axios';
 import { addFTHistory, getFTHistoryById, updateFTHistory, type FTHistory } from '@/utils/sqlite';
 
 interface FTHistoryResponse {
@@ -24,7 +23,7 @@ export async function fetchFTHistory(
 	contract_id: string,
 	page: number,
 ): Promise<FTHistoryResponse> {
-	const response = await axios.get(
+	const response = await api.get(
 		`https://turingwallet.xyz/v1/tbc/main/ft/history/address/${address}/contract/${contract_id}/page/${page}/size/10`,
 	);
 	return response.data;

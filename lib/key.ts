@@ -148,7 +148,15 @@ export const verifyPassword = (password: string, passKey: string, salt: string):
 	}
 	try {
 		const derivedKey = deriveKey(password, salt);
-		return derivedKey === passKey;
+		if (derivedKey.length !== passKey.length) {
+			return false;
+		}
+		
+		let result = 0;
+		for (let i = 0; i < derivedKey.length; i++) {
+			result |= derivedKey.charCodeAt(i) ^ passKey.charCodeAt(i);
+		}
+		return result === 0;
 	} catch (error) {
 		return false;
 	}

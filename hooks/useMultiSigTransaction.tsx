@@ -1,5 +1,6 @@
-import axios from 'axios';
 import { create } from 'zustand';
+
+import { api } from '@/lib/axios';
 
 interface MultiSigTxSignature {
 	pubkey: string;
@@ -36,7 +37,6 @@ interface MultiSigTransactionState {
 	isLoading: boolean;
 	error: string | null;
 
-	// Actions
 	fetchTransactions: (address: string, page: number) => Promise<void>;
 	setPage: (page: number) => void;
 	setLoading: (loading: boolean) => void;
@@ -71,7 +71,7 @@ const useMultiSigTransaction = create<MultiSigTransactionState>((set) => ({
 	fetchTransactions: async (address: string, page: number) => {
 		set({ isLoading: true, error: null });
 		try {
-			const response = await axios.get<MultiSigTransactionResponse>(
+			const response = await api.get<MultiSigTransactionResponse>(
 				`https://turingwallet.xyz/multy/sig/history/address/${address}/page/${page}/size/50`,
 			);
 			const { history_count, history_list } = response.data;

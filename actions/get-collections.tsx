@@ -1,6 +1,5 @@
-import axios from 'axios';
-
 import { addCollection, getCollection, getCollectionCount, type Collection } from '@/utils/sqlite';
+import { api } from '@/lib/axios';
 
 interface CollectionResponse {
 	collectionCount: number;
@@ -18,7 +17,7 @@ interface CollectionResponse {
 }
 
 export async function fetchCollections(address: string, page: number): Promise<CollectionResponse> {
-	const response = await axios.get(
+	const response = await api.get(
 		`https://turingwallet.xyz/v1/tbc/main/nft/collection/address/${address}/page/${page}/size/10`,
 	);
 	return response.data;
@@ -30,7 +29,7 @@ export async function getCollectionInfo(
 	try {
 		const response = await fetchCollections(address, 0);
 		const totalCount = response.collectionCount;
-		const maxPage = Math.ceil(totalCount / 10) - 1; 
+		const maxPage = Math.ceil(totalCount / 10) - 1;
 		return { totalCount, maxPage };
 	} catch (error) {
 		return { totalCount: 0, maxPage: 0 };
@@ -40,10 +39,8 @@ export async function getCollectionInfo(
 export async function initCollections(address: string): Promise<void> {
 	try {
 		const { maxPage } = await getCollectionInfo(address);
-
 		for (let page = 0; page <= maxPage; page++) {
 			const response = await fetchCollections(address, page);
-
 			for (const col of response.collectionList) {
 				const collection: Collection = {
 					id: col.collectionId,
@@ -53,7 +50,6 @@ export async function initCollections(address: string): Promise<void> {
 					icon: col.collectionIcon,
 					isDeleted: false,
 				};
-
 				await addCollection(collection, address);
 			}
 		}
@@ -66,7 +62,7 @@ export async function syncCollections(address: string): Promise<void> {
 	try {
 		const { totalCount } = await getCollectionInfo(address);
 		const dbCount = await getCollectionCount(address);
-			
+
 		if (dbCount === totalCount) {
 			return;
 		}
@@ -75,7 +71,7 @@ export async function syncCollections(address: string): Promise<void> {
 		while (true) {
 			const response = await fetchCollections(address, page);
 			let foundExisting = false;
-			
+
 			for (const col of response.collectionList) {
 				const existingCollection = await getCollection(col.collectionId);
 				if (existingCollection) {

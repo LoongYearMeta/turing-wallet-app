@@ -511,13 +511,13 @@ export async function getFTHistoryByContractId(contractId: string): Promise<FTHi
 }
 
 export async function getTransactionHistoryById(
-	id: string, 
-	userAddress: string
+	id: string,
+	userAddress: string,
 ): Promise<TransactionHistory | null> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getFirstAsync(
-		'SELECT * FROM TransactionHistory WHERE id = ? AND user_address = ?', 
-		[id, userAddress]
+		'SELECT * FROM TransactionHistory WHERE id = ? AND user_address = ?',
+		[id, userAddress],
 	);
 }
 
@@ -805,8 +805,8 @@ export async function updateFTHistory(history: FTHistory): Promise<void> {
 }
 
 export async function updateTransactionHistory(
-	history: TransactionHistory, 
-	userAddress: string
+	history: TransactionHistory,
+	userAddress: string,
 ): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
@@ -826,7 +826,7 @@ export async function updateTransactionHistory(
 			history.type,
 			history.balance_change,
 			history.id,
-			userAddress
+			userAddress,
 		],
 	);
 }

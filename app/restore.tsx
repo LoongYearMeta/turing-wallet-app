@@ -56,8 +56,31 @@ const RestorePage = () => {
 	];
 
 	const validatePassword = (password: string) => {
-		const passwordRegex = /^[a-zA-Z0-9]{6,15}$/;
-		return passwordRegex.test(password);
+		if (password.length < 16) {
+			showToast('error', 'Password must be at least 16 characters long');
+			return false;
+		}
+		const hasUpperCase = /[A-Z]/.test(password);
+		const hasLowerCase = /[a-z]/.test(password);
+		const hasNumbers = /[0-9]/.test(password);
+		const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(password);
+
+		if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+			showToast(
+				'error',
+				'Password must contain uppercase letters, lowercase letters, numbers, and special characters',
+			);
+			return false;
+		}
+
+		for (let i = 0; i < password.length - 2; i++) {
+			if (password[i] === password[i + 1] && password[i] === password[i + 2]) {
+				showToast('error', 'Password cannot contain three consecutive identical characters');
+				return false;
+			}
+		}
+
+		return true;
 	};
 
 	const showToast = (type: 'success' | 'error' | 'info', message: string) => {
@@ -123,7 +146,6 @@ const RestorePage = () => {
 			}
 
 			if (!validatePassword(password)) {
-				showToast('error', 'Password must be 6-15 characters and contain only letters and numbers');
 				setIsSubmitting(false);
 				return;
 			}
@@ -260,6 +282,7 @@ const RestorePage = () => {
 					showsVerticalScrollIndicator={false}
 					contentContainerStyle={styles.contentContainer}
 					bounces={true}
+					keyboardShouldPersistTaps="handled"
 				>
 					<View style={styles.container}>
 						<View>
@@ -267,7 +290,15 @@ const RestorePage = () => {
 						</View>
 						<View style={styles.form}>
 							<Text style={styles.description}>
-								Please enter your mnemonic phrase to restore your wallet.
+								Please enter your mnemonic phrase{hasExistingAccount ? '' : ' and set a password'}{' '}
+								to restore your wallet.
+								{!hasExistingAccount &&
+									`
+									\nThe password must:
+									\n- Be at least 16 characters long
+									\n- Include uppercase letters, lowercase letters, numbers, and special characters
+									\n- Not contain three consecutive identical characters
+								`}
 							</Text>
 
 							<View style={styles.inputGroup}>
@@ -376,12 +407,14 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		paddingHorizontal: wp(5),
+		paddingBottom: hp(4),
 	},
 	content: {
 		flex: 1,
 	},
 	contentContainer: {
-		paddingTop: hp(4),
+		flexGrow: 1,
+		paddingVertical: hp(4),
 	},
 	welcomeText: {
 		fontSize: hp(2.8),
@@ -391,6 +424,7 @@ const styles = StyleSheet.create({
 	},
 	form: {
 		gap: hp(2),
+		marginBottom: hp(2),
 	},
 	description: {
 		fontSize: hp(1.5),

@@ -2,7 +2,6 @@ import '@/shim';
 import { useCallback } from 'react';
 import * as contract from 'tbc-contract';
 import * as tbc from 'tbc-lib-js';
-import axios from 'axios';
 
 import { fetchUTXOs } from '@/actions/get-utxos';
 import { useAccount } from '@/hooks/useAccount';
@@ -12,7 +11,7 @@ import { getTaprootTweakPrivateKey } from '@/lib/taproot-legacy';
 import { calculateFee } from '@/lib/util';
 import { Transaction } from '@/types';
 import { getMultiSigPubKeys } from '@/utils/sqlite';
-
+import { api } from '@/lib/axios';
 export const useFtTransaction = () => {
 	const {
 		isTaprootLegacyAccount,
@@ -37,7 +36,7 @@ export const useFtTransaction = () => {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys,);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				let privateKey: tbc.PrivateKey;
 				if (isTaprootLegacyAccount()) {
 					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
@@ -158,7 +157,7 @@ export const useFtTransaction = () => {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys,);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const Token = new contract.FT(contractId);
 				const TokenInfo = await contract.API.fetchFtInfo(Token.contractTxid);
@@ -229,7 +228,7 @@ export const useFtTransaction = () => {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys,);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const script_asm = contract.MultiSig.getMultiSigLockScript(address_from);
 				const umtxo = await contract.API.fetchUMTXO(script_asm, 0.01, 'mainnet');
@@ -298,7 +297,7 @@ export const useFtTransaction = () => {
 					throw new Error('No keys found');
 				}
 
-				const { walletWif } = retrieveKeys(password, encryptedKeys,);
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
 				const Token = new contract.FT(contractId);
 				const TokenInfo = await contract.API.fetchFtInfo(Token.contractTxid, 'mainnet');
@@ -383,7 +382,7 @@ export const useFtTransaction = () => {
 							sig_list: sigs,
 						},
 					};
-					const response = await axios.post(url, request);
+					const response = await api.post(url, request);
 
 					const { status, message } = response.data;
 
@@ -417,7 +416,7 @@ export const useFtTransaction = () => {
 							sig_list: sigs,
 						},
 					};
-					const response = await axios.post(url, request);
+					const response = await api.post(url, request);
 
 					const { status, message } = response.data;
 
@@ -537,6 +536,33 @@ export const useFtTransaction = () => {
 		[getCurrentAccountUtxos, updateCurrentAccountUtxos, sendTbc],
 	);
 
+	const getFTUtxoByContractId = useCallback(
+		async (address_from: string, ft_amount: number | BigInt, contract_id: string) => {
+			try {
+				const { data } = await api.get(
+					`https://turingwallet.xyz/v1/tbc/main/ft/utxo/address/${address_from}/contract/${contract_id}`,
+				);
+				if (!data) throw new Error('Failed to fetch FT UTXO!');
+				const decimal = data.ftUtxoList[0].ftDecimal;
+				const totalFtBalance =
+					typeof ft_amount === 'number'
+						? BigInt(Math.floor(ft_amount * Math.pow(10, decimal)))
+						: ft_amount;
+
+				for (let i = 0; i < data.ftUtxoList.length; i++) {
+					const ftutxo = data.ftUtxoList[i];
+					if (ftutxo.ftBalance > totalFtBalance) {
+						return ftutxo;
+					}
+				}
+				return null;
+			} catch (error: any) {
+				throw new Error(error.message);
+			}
+		},
+		[],
+	);
+
 	return {
 		sendFT,
 		mergeFT,
@@ -545,5 +571,6 @@ export const useFtTransaction = () => {
 		transferFT_multiSig_finish,
 		getUTXO,
 		createMultiSigTransaction,
+		getFTUtxoByContractId,
 	};
 };

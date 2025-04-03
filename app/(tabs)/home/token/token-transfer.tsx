@@ -64,6 +64,8 @@ const TokenTransferPage = () => {
 		utxos: any[];
 	} | null>(null);
 	const currentAddress = getCurrentAccountAddress();
+	const passKey = getPassKey();
+	const salt = getSalt();
 
 	useEffect(() => {
 		if (amount) {
@@ -110,9 +112,6 @@ const TokenTransferPage = () => {
 				setFormErrors((prev) => ({ ...prev, password: 'Password is required' }));
 				return;
 			}
-
-			const passKey = getPassKey();
-			const salt = getSalt();
 
 			if (!passKey || !salt) {
 				setFormErrors((prev) => ({
@@ -179,8 +178,6 @@ const TokenTransferPage = () => {
 		const amountError = validateAmount(formData.amount);
 		if (addressError || amountError) return;
 
-		const passKey = getPassKey();
-		const salt = getSalt();
 		if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
 			return;
 		}

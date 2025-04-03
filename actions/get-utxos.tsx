@@ -1,15 +1,20 @@
 import { StoredUtxo } from '@/types';
+import { api } from '@/lib/axios';
+
+interface UTXOResponse {
+	tx_hash: string;
+	tx_pos: number;
+	height: number;
+	value: number;
+}
 
 export async function fetchUTXOs(address: string): Promise<StoredUtxo[]> {
 	const url = `https://turingwallet.xyz/v1/tbc/main/address/${address}/unspent/`;
 
 	try {
-		const response = await fetch(url);
-		if (!response.ok) {
-			throw new Error('Failed to fetch UTXO: '.concat(response.statusText));
-		}
-		const data: { tx_hash: string; tx_pos: number; height: number; value: number }[] =
-			await response.json();
+		const response = await api.get<UTXOResponse[]>(url);
+		const data = response.data;
+		
 		if (data.length === 0) {
 			throw new Error('The balance in the account is zero.');
 		}
@@ -23,6 +28,6 @@ export async function fetchUTXOs(address: string): Promise<StoredUtxo[]> {
 			address: address,
 		}));
 	} catch (error: any) {
-		throw new Error(error.message);
+		throw new Error(error.message || 'Failed to fetch UTXOs');
 	}
 }

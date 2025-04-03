@@ -1,9 +1,8 @@
 import '@/shim';
-import axios from 'axios';
 import * as contract from 'tbc-contract';
 import * as tbc from 'tbc-lib-js';
 
-import type { Balance } from '@/types';
+import { api } from '@/lib/axios';
 
 interface BalanceResponse {
 	status: number;
@@ -30,7 +29,7 @@ interface FTBalanceResponse {
 }
 
 export async function getTbcBalance(address: string): Promise<number> {
-	const response = await axios.get<BalanceResponse>(
+	const response = await api.get<BalanceResponse>(
 		`https://turingwallet.xyz/v1/tbc/main/address/${address}/get/balance`,
 	);
 
@@ -42,7 +41,7 @@ export async function getTbcBalance(address: string): Promise<number> {
 }
 
 export const getExchangeRate = async () => {
-	const res = await axios.get(`https://turingwallet.xyz/v1/tbc/main/exchangerate/`);
+	const res = await api.get(`https://turingwallet.xyz/v1/tbc/main/exchangerate/`);
 	if (!res.data) {
 		throw new Error('Could not fetch exchange rate ');
 	}
@@ -63,7 +62,7 @@ export async function getTbcBalance_byMultiSigAddress(address: string): Promise<
 	const url = `https://turingwallet.xyz/v1/tbc/main/script/hash/${script_hash}/unspent/`;
 
 	try {
-		const response = await axios.get<UnspentOutput[]>(url);
+		const response = await api.get<UnspentOutput[]>(url);
 		const totalValue = response.data.reduce((sum, utxo) => sum + utxo.value, 0);
 		return totalValue * 1e-6;
 	} catch (error) {
@@ -77,7 +76,7 @@ export async function getFTBalance_byCombinedHash(
 ): Promise<number> {
 	try {
 		const combine_script = contract.MultiSig.getCombineHash(address);
-		const response = await axios.get<FTBalanceResponse>(
+		const response = await api.get<FTBalanceResponse>(
 			`https://turingwallet.xyz/v1/tbc/main/ft/balance/combine/script/${combine_script}/contract/${contract_id}`,
 		);
 

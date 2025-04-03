@@ -1,6 +1,5 @@
-import axios from 'axios';
-
 import { addMultiSig, getAllMultiSigs, type MultiSig } from '@/utils/sqlite';
+import { api } from '@/lib/axios';
 
 interface MultiSigResponse {
 	multi_wallet_list: {
@@ -10,7 +9,7 @@ interface MultiSigResponse {
 }
 
 export async function fetchMultiSigs(address: string): Promise<MultiSigResponse> {
-	const response = await axios.get(
+	const response = await api.get(
 		`https://turingwallet.xyz/v1/tbc/main/multisig/pubkeys/address/${address}`,
 	);
 	const uniqueWallets = new Map();

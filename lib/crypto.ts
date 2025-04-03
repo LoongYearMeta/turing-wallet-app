@@ -12,10 +12,12 @@ export const generateRandomSalt = (length = 16): string => {
 export const deriveKey = (password: string, salt: string): string => {
 	try {
 		const key = CryptoJS.PBKDF2(password, salt, {
-			keySize: 256 / 32,
+			keySize: 512 / 32,
 			iterations: 10000,
+			hasher: CryptoJS.algo.SHA256
 		});
-		return key.toString();
+		const finalKey = CryptoJS.SHA256(key);
+		return finalKey.toString();
 	} catch (error) {
 		return '';
 	}

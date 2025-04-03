@@ -96,6 +96,8 @@ export default function SendPage() {
 
 	const currentAddress = getCurrentAccountAddress();
 	const accountType = getCurrentAccountType();
+	const passKey = getPassKey();
+	const salt = getSalt();
 
 	useEffect(() => {
 		loadAssets();
@@ -183,9 +185,6 @@ export default function SendPage() {
 				return;
 			}
 
-			const passKey = getPassKey();
-			const salt = getSalt();
-
 			if (!passKey || !salt) {
 				setFormErrors((prev) => ({
 					...prev,
@@ -255,6 +254,10 @@ export default function SendPage() {
 		const addressError = validateAddress(formData.addressTo);
 		const amountError = validateAmount(formData.amount);
 		if (addressError || amountError || formErrors.password) return;
+
+		if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
+			return;
+		}
 
 		setIsCalculatingFee(true);
 		try {

@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 import {
 	addTransactionHistory,
 	getTransactionHistoryById,
@@ -7,6 +5,7 @@ import {
 	updateTransactionHistory,
 } from '@/utils/sqlite';
 import { selectAddress } from '@/lib/util';
+import { api } from '@/lib/axios';
 
 interface TransactionHistoryResponse {
 	address: string;
@@ -29,7 +28,7 @@ export async function fetchTransactionHistory(
 	address: string,
 	page: number,
 ): Promise<TransactionHistoryResponse> {
-	const response = await axios.get(
+	const response = await api.get(
 		`https://turingwallet.xyz/v1/tbc/main/address/${address}/history/page/${page}`,
 	);
 	return response.data;
@@ -66,7 +65,7 @@ export async function initTransactionHistory(address: string): Promise<void> {
 					receive_address: receiveAddress,
 					fee: parseFloat(tx.fee),
 					timestamp: tx.time_stamp,
-					type: tx.tx_type,
+					type: tx.tx_type === 'P2MS' ? 'TBC MS' : tx.tx_type,
 					balance_change: parseFloat(tx.balance_change),
 				};
 				await addTransactionHistory(history, address, 'tbc');
@@ -118,7 +117,7 @@ export async function syncTransactionHistory(address: string): Promise<void> {
 					receive_address: receiveAddress,
 					fee: parseFloat(tx.fee),
 					timestamp: tx.time_stamp || currentTimestamp,
-					type: tx.tx_type,
+					type: tx.tx_type === 'P2MS' ? 'TBC MS' : tx.tx_type,
 					balance_change: parseFloat(tx.balance_change),
 				};
 				await addTransactionHistory(history, address, 'tbc');

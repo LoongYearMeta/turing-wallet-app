@@ -1,11 +1,11 @@
 import '@/shim';
 import { useCallback } from 'react';
 import * as bitcoin from 'bitcoinjs-lib';
-import axios from 'axios';
 
 import { createFromWIF } from '@/lib/taproot';
 import { useAccount } from '@/hooks/useAccount';
 import { retrieveKeys } from '@/lib/key';
+import { api } from '@/lib/axios';
 
 interface UTXO {
 	txid: string;
@@ -16,23 +16,43 @@ interface UTXO {
 
 export const useBtcTransaction = () => {
 	const getUTXOsFromBlockstream = useCallback(async (address: string): Promise<UTXO[]> => {
-		const baseUrl = 'https://blockstream.info/api';
+		const APIs = [
+			{
+				url: 'https://blockstream.info/api',
+				fetch: async () => {
+					const response = await api.get(`https://blockstream.info/api/address/${address}/utxo`);
+					return response.data.map((utxo: any) => ({
+						txid: utxo.txid,
+						vout: utxo.vout,
+						value: utxo.value,
+						address: address,
+					}));
+				},
+			},
+			{
+				url: 'https://mempool.space/api',
+				fetch: async () => {
+					const response = await api.get(`https://mempool.space/api/address/${address}/utxo`);
+					return response.data.map((utxo: any) => ({
+						txid: utxo.txid,
+						vout: utxo.vout,
+						value: utxo.value,
+						address: address,
+					}));
+				},
+			},
+		];
 
-		try {
-			const response = await axios.get(`${baseUrl}/address/${address}/utxo`);
-
-			return response.data.map((utxo: any) => ({
-				txid: utxo.txid,
-				vout: utxo.vout,
-				value: utxo.value,
-				address: address,
-			}));
-		} catch (error) {
-			if (axios.isAxiosError(error) && error.response) {
-				throw new Error(`Failed to get UTXOs: ${error.response.statusText}`);
+		for (const API of APIs) {
+			try {
+				return await API.fetch();
+			} catch (error) {
+				console.warn(`Failed to fetch UTXOs from ${API.url}:`, error);
+				continue;
 			}
-			throw error;
 		}
+
+		throw new Error('Failed to get UTXOs.');
 	}, []);
 
 	const getFeeRates = useCallback(async (): Promise<{
@@ -40,34 +60,76 @@ export const useBtcTransaction = () => {
 		medium: number;
 		slow: number;
 	}> => {
-		try {
-			const response = await axios.get('https://mempool.space/api/v1/fees/recommended');
-			return {
-				fast: response.data.fastestFee,
-				medium: response.data.halfHourFee,
-				slow: response.data.economyFee,
-			};
-		} catch (error) {
-			return {
-				fast: 20,
-				medium: 10,
-				slow: 5,
-			};
+		const APIs = [
+			{
+				url: 'https://mempool.space/api',
+				fetch: async () => {
+					const response = await api.get('https://mempool.space/api/v1/fees/recommended');
+					return {
+						fast: response.data.fastestFee,
+						medium: response.data.halfHourFee,
+						slow: response.data.economyFee,
+					};
+				},
+			},
+			{
+				url: 'https://blockstream.info/api',
+				fetch: async () => {
+					const response = await api.get('https://blockstream.info/api/fee-estimates');
+					return {
+						fast: response.data['1'],
+						medium: response.data['3'],
+						slow: response.data['6'],
+					};
+				},
+			},
+		];
+
+		for (const API of APIs) {
+			try {
+				return await API.fetch();
+			} catch (error) {
+				console.warn(`Failed to fetch fee rates from ${API.url}:`, error);
+				continue;
+			}
 		}
+
+		// 如果所有API都失败，返回默认值
+		return {
+			fast: 20,
+			medium: 10,
+			slow: 5,
+		};
 	}, []);
 
 	const getTxHexBuffer = useCallback(async (txid: string): Promise<Buffer> => {
-		const baseUrl = 'https://blockstream.info/api';
+		const APIs = [
+			{
+				url: 'https://blockstream.info/api',
+				fetch: async () => {
+					const response = await api.get(`https://blockstream.info/api/tx/${txid}/hex`);
+					return Buffer.from(response.data, 'hex');
+				},
+			},
+			{
+				url: 'https://mempool.space/api',
+				fetch: async () => {
+					const response = await api.get(`https://mempool.space/api/tx/${txid}/hex`);
+					return Buffer.from(response.data, 'hex');
+				},
+			},
+		];
 
-		try {
-			const response = await axios.get(`${baseUrl}/tx/${txid}/hex`);
-			return Buffer.from(response.data, 'hex');
-		} catch (error) {
-			if (axios.isAxiosError(error) && error.response) {
-				throw new Error(`Failed to get transaction data: ${error.response.statusText}`);
+		for (const API of APIs) {
+			try {
+				return await API.fetch();
+			} catch (error) {
+				console.warn(`Failed to fetch tx hex from ${API.url}:`, error);
+				continue;
 			}
-			throw error;
 		}
+
+		throw new Error('Failed to get transaction data.');
 	}, []);
 
 	const selectOptimalUtxos = useCallback(
@@ -327,20 +389,35 @@ export const useBtcTransaction = () => {
 		[],
 	);
 
-	async function broadcastTransaction(txHex: string): Promise<string> {
-		const baseUrl = 'https://blockstream.info/api';
+	const broadcastTransaction = useCallback(async (txHex: string): Promise<string> => {
+		const APIs = [
+			{
+				url: 'https://blockstream.info/api',
+				fetch: async () => {
+					const response = await api.post(`https://blockstream.info/api/tx`, txHex);
+					return response.data;
+				},
+			},
+			{
+				url: 'https://mempool.space/api',
+				fetch: async () => {
+					const response = await api.post(`https://mempool.space/api/tx`, txHex);
+					return response.data;
+				},
+			},
+		];
 
-		try {
-			const response = await axios.post(`${baseUrl}/tx`, txHex);
-			console.log('txid:', response.data);
-			return response.data;
-		} catch (error) {
-			if (axios.isAxiosError(error) && error.response) {
-				throw new Error(`Broadcast transaction failed: ${error.response.data}`);
+		for (const API of APIs) {
+			try {
+				return await API.fetch();
+			} catch (error) {
+				console.warn(`Failed to broadcast tx from ${API.url}:`, error);
+				continue;
 			}
-			throw error;
 		}
-	}
+
+		throw new Error('Failed to broadcast transaction.');
+	}, []);
 
 	return {
 		getUTXOsFromBlockstream,

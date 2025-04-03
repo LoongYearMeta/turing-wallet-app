@@ -1,5 +1,4 @@
-import axios from 'axios';
-
+import { api } from '@/lib/axios';
 import { getAllFTs, getFT, removeFT, upsertFT, type FT } from '@/utils/sqlite';
 
 interface FTResponse {
@@ -15,7 +14,7 @@ interface FTResponse {
 }
 
 export async function fetchFTs(address: string): Promise<FTResponse> {
-	const response = await axios.get(
+	const response = await api.get(
 		`https://turingwallet.xyz/v1/tbc/main/ft/tokens/held/by/address/${address}`,
 	);
 	return response.data;

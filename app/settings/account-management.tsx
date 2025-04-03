@@ -47,7 +47,7 @@ export default function AccountManagementPage() {
 					accountToDelete.addresses.taprootAddress,
 					accountToDelete.addresses.taprootLegacyAddress,
 					accountToDelete.addresses.legacyAddress,
-				].filter(Boolean); 
+				].filter(Boolean);
 
 				for (const addr of addressesToDelete) {
 					await deleteAccountData(addr);

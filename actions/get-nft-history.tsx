@@ -1,11 +1,10 @@
-import axios from 'axios';
-
 import {
 	addNFTHistory,
 	getNFTHistoryById,
 	updateNFTHistory,
 	type NFTHistory,
 } from '@/utils/sqlite';
+import { api } from '@/lib/axios';
 
 interface NFTHistoryResponse {
 	address: string;
@@ -29,7 +28,7 @@ interface NFTHistoryResponse {
 }
 
 export async function fetchNFTHistory(address: string, page: number): Promise<NFTHistoryResponse> {
-	const response = await axios.get(
+	const response = await api.get(
 		`https://turingwallet.xyz/v1/tbc/main/nft/history/address/${address}/page/${page}/size/10`,
 	);
 	return response.data;

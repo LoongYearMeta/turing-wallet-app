@@ -1,7 +1,5 @@
-import axios from 'axios';
-
 import { addFTPublic, type FTPublic, getFTPublic, updateFTPublicHoldsCount } from '@/utils/sqlite';
-
+import { api } from '@/lib/axios';
 interface FTInfoResponse {
 	ftContractId: string;
 	ftCodeScript: string;
@@ -20,7 +18,7 @@ interface FTInfoResponse {
 }
 
 export async function fetchFTInfo(contract_id: string): Promise<FTInfoResponse> {
-	const response = await axios.get(
+	const response = await api.get(
 		`https://turingwallet.xyz/v1/tbc/main/ft/info/contract/id/${contract_id}`,
 	);
 	return response.data;

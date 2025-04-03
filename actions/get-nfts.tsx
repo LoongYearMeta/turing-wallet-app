@@ -1,8 +1,3 @@
-import '@/shim';
-import axios from 'axios';
-import * as contract from 'tbc-contract';
-import * as tbc from 'tbc-lib-js';
-
 import {
 	addNFT,
 	getAllNFTs,
@@ -11,7 +6,7 @@ import {
 	updateNFTTransferTimes,
 	type NFT,
 } from '@/utils/sqlite';
-
+import { api } from '@/lib/axios';
 interface NFTResponse {
 	nftTotalCount: number;
 	nftList: {
@@ -36,7 +31,7 @@ interface NFTResponse {
 }
 
 export async function fetchNFTs(address: string, page: number): Promise<NFTResponse> {
-	const response = await axios.get(
+	const response = await api.get(
 		`https://turingwallet.xyz/v1/tbc/main/nft/address/${address}/page/${page}/size/10?if_extra_collection_info_needed=false`,
 	);
 	return response.data;
@@ -44,10 +39,10 @@ export async function fetchNFTs(address: string, page: number): Promise<NFTRespo
 
 export async function fetchNFTCounts_byCollection(collection_id: string): Promise<number> {
 	try {
-		const response = await axios.get(
+		const response = await api.get(
 			`https://turingwallet.xyz/v1/tbc/main/nft/collection/id/${collection_id}/page/0/size/0`,
 		);
-		
+
 		return response.data.nftTotalCount;
 	} catch (error) {
 		console.error('Failed to fetch NFT counts:', error);
@@ -71,10 +66,8 @@ export async function getNFTInfo(
 export async function initNFTs(address: string): Promise<void> {
 	try {
 		const { maxPage } = await getNFTInfo(address);
-
 		for (let page = 0; page <= maxPage; page++) {
 			const response = await fetchNFTs(address, page);
-
 			for (const nft of response.nftList) {
 				const nftData: NFT = {
 					id: nft.nftContractId,

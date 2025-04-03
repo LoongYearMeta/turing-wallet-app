@@ -1,5 +1,4 @@
 import '@/shim';
-import axios from 'axios';
 import { useCallback } from 'react';
 import * as contract from 'tbc-contract';
 import * as tbc from 'tbc-lib-js';
@@ -59,7 +58,7 @@ interface FTData {
 export const useResponse = () => {
 	const { getCurrentAccountAddress, updateCurrentAccountUtxos } = useAccount();
 	const { sendTbc, finish_transaction } = useTbcTransaction();
-	const { getUTXO, mergeFT, sendFT } = useFtTransaction();
+	const { getUTXO, mergeFT, sendFT, getFTUtxoByContractId } = useFtTransaction();
 	const { createCollection, createNFT, transferNFT } = useNftTransaction();
 
 	const sendTbcResponse = useCallback(
@@ -1079,33 +1078,6 @@ export const useResponse = () => {
 		[getCurrentAccountAddress, getUTXO, finish_transaction],
 	);
 
-	const getFTUtxoByContractId = useCallback(
-		async (address_from: string, ft_amount: number | BigInt, contract_id: string) => {
-			try {
-				const { data } = await axios.get(
-					`https://turingwallet.xyz/v1/tbc/main/ft/utxo/address/${address_from}/contract/${contract_id}`,
-				);
-				if (!data) throw new Error('Failed to fetch FT UTXO!');
-				const decimal = data.ftUtxoList[0].ftDecimal;
-				const totalFtBalance =
-					typeof ft_amount === 'number'
-						? BigInt(Math.floor(ft_amount * Math.pow(10, decimal)))
-						: ft_amount;
-
-				for (let i = 0; i < data.ftUtxoList.length; i++) {
-					const ftutxo = data.ftUtxoList[i];
-					if (ftutxo.ftBalance > totalFtBalance) {
-						return ftutxo;
-					}
-				}
-				return null;
-			} catch (error: any) {
-				throw new Error(error.message);
-			}
-		},
-		[],
-	);
-
 	return {
 		sendTbcResponse,
 		createCollectionResponse,
@@ -1121,6 +1093,5 @@ export const useResponse = () => {
 		swapToTokenResponse,
 		poolNFTMergeResponse,
 		mergeFTLPResponse,
-		getFTUtxoByContractId,
 	};
 };

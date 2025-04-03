@@ -35,8 +35,31 @@ const CreatePage = () => {
 	const router = useRouter();
 
 	const validatePassword = (password: string) => {
-		const passwordRegex = /^[a-zA-Z0-9]{6,15}$/;
-		return passwordRegex.test(password);
+		if (password.length < 16) {
+			showToast('error', 'Password must be at least 16 characters long');
+			return false;
+		}
+		const hasUpperCase = /[A-Z]/.test(password);
+		const hasLowerCase = /[a-z]/.test(password);
+		const hasNumbers = /[0-9]/.test(password);
+		const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(password);
+
+		if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+			showToast(
+				'error',
+				'Password must contain uppercase letters, lowercase letters, numbers, and special characters',
+			);
+			return false;
+		}
+
+		for (let i = 0; i < password.length - 2; i++) {
+			if (password[i] === password[i + 1] && password[i] === password[i + 2]) {
+				showToast('error', 'Password cannot contain three consecutive identical characters');
+				return false;
+			}
+		}
+
+		return true;
 	};
 
 	const showToast = (type: 'success' | 'error' | 'info', message: string) => {
@@ -83,10 +106,6 @@ const CreatePage = () => {
 					return;
 				}
 				if (!validatePassword(password)) {
-					showToast(
-						'error',
-						'Password must be 6-15 characters and contain only letters and numbers',
-					);
 					setIsSubmitting(false);
 					return;
 				}
@@ -222,16 +241,19 @@ const CreatePage = () => {
 				>
 					<View style={styles.container}>
 						<View>
-							<Text style={styles.welcomeText}>
-								{initialHasAccount ? 'Confirm Password' : 'Set your password'}
-							</Text>
+							<Text style={styles.welcomeText}>Create a new wallet</Text>
 						</View>
 
 						<View style={styles.form}>
 							{!initialHasAccount && (
 								<Text style={styles.description}>
-									Please set a password to protect your wallet. Once you forget it, you can set a
-									new one by resetting and re-importing your wallet.
+									Please set a password to protect your wallet.
+									{'\n\n'}The password must:
+									{'\n\n'}- Be at least 16 characters long
+									{'\n\n'}- Include uppercase letters, lowercase letters, numbers, and special
+									characters
+									{'\n\n'}- Not contain three consecutive identical characters
+									{'\n\n'}Once you forget it, you can set a new one by re-importing your wallet.
 								</Text>
 							)}
 
@@ -250,9 +272,7 @@ const CreatePage = () => {
 							) : null}
 
 							<View style={styles.inputGroup}>
-								<Text style={styles.label}>
-									{initialHasAccount ? 'Password' : 'Confirm Password'}
-								</Text>
+								<Text style={styles.label}>Confirm Password</Text>
 								<Input
 									icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
 									secureTextEntry
