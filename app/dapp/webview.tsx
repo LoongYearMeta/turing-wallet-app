@@ -1,13 +1,14 @@
-import { useAccount } from '@/hooks/useAccount';
-import type { SendTransactionRequest, SendTransactionResponse } from '@/hooks/useResponse';
-import { useResponse } from '@/hooks/useResponse';
-import { hp } from '@/lib/common';
-import { verifyPassword } from '@/lib/key';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { WebView } from 'react-native-webview';
+
+import { useAccount } from '@/hooks/useAccount';
+import type { SendTransactionRequest, SendTransactionResponse } from '@/hooks/useResponse';
+import { useResponse } from '@/hooks/useResponse';
+import { hp } from '@/lib/common';
+import { verifyPassword } from '@/lib/key';
 
 export default function DAppWebView() {
 	const { url, name } = useLocalSearchParams();

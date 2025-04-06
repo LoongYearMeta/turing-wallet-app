@@ -5,13 +5,15 @@ import * as tbc from 'tbc-lib-js';
 
 import { fetchUTXOs } from '@/actions/get-utxos';
 import { useAccount } from '@/hooks/useAccount';
+import { MultiSigTransaction } from '@/hooks/useMultiSigTransaction';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
+import { api } from '@/lib/axios';
 import { retrieveKeys } from '@/lib/key';
 import { getTaprootTweakPrivateKey } from '@/lib/taproot-legacy';
 import { calculateFee } from '@/lib/util';
 import { Transaction } from '@/types';
 import { getMultiSigPubKeys } from '@/utils/sqlite';
-import { api } from '@/lib/axios';
+
 export const useFtTransaction = () => {
 	const {
 		isTaprootLegacyAccount,
@@ -19,7 +21,7 @@ export const useFtTransaction = () => {
 		getCurrentAccountUtxos,
 		getCurrentAccountTbcPubKey,
 	} = useAccount();
-	const { sendTbc_multiSig_create, sendTbc } = useTbcTransaction();
+	const { sendTbc_multiSig_create, sendTbc_multiSig_sign, sendTbc_multiSig_finish, sendTbc } = useTbcTransaction();
 
 	const sendFT = useCallback(
 		async (
@@ -284,12 +286,11 @@ export const useFtTransaction = () => {
 	);
 
 	const transferFT_multiSig_sign = useCallback(
-		async (
-			contractId: string,
+		(
 			multiSigAddress: string,
 			multiSigTxraw: contract.MultiSigTxRaw,
 			password: string,
-		): Promise<string[]> => {
+		): string[] => {
 			try {
 				const encryptedKeys = useAccount.getState().getEncryptedKeys();
 
@@ -299,9 +300,6 @@ export const useFtTransaction = () => {
 
 				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
-				const Token = new contract.FT(contractId);
-				const TokenInfo = await contract.API.fetchFtInfo(Token.contractTxid, 'mainnet');
-				Token.initialize(TokenInfo);
 
 				return contract.MultiSig.signMultiSigTransaction_transferFT(
 					multiSigAddress,
@@ -429,6 +427,101 @@ export const useFtTransaction = () => {
 			}
 		},
 		[getCurrentAccountTbcPubKey, sendTbc_multiSig_create],
+	);
+
+	const signMultiSigTransaction = useCallback(
+		async (
+			multiTransaction: MultiSigTransaction,
+			password: string,
+		) => {
+			try {
+				let sigs: string[] = [];
+				if (multiTransaction.ft_contract_id) {
+					sigs = transferFT_multiSig_sign(
+						multiTransaction.multi_sig_address,
+						{ txraw: multiTransaction.tx_raw, amounts: multiTransaction.json_info.vin_balance_list },
+						password
+					);
+				} else {
+					sigs = sendTbc_multiSig_sign(
+						multiTransaction.multi_sig_address,
+						{ txraw: multiTransaction.tx_raw, amounts: multiTransaction.json_info.vin_balance_list },
+						password
+					);
+				}
+				const request = { pubkey: getCurrentAccountTbcPubKey(), sig_list: sigs };
+				const response = await api.post(
+					`https://turingwallet.xyz/multy/sig/add/multi/sig/${multiTransaction.unsigned_txid}`,
+					request,
+				);
+				if (response.data.status == 0) {
+					return;
+				} else {
+					throw new Error(`Transaction failed: ${response.data.message}`);
+				}
+			}
+			catch (error: any) {
+				throw new Error(error.message);
+			}
+		},
+		[],
+	);
+
+	const finishMultiSigTransaction = useCallback(
+		async (
+			multiTransaction: MultiSigTransaction,
+		) => {
+			try {
+				const sigs: string[][] = multiTransaction.json_info.collected_sig_list[0].sig_list.map((_, colIndex) =>
+					multiTransaction.json_info.collected_sig_list.map((item) => item.sig_list[colIndex]),);
+				let txId: string;
+				if (multiTransaction.ft_contract_id) {
+					txId = await transferFT_multiSig_finish(
+						{ txraw: multiTransaction.tx_raw, amounts: multiTransaction.json_info.vin_balance_list },
+						sigs,
+						multiTransaction.json_info.pubkey_list,
+					);
+				} else {
+					txId = await sendTbc_multiSig_finish(
+						{ txraw: multiTransaction.tx_raw, amounts: multiTransaction.json_info.vin_balance_list },
+						sigs,
+						multiTransaction.json_info.pubkey_list,
+					);
+				}
+				const response = await api.get(
+					`https://turingwallet.xyz/multy/sig/notice/${multiTransaction.unsigned_txid}`, {
+					params: { txid: txId }
+				}
+				);
+				if (response.data.status == 0) {
+					return;
+				} else {
+					throw new Error(`Transaction failed: ${response.data.message}`);
+				}
+			} catch (error: any) {
+				throw new Error(error.message);
+			}
+		},
+		[],
+	);
+
+	const withdrawMultiSigTransaction = useCallback(
+		async (
+			txId: string,
+		) => {
+			try {
+				const response = await api.get(
+					`https://turingwallet.xyz/multy/sig/withdraw/history/${txId}`);
+				if (response.data.status == 0) {
+					return;
+				} else {
+					throw new Error(`Withdraw failed: ${response.data.message}`);
+				}
+			} catch (error: any) {
+				throw new Error(error.message);
+			}
+		},
+		[],
 	);
 
 	const getUTXO = useCallback(
@@ -569,8 +662,11 @@ export const useFtTransaction = () => {
 		transferFT_multiSig_create,
 		transferFT_multiSig_sign,
 		transferFT_multiSig_finish,
-		getUTXO,
 		createMultiSigTransaction,
+		signMultiSigTransaction,
+		finishMultiSigTransaction,
+		withdrawMultiSigTransaction,
+		getUTXO,
 		getFTUtxoByContractId,
 	};
 };

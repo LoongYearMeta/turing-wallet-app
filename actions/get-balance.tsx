@@ -70,7 +70,7 @@ export async function getTbcBalance_byMultiSigAddress(address: string): Promise<
 	}
 }
 
-export async function getFTBalance_byCombinedHash(
+export async function getFTBalance_byMultiSigAddress(
 	contract_id: string,
 	address: string,
 ): Promise<number> {

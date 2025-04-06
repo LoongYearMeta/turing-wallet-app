@@ -42,6 +42,14 @@ export default function SettingsLayout() {
 					headerBackVisible: true,
 				}}
 			/>
+			<Stack.Screen
+				name="system-settings"
+				options={{
+					headerTitle: 'System Settings',
+					headerTitleStyle: styles.headerTitle,
+					headerBackVisible: true,
+				}}
+			/>
 		</Stack>
 	);
 }

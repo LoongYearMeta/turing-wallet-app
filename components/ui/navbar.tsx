@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/ui/avatar';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { DropdownMenu } from '@/components/ui/dropdown-menu';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
-import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { clearAllData } from '@/utils/sqlite';
 
 export const Navbar = () => {
@@ -47,10 +47,13 @@ export const Navbar = () => {
 				router.push('/settings/account-management');
 			},
 		},
-		// {
-		// 	label: 'System Settings',
-		// 	onPress: () => console.log('Settings'),
-		// },
+		{
+			label: 'System Settings',
+			onPress: () => {
+				setMenuVisible(false);
+				router.push('/settings/system-settings');
+			},
+		},
 		{
 			label: 'Address Book',
 			onPress: () => {
