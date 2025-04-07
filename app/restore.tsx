@@ -56,8 +56,8 @@ const RestorePage = () => {
 	];
 
 	const validatePassword = (password: string) => {
-		if (password.length < 16) {
-			showToast('error', 'Password must be at least 16 characters long');
+		if (password.length < 12) {
+			showToast('error', 'Password must be at least 12 characters long');
 			return false;
 		}
 		const hasUpperCase = /[A-Z]/.test(password);
@@ -295,7 +295,7 @@ const RestorePage = () => {
 								{!hasExistingAccount &&
 									`
 									\nThe password must:
-									\n- Be at least 16 characters long
+									\n- Be at least 12 characters long
 									\n- Include uppercase letters, lowercase letters, numbers, and special characters
 									\n- Not contain three consecutive identical characters
 								`}

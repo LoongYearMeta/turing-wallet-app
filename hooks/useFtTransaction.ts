@@ -21,7 +21,8 @@ export const useFtTransaction = () => {
 		getCurrentAccountUtxos,
 		getCurrentAccountTbcPubKey,
 	} = useAccount();
-	const { sendTbc_multiSig_create, sendTbc_multiSig_sign, sendTbc_multiSig_finish, sendTbc } = useTbcTransaction();
+	const { sendTbc_multiSig_create, sendTbc_multiSig_sign, sendTbc_multiSig_finish, sendTbc } =
+		useTbcTransaction();
 
 	const sendFT = useCallback(
 		async (
@@ -430,23 +431,26 @@ export const useFtTransaction = () => {
 	);
 
 	const signMultiSigTransaction = useCallback(
-		async (
-			multiTransaction: MultiSigTransaction,
-			password: string,
-		) => {
+		async (multiTransaction: MultiSigTransaction, password: string) => {
 			try {
 				let sigs: string[] = [];
 				if (multiTransaction.ft_contract_id) {
 					sigs = transferFT_multiSig_sign(
 						multiTransaction.multi_sig_address,
-						{ txraw: multiTransaction.tx_raw, amounts: multiTransaction.json_info.vin_balance_list },
-						password
+						{
+							txraw: multiTransaction.tx_raw,
+							amounts: multiTransaction.json_info.vin_balance_list,
+						},
+						password,
 					);
 				} else {
 					sigs = sendTbc_multiSig_sign(
 						multiTransaction.multi_sig_address,
-						{ txraw: multiTransaction.tx_raw, amounts: multiTransaction.json_info.vin_balance_list },
-						password
+						{
+							txraw: multiTransaction.tx_raw,
+							amounts: multiTransaction.json_info.vin_balance_list,
+						},
+						password,
 					);
 				}
 				const request = { pubkey: getCurrentAccountTbcPubKey(), sig_list: sigs };
@@ -459,70 +463,61 @@ export const useFtTransaction = () => {
 				} else {
 					throw new Error(`Transaction failed: ${response.data.message}`);
 				}
-			}
-			catch (error: any) {
+			} catch (error: any) {
 				throw new Error(error.message);
 			}
 		},
 		[],
 	);
 
-	const finishMultiSigTransaction = useCallback(
-		async (
-			multiTransaction: MultiSigTransaction,
-		) => {
-			try {
-				const sigs: string[][] = multiTransaction.json_info.collected_sig_list[0].sig_list.map((_, colIndex) =>
-					multiTransaction.json_info.collected_sig_list.map((item) => item.sig_list[colIndex]),);
-				let txId: string;
-				if (multiTransaction.ft_contract_id) {
-					txId = await transferFT_multiSig_finish(
-						{ txraw: multiTransaction.tx_raw, amounts: multiTransaction.json_info.vin_balance_list },
-						sigs,
-						multiTransaction.json_info.pubkey_list,
-					);
-				} else {
-					txId = await sendTbc_multiSig_finish(
-						{ txraw: multiTransaction.tx_raw, amounts: multiTransaction.json_info.vin_balance_list },
-						sigs,
-						multiTransaction.json_info.pubkey_list,
-					);
-				}
-				const response = await api.get(
-					`https://turingwallet.xyz/multy/sig/notice/${multiTransaction.unsigned_txid}`, {
-					params: { txid: txId }
-				}
+	const finishMultiSigTransaction = useCallback(async (multiTransaction: MultiSigTransaction) => {
+		try {
+			const sigs: string[][] = multiTransaction.json_info.collected_sig_list[0].sig_list.map(
+				(_, colIndex) =>
+					multiTransaction.json_info.collected_sig_list.map((item) => item.sig_list[colIndex]),
+			);
+			let txId: string;
+			if (multiTransaction.ft_contract_id) {
+				txId = await transferFT_multiSig_finish(
+					{ txraw: multiTransaction.tx_raw, amounts: multiTransaction.json_info.vin_balance_list },
+					sigs,
+					multiTransaction.json_info.pubkey_list,
 				);
-				if (response.data.status == 0) {
-					return;
-				} else {
-					throw new Error(`Transaction failed: ${response.data.message}`);
-				}
-			} catch (error: any) {
-				throw new Error(error.message);
+			} else {
+				txId = await sendTbc_multiSig_finish(
+					{ txraw: multiTransaction.tx_raw, amounts: multiTransaction.json_info.vin_balance_list },
+					sigs,
+					multiTransaction.json_info.pubkey_list,
+				);
 			}
-		},
-		[],
-	);
+			const response = await api.get(
+				`https://turingwallet.xyz/multy/sig/notice/${multiTransaction.unsigned_txid}`,
+				{
+					params: { txid: txId },
+				},
+			);
+			if (response.data.status == 0) {
+				return;
+			} else {
+				throw new Error(`Transaction failed: ${response.data.message}`);
+			}
+		} catch (error: any) {
+			throw new Error(error.message);
+		}
+	}, []);
 
-	const withdrawMultiSigTransaction = useCallback(
-		async (
-			txId: string,
-		) => {
-			try {
-				const response = await api.get(
-					`https://turingwallet.xyz/multy/sig/withdraw/history/${txId}`);
-				if (response.data.status == 0) {
-					return;
-				} else {
-					throw new Error(`Withdraw failed: ${response.data.message}`);
-				}
-			} catch (error: any) {
-				throw new Error(error.message);
+	const withdrawMultiSigTransaction = useCallback(async (txId: string) => {
+		try {
+			const response = await api.get(`https://turingwallet.xyz/multy/sig/withdraw/history/${txId}`);
+			if (response.data.status == 0) {
+				return;
+			} else {
+				throw new Error(`Withdraw failed: ${response.data.message}`);
 			}
-		},
-		[],
-	);
+		} catch (error: any) {
+			throw new Error(error.message);
+		}
+	}, []);
 
 	const getUTXO = useCallback(
 		async (

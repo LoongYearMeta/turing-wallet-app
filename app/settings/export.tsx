@@ -67,7 +67,7 @@ export default function ExportPage() {
 				setIsPasswordValid(false);
 				setKeys({ walletWif: '' });
 			}
-		}, 1500),
+		}, 1000),
 		[getPassKey, getSalt, getEncryptedKeys],
 	);
 

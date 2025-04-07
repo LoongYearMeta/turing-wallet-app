@@ -10,10 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.turingwallet"
+      "bundleIdentifier": "xyz.turingwallet.app"
     },
     "android": {
-      "package": "com.anonymous.turingwallet"
+      "package": "xyz.turingwallet.app"
     },
     "plugins": [
       "expo-router",

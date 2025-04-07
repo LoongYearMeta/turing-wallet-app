@@ -38,8 +38,8 @@ const RestoreByPriKeyPage = () => {
 	const router = useRouter();
 
 	const validatePassword = (password: string) => {
-		if (password.length < 16) {
-			showToast('error', 'Password must be at least 16 characters long');
+		if (password.length < 12) {
+			showToast('error', 'Password must be at least 12 characters long');
 			return false;
 		}
 		const hasUpperCase = /[A-Z]/.test(password);
@@ -258,13 +258,15 @@ const RestoreByPriKeyPage = () => {
 						</View>
 						<View style={styles.form}>
 							<Text style={styles.description}>
-								Please enter your private key{hasExistingAccount ? '' : ' and set a password'} to restore your wallet.
-								{!hasExistingAccount && (`
+								Please enter your private key{hasExistingAccount ? '' : ' and set a password'} to
+								restore your wallet.
+								{!hasExistingAccount &&
+									`
 									\nThe password must:
-									\n- Be at least 16 characters long
+									\n- Be at least 12 characters long
 									\n- Include uppercase letters, lowercase letters, numbers, and special characters
 									\n- Not contain three consecutive identical characters
-								`)}
+								`}
 							</Text>
 
 							<View style={styles.inputGroup}>

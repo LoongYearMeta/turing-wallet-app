@@ -152,7 +152,7 @@ const CreateCollectionPage = () => {
 					password: 'Incorrect password',
 				}));
 			}
-		}, 1500),
+		}, 1000),
 		[getPassKey, getSalt],
 	);
 

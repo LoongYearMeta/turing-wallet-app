@@ -1,13 +1,15 @@
 import { useLocalSearchParams } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { WebView } from 'react-native-webview';
+import { debounce } from 'lodash';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import { useAccount } from '@/hooks/useAccount';
 import type { SendTransactionRequest, SendTransactionResponse } from '@/hooks/useResponse';
 import { useResponse } from '@/hooks/useResponse';
-import { hp } from '@/lib/common';
+import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
 
 export default function DAppWebView() {
@@ -17,7 +19,7 @@ export default function DAppWebView() {
 	const [showTransactionForm, setShowTransactionForm] = useState(false);
 	const [currentRequest, setCurrentRequest] = useState<SendTransactionRequest[]>([]);
 	const [password, setPassword] = useState('');
-	const [processing, setProcessing] = useState(false);
+	const [formErrors, setFormErrors] = useState<{ password?: string; isValid?: boolean }>({});
 
 	const {
 		getCurrentAccountAddress,
@@ -144,19 +146,54 @@ export default function DAppWebView() {
     true;
   `;
 
-	const validatePassword = () => {
-		const encryptedPass = getPassKey();
-		const salt = getSalt();
+	const debouncedPasswordValidation = useCallback(
+		debounce(async (password: string) => {
+			if (!password) {
+				setFormErrors({ password: 'Password is required', isValid: false });
+				return;
+			}
 
-		if (!encryptedPass || !salt) {
-			return false;
-		}
+			const encryptedPass = getPassKey();
+			const salt = getSalt();
 
-		return verifyPassword(password, encryptedPass, salt);
+			if (!encryptedPass || !salt) {
+				setFormErrors({
+					password: 'Account error, please try again',
+					isValid: false,
+				});
+				return;
+			}
+
+			try {
+				const isValid = verifyPassword(password, encryptedPass, salt);
+				if (isValid) {
+					setFormErrors({ isValid: true });
+				} else {
+					setFormErrors({
+						password: 'Incorrect password',
+						isValid: false,
+					});
+				}
+			} catch (error) {
+				console.error('Password validation error:', error);
+				setFormErrors({
+					password: 'Incorrect password',
+					isValid: false,
+				});
+			}
+		}, 1000),
+		[getPassKey, getSalt],
+	);
+
+	const handlePasswordChange = (value: string) => {
+		value = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
+		setFormErrors({ isValid: false });
+		setPassword(value);
+		debouncedPasswordValidation(value);
 	};
 
 	const processTransaction = async () => {
-		if (!validatePassword()) {
+		if (!password) {
 			Toast.show({
 				type: 'error',
 				text1: 'Invalid password',
@@ -164,7 +201,6 @@ export default function DAppWebView() {
 			return { error: 'invalid-password' };
 		}
 
-		setProcessing(true);
 		try {
 			if (!currentRequest || currentRequest.length === 0) {
 				throw new Error('No transaction request found');
@@ -366,35 +402,52 @@ export default function DAppWebView() {
 		} catch (error: any) {
 			console.error('Transaction error:', error);
 			return { error: error.message || 'unknown-error' };
-		} finally {
-			setProcessing(false);
 		}
 	};
 
 	const handleSubmitTransaction = async () => {
-		const result = await processTransaction();
+		if (formErrors.password || !password) {
+			return;
+		}
 
-		setShowTransactionForm(false);
-		setCurrentRequest([]);
-		setPassword('');
-
-		webViewRef.current?.injectJavaScript(`
-			window.dispatchEvent(new CustomEvent('TuringResponse', {
-				detail: { method: 'sendTransaction', result: ${JSON.stringify(result)} }
-			}));
-		`);
+		try {
+			const response = await processTransaction();
+			webViewRef.current?.injectJavaScript(`
+				window.dispatchEvent(new CustomEvent('TuringResponse', {
+					detail: { 
+						method: 'sendTransaction', 
+						result: ${JSON.stringify(response)}
+					}
+				}));
+			`);
+		} catch (error: any) {
+			webViewRef.current?.injectJavaScript(`
+				window.dispatchEvent(new CustomEvent('TuringResponse', {
+					detail: { 
+						method: 'sendTransaction', 
+						result: { error: '${error.message}' }
+					}
+				}));
+			`);
+		} finally {
+			setPassword('');
+			setCurrentRequest([]);
+			setShowTransactionForm(false);
+		}
 	};
 
 	const handleCancelTransaction = () => {
-		setShowTransactionForm(false);
-		setCurrentRequest([]);
-		setPassword('');
-
 		webViewRef.current?.injectJavaScript(`
 			window.dispatchEvent(new CustomEvent('TuringResponse', {
-				detail: { method: 'sendTransaction', result: { error: 'user-cancelled' } }
+				detail: { 
+					method: 'sendTransaction', 
+					result: { error: 'User cancelled the transaction' }
+				}
 			}));
 		`);
+		setShowTransactionForm(false);
+		setPassword('');
+		setCurrentRequest([]);
 	};
 
 	const renderParameter = (key: string, value: any) => {
@@ -469,7 +522,6 @@ export default function DAppWebView() {
 					break;
 
 				case 'sendTransaction':
-					// Instead of processing immediately, show the transaction form
 					setCurrentRequest(data.params);
 					setShowTransactionForm(true);
 					break;
@@ -481,60 +533,83 @@ export default function DAppWebView() {
 
 	return (
 		<View style={styles.container}>
-			{showTransactionForm ? (
-				<ScrollView style={styles.formContainer}>
-					<View style={styles.formHeader}>
-						<Text style={styles.formTitle}>Transaction Request</Text>
-						<Text style={styles.formSubtitle}>Type: {currentRequest[0]?.flag}</Text>
-					</View>
+			<View style={styles.header}>
+				<Text style={styles.title}>{name}</Text>
+			</View>
+			<WebView
+				ref={webViewRef}
+				source={{ uri: url as string }}
+				injectedJavaScript={injectedJavaScript}
+				onMessage={handleMessage}
+				style={styles.webview}
+			/>
+			{showTransactionForm && (
+				<View style={styles.modalOverlay}>
+					<View style={styles.formContainer}>
+						<View style={styles.formHeader}>
+							<Text style={styles.formTitle}>Transaction Request</Text>
+							<Text style={styles.formSubtitle}>Type: {currentRequest[0]?.flag}</Text>
+						</View>
 
-					<View style={styles.paramsContainer}>
-						{Object.entries(currentRequest[0] || {}).map(([key, value]) =>
-							key !== 'flag' ? renderParameter(key, value) : null,
-						)}
-					</View>
+						<ScrollView style={styles.paramsContainer}>
+							{Object.entries(currentRequest[0] || {}).map(([key, value]) =>
+								key !== 'flag' ? renderParameter(key, value) : null,
+							)}
+						</ScrollView>
 
-					<View style={styles.passwordContainer}>
-						<Text style={styles.passwordLabel}>Enter your password to confirm:</Text>
-						<TextInput
-							style={styles.passwordInput}
-							value={password}
-							onChangeText={setPassword}
-							secureTextEntry
-							placeholder="Password"
-						/>
-					</View>
+						<View style={styles.passwordContainer}>
+							<Text style={styles.passwordLabel}>Enter your password to confirm:</Text>
+							<View style={styles.inputWrapper}>
+								<TextInput
+									style={[styles.passwordInput, formErrors.password && styles.inputError]}
+									value={password}
+									onChangeText={handlePasswordChange}
+									secureTextEntry
+									placeholder="Password"
+									placeholderTextColor="#999"
+								/>
+								{password.length > 0 && (
+									<TouchableOpacity
+										style={styles.clearButton}
+										onPress={() => {
+											setPassword('');
+											setFormErrors({});
+										}}
+									>
+										<MaterialIcons name="close" size={20} color="#999" />
+									</TouchableOpacity>
+								)}
+							</View>
+							{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
+						</View>
 
-					<View style={styles.buttonContainer}>
-						<TouchableOpacity
-							style={[styles.button, styles.cancelButton]}
-							onPress={handleCancelTransaction}
-							disabled={processing}
-						>
-							<Text style={styles.buttonText}>Cancel</Text>
-						</TouchableOpacity>
-						<TouchableOpacity
-							style={[styles.button, styles.confirmButton]}
-							onPress={handleSubmitTransaction}
-							disabled={processing || !password}
-						>
-							<Text style={styles.buttonText}>{processing ? 'Processing...' : 'Confirm'}</Text>
-						</TouchableOpacity>
+						<View style={styles.buttonContainer}>
+							<TouchableOpacity
+								style={[styles.button, styles.cancelButton]}
+								onPress={handleCancelTransaction}
+							>
+								<Text style={styles.buttonText}>Cancel</Text>
+							</TouchableOpacity>
+							<TouchableOpacity
+								style={[
+									styles.button,
+									formErrors.isValid ? styles.confirmButton : styles.disabledButton,
+								]}
+								onPress={handleSubmitTransaction}
+								disabled={!formErrors.isValid}
+							>
+								<Text
+									style={[
+										styles.buttonText,
+										formErrors.isValid ? styles.confirmButtonText : styles.disabledButtonText,
+									]}
+								>
+									Confirm
+								</Text>
+							</TouchableOpacity>
+						</View>
 					</View>
-				</ScrollView>
-			) : (
-				<>
-					<View style={styles.header}>
-						<Text style={styles.title}>{name}</Text>
-					</View>
-					<WebView
-						ref={webViewRef}
-						source={{ uri: url as string }}
-						injectedJavaScript={injectedJavaScript}
-						onMessage={handleMessage}
-						style={styles.webview}
-					/>
-				</>
+				</View>
 			)}
 		</View>
 	);
@@ -561,76 +636,127 @@ const styles = StyleSheet.create({
 	webview: {
 		flex: 1,
 	},
+	modalOverlay: {
+		position: 'absolute',
+		bottom: 0,
+		left: 0,
+		right: 0,
+		height: '50%',
+		backgroundColor: 'rgba(0, 0, 0, 0.5)',
+	},
 	formContainer: {
 		flex: 1,
-		padding: 16,
+		backgroundColor: '#1a1a1a',
+		padding: wp(4),
+		borderTopLeftRadius: wp(4),
+		borderTopRightRadius: wp(4),
 	},
 	formHeader: {
-		marginBottom: 24,
+		marginBottom: hp(2),
 	},
 	formTitle: {
-		fontSize: 24,
+		fontSize: hp(2.4),
 		fontWeight: 'bold',
-		marginBottom: 8,
+		color: '#fff',
+		marginBottom: hp(1),
 	},
 	formSubtitle: {
-		fontSize: 16,
-		color: '#666',
+		fontSize: hp(1.8),
+		color: '#999',
 	},
 	paramsContainer: {
-		marginBottom: 24,
-		backgroundColor: '#f5f5f5',
-		padding: 16,
-		borderRadius: 8,
+		flex: 1,
+		backgroundColor: '#1a1a1a',
+		borderRadius: wp(2),
+		padding: wp(3),
+		marginBottom: hp(2),
 	},
 	paramRow: {
 		flexDirection: 'row',
-		marginBottom: 8,
-		paddingBottom: 8,
+		marginBottom: hp(1),
+		paddingBottom: hp(1),
 		borderBottomWidth: 1,
-		borderBottomColor: '#eee',
+		borderBottomColor: '#333',
 	},
 	paramLabel: {
 		flex: 1,
-		fontWeight: 'bold',
+		color: '#999',
+		fontWeight: '500',
 	},
 	paramValue: {
 		flex: 2,
+		color: '#fff',
 	},
 	passwordContainer: {
-		marginBottom: 24,
+		marginBottom: hp(2),
 	},
 	passwordLabel: {
-		marginBottom: 8,
-		fontSize: 16,
+		marginBottom: hp(1),
+		fontSize: hp(1.6),
+		color: '#fff',
+	},
+	inputWrapper: {
+		position: 'relative',
+		flexDirection: 'row',
+		alignItems: 'center',
 	},
 	passwordInput: {
+		flex: 1,
 		borderWidth: 1,
-		borderColor: '#ccc',
-		borderRadius: 4,
-		padding: 12,
-		fontSize: 16,
+		borderColor: '#333',
+		borderRadius: wp(1),
+		padding: wp(3),
+		paddingRight: wp(10),
+		fontSize: hp(1.6),
+		color: '#fff',
+		backgroundColor: '#1a1a1a',
+	},
+	clearButton: {
+		position: 'absolute',
+		right: wp(2),
+		padding: wp(1),
+		justifyContent: 'center',
+		alignItems: 'center',
 	},
 	buttonContainer: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
+		gap: wp(3),
 	},
 	button: {
-		padding: 16,
-		borderRadius: 4,
 		flex: 1,
+		padding: wp(4),
+		borderRadius: wp(2),
 		alignItems: 'center',
-		marginHorizontal: 8,
 	},
 	cancelButton: {
-		backgroundColor: '#ccc',
+		backgroundColor: '#333',
 	},
 	confirmButton: {
-		backgroundColor: '#000',
+		backgroundColor: '#fff',
 	},
 	buttonText: {
-		color: 'white',
-		fontWeight: 'bold',
-		fontSize: 16,
+		color: '#fff',
+		fontWeight: '600',
+		fontSize: hp(1.8),
+	},
+	disabledButton: {
+		backgroundColor: '#333',
+		opacity: 0.7,
+	},
+	disabledButtonText: {
+		opacity: 0.7,
+	},
+	confirmButtonText: {
+		color: '#000',
+	},
+	inputError: {
+		borderColor: '#ff4444',
+	},
+	errorText: {
+		color: '#ff4444',
+		fontSize: hp(1.4),
+		marginTop: hp(0.5),
+		marginLeft: wp(1),
 	},
 });
