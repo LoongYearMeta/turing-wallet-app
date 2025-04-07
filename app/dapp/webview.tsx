@@ -1,6 +1,14 @@
 import { useLocalSearchParams } from 'expo-router';
 import React, { useRef, useState, useCallback } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+	ScrollView,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
+	ActivityIndicator,
+} from 'react-native';
 import Toast from 'react-native-toast-message';
 import { WebView } from 'react-native-webview';
 import { debounce } from 'lodash';
@@ -20,6 +28,7 @@ export default function DAppWebView() {
 	const [currentRequest, setCurrentRequest] = useState<SendTransactionRequest[]>([]);
 	const [password, setPassword] = useState('');
 	const [formErrors, setFormErrors] = useState<{ password?: string; isValid?: boolean }>({});
+	const [isProcessing, setIsProcessing] = useState(false);
 
 	const {
 		getCurrentAccountAddress,
@@ -406,12 +415,11 @@ export default function DAppWebView() {
 	};
 
 	const handleSubmitTransaction = async () => {
-		if (formErrors.password || !password) {
-			return;
-		}
-
+		setIsProcessing(true);
 		try {
 			const response = await processTransaction();
+
+			// 返回结果给 DApp
 			webViewRef.current?.injectJavaScript(`
 				window.dispatchEvent(new CustomEvent('TuringResponse', {
 					detail: { 
@@ -420,7 +428,16 @@ export default function DAppWebView() {
 					}
 				}));
 			`);
+
+			// 如果交易成功则关闭表单
+			if (!response?.error) {
+				setShowTransactionForm(false);
+				setPassword('');
+				setCurrentRequest([]);
+			}
 		} catch (error: any) {
+			console.error('Transaction error:', error);
+			// 返回错误给 DApp
 			webViewRef.current?.injectJavaScript(`
 				window.dispatchEvent(new CustomEvent('TuringResponse', {
 					detail: { 
@@ -430,9 +447,7 @@ export default function DAppWebView() {
 				}));
 			`);
 		} finally {
-			setPassword('');
-			setCurrentRequest([]);
-			setShowTransactionForm(false);
+			setIsProcessing(false);
 		}
 	};
 
@@ -546,68 +561,79 @@ export default function DAppWebView() {
 			{showTransactionForm && (
 				<View style={styles.modalOverlay}>
 					<View style={styles.formContainer}>
-						<View style={styles.formHeader}>
-							<Text style={styles.formTitle}>Transaction Request</Text>
-							<Text style={styles.formSubtitle}>Type: {currentRequest[0]?.flag}</Text>
-						</View>
-
-						<ScrollView style={styles.paramsContainer}>
-							{Object.entries(currentRequest[0] || {}).map(([key, value]) =>
-								key !== 'flag' ? renderParameter(key, value) : null,
-							)}
-						</ScrollView>
-
-						<View style={styles.passwordContainer}>
-							<Text style={styles.passwordLabel}>Enter your password to confirm:</Text>
-							<View style={styles.inputWrapper}>
-								<TextInput
-									style={[styles.passwordInput, formErrors.password && styles.inputError]}
-									value={password}
-									onChangeText={handlePasswordChange}
-									secureTextEntry
-									placeholder="Password"
-									placeholderTextColor="#999"
-								/>
-								{password.length > 0 && (
-									<TouchableOpacity
-										style={styles.clearButton}
-										onPress={() => {
-											setPassword('');
-											setFormErrors({});
-										}}
-									>
-										<MaterialIcons name="close" size={20} color="#999" />
-									</TouchableOpacity>
-								)}
+						{isProcessing ? (
+							<View style={styles.loadingContainer}>
+								<ActivityIndicator size="large" color="#fff" />
+								<Text style={styles.loadingText}>Processing transaction...</Text>
 							</View>
-							{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
-						</View>
+						) : (
+							<>
+								<View style={styles.formHeader}>
+									<Text style={styles.formTitle}>Transaction Request</Text>
+									<Text style={styles.formSubtitle}>Type: {currentRequest[0]?.flag}</Text>
+								</View>
 
-						<View style={styles.buttonContainer}>
-							<TouchableOpacity
-								style={[styles.button, styles.cancelButton]}
-								onPress={handleCancelTransaction}
-							>
-								<Text style={styles.buttonText}>Cancel</Text>
-							</TouchableOpacity>
-							<TouchableOpacity
-								style={[
-									styles.button,
-									formErrors.isValid ? styles.confirmButton : styles.disabledButton,
-								]}
-								onPress={handleSubmitTransaction}
-								disabled={!formErrors.isValid}
-							>
-								<Text
-									style={[
-										styles.buttonText,
-										formErrors.isValid ? styles.confirmButtonText : styles.disabledButtonText,
-									]}
-								>
-									Confirm
-								</Text>
-							</TouchableOpacity>
-						</View>
+								<ScrollView style={styles.paramsContainer}>
+									{Object.entries(currentRequest[0] || {}).map(([key, value]) =>
+										key !== 'flag' ? renderParameter(key, value) : null,
+									)}
+								</ScrollView>
+
+								<View style={styles.passwordContainer}>
+									<Text style={styles.passwordLabel}>Enter your password to confirm:</Text>
+									<View style={styles.inputWrapper}>
+										<TextInput
+											style={[styles.passwordInput, formErrors.password && styles.inputError]}
+											value={password}
+											onChangeText={handlePasswordChange}
+											secureTextEntry
+											placeholder="Password"
+											placeholderTextColor="#999"
+										/>
+										{password.length > 0 && (
+											<TouchableOpacity
+												style={styles.clearButton}
+												onPress={() => {
+													setPassword('');
+													setFormErrors({});
+												}}
+											>
+												<MaterialIcons name="close" size={20} color="#999" />
+											</TouchableOpacity>
+										)}
+									</View>
+									{formErrors.password && (
+										<Text style={styles.errorText}>{formErrors.password}</Text>
+									)}
+								</View>
+
+								<View style={styles.buttonContainer}>
+									<TouchableOpacity
+										style={[styles.button, styles.cancelButton]}
+										onPress={handleCancelTransaction}
+									>
+										<Text style={styles.buttonText}>Cancel</Text>
+									</TouchableOpacity>
+									<TouchableOpacity
+										style={[
+											styles.button,
+											formErrors.isValid ? styles.confirmButton : styles.disabledButton,
+										]}
+										onPress={handleSubmitTransaction}
+										disabled={!formErrors.isValid}
+									>
+										<Text
+											style={[
+												styles.buttonText,
+												formErrors.isValid ? styles.confirmButtonText : styles.disabledButtonText,
+											]}
+										>
+											Confirm
+										</Text>
+									</TouchableOpacity>
+								</View>
+							</>
+						)}
 					</View>
 				</View>
 			)}
@@ -758,5 +784,15 @@ const styles = StyleSheet.create({
 		fontSize: hp(1.4),
 		marginTop: hp(0.5),
 		marginLeft: wp(1),
+	},
+	loadingContainer: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+	},
+	loadingText: {
+		color: '#fff',
+		fontSize: hp(1.8),
+		marginTop: hp(2),
 	},
 });
