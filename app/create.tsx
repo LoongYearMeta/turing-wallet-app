@@ -19,19 +19,29 @@ import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { generateKeysEncrypted_mnemonic, verifyPassword } from '@/lib/key';
 import { theme } from '@/lib/theme';
+import { initDApps } from '@/actions/get-dapps';
 import { Account, AccountType } from '@/types';
+import { clearAllData } from '@/utils/sqlite';
 
 const CreatePage = () => {
-	const { getPassKey, getSalt } = useAccount();
-	const passKey = getPassKey();
-	const salt = getSalt();
-	const initialHasAccount = React.useRef(passKey && salt).current;
+	const {
+		addAccount,
+		setCurrentAccount,
+		setPassKeyAndSalt,
+		getAccountsCount,
+		getPassKey,
+		getSalt,
+		clear,
+	} = useAccount();
 
 	const [password, setPassword] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const { addAccount, setCurrentAccount, setPassKeyAndSalt, getAccountsCount } = useAccount();
+	const passKey = getPassKey();
+	const salt = getSalt();
+	const initialHasAccount = React.useRef(passKey && salt).current;
+
 	const router = useRouter();
 
 	const validatePassword = (password: string) => {
@@ -193,6 +203,7 @@ const CreatePage = () => {
 					paymentUtxos: [],
 					type: AccountType.TBC,
 				};
+				await initDApps();
 				await setPassKeyAndSalt(passKey, salt);
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
@@ -201,7 +212,8 @@ const CreatePage = () => {
 			router.replace('/(tabs)/home');
 			showToast('success', 'Wallet created successfully!');
 		} catch (error) {
-			console.error('Error creating wallet:', error);
+			await clearAllData();
+			await clear();
 			showToast('error', 'Failed to create wallet. Please try again.');
 		} finally {
 			setLoading(false);

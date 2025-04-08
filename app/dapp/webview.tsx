@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
 import React, { useRef, useState, useCallback } from 'react';
 import {
 	ScrollView,
@@ -19,6 +19,7 @@ import type { SendTransactionRequest, SendTransactionResponse } from '@/hooks/us
 import { useResponse } from '@/hooks/useResponse';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
+import { getNFT } from '@/utils/sqlite';
 
 export default function DAppWebView() {
 	const { url, name } = useLocalSearchParams();
@@ -246,12 +247,13 @@ export default function DAppWebView() {
 					if (!request.nft_contract_address || !request.address) {
 						throw new Error('Missing required parameters');
 					}
-					// Transfer times defaults to 1 if not specified
-					const transferTimes = request.merge_times || 1;
+					const nft = await getNFT(request.nft_contract_address);
+					const transfer_times = nft?.transfer_times || 0;
+
 					response = await transferNFTResponse(
 						request.nft_contract_address,
 						request.address,
-						transferTimes,
+						transfer_times,
 						password,
 					);
 					break;
@@ -419,7 +421,6 @@ export default function DAppWebView() {
 		try {
 			const response = await processTransaction();
 
-			// 返回结果给 DApp
 			webViewRef.current?.injectJavaScript(`
 				window.dispatchEvent(new CustomEvent('TuringResponse', {
 					detail: { 
@@ -429,7 +430,6 @@ export default function DAppWebView() {
 				}));
 			`);
 
-			// 如果交易成功则关闭表单
 			if (!response?.error) {
 				setShowTransactionForm(false);
 				setPassword('');
@@ -437,7 +437,6 @@ export default function DAppWebView() {
 			}
 		} catch (error: any) {
 			console.error('Transaction error:', error);
-			// 返回错误给 DApp
 			webViewRef.current?.injectJavaScript(`
 				window.dispatchEvent(new CustomEvent('TuringResponse', {
 					detail: { 
@@ -549,7 +548,11 @@ export default function DAppWebView() {
 	return (
 		<View style={styles.container}>
 			<View style={styles.header}>
-				<Text style={styles.title}>{name}</Text>
+				<TouchableOpacity style={styles.urlBar} activeOpacity={0.7}>
+					<Text style={styles.urlText} numberOfLines={1}>
+						{name}
+					</Text>
+				</TouchableOpacity>
 			</View>
 			<WebView
 				ref={webViewRef}
@@ -650,14 +653,25 @@ const styles = StyleSheet.create({
 		height: hp(6),
 		justifyContent: 'center',
 		alignItems: 'center',
+		backgroundColor: '#f5f5f5',
 		borderBottomWidth: 1,
-		borderBottomColor: '#eee',
-		backgroundColor: '#fff',
+		borderBottomColor: '#f0f0f0',
 	},
-	title: {
-		fontSize: hp(2),
-		fontWeight: '500',
-		color: '#000',
+	urlBar: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		backgroundColor: '#eeeeee',
+		paddingHorizontal: wp(4),
+		paddingVertical: hp(0.8),
+		borderRadius: wp(2),
+		minWidth: wp(35),
+		maxWidth: wp(50),
+	},
+	urlText: {
+		fontSize: hp(1.8),
+		color: '#333',
+		textAlign: 'center',
+		flex: 1,
 	},
 	webview: {
 		flex: 1,

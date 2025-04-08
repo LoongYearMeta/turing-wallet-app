@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
 	View,
 	Text,
@@ -7,75 +7,48 @@ import {
 	ScrollView,
 	TouchableOpacity,
 	TextInput,
+	RefreshControl,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Navbar } from '@/components/ui/navbar';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { wp, hp } from '@/lib/common';
 import { router } from 'expo-router';
-
-interface DApp {
-	id: string;
-	name: string;
-	description: string;
-	icon: any;
-	url: string;
-}
-
-const dapps: DApp[] = [
-	{
-		id: 'onion',
-		name: 'OnionSwap',
-		description: 'Transaction aggregator based on TBC network',
-		icon: require('@/assets/images/onion.jpg'),
-		url: 'https://dapp.onionswap.info/',
-	},
-	{
-		id: 'bison',
-		name: 'BisonSwap',
-		description: 'Decentralized trading platform based on UTXOs',
-		icon: require('@/assets/images/bison.png'),
-		url: 'https://app.bisonswap.com/',
-	},
-	{
-		id: 'shell',
-		name: 'ShellSwap',
-		description: "AMM Dex for Bitcoin's native smart contract layer",
-		icon: require('@/assets/images/shell.png'),
-		url: 'https://dev.shellswap.org/',
-	},
-	{
-		id: 'ave',
-		name: 'Ave',
-		description: 'Dex quotation tool',
-		icon: require('@/assets/images/ave.png'),
-		url: 'https://ave.ai/',
-	},
-	{
-		id: 'utxopump',
-		name: 'utxopump',
-		description: 'Release TBC20 token',
-		icon: require('@/assets/images/utxopump.jpg'),
-		url: 'https://utxopump.fun/',
-	},
-	{
-		id: 'explorer',
-		name: 'TBC Explorer',
-		description: 'TBC explorer',
-		icon: require('@/assets/images/explorer.png'),
-		url: 'https://explorer.turingbitchain.io/',
-	},
-	{
-		id: 'bitbus',
-		name: 'Bitbus',
-		description: 'Inscriptions cross the chain platform',
-		icon: require('@/assets/images/bitbus.png'),
-		url: 'https://bitbus.net/',
-	},
-];
+import { useAccount } from '@/hooks/useAccount';
+import { getAllDApps } from '@/utils/sqlite';
+import { syncDApps } from '@/actions/get-dapps';
+import type { DApp } from '@/utils/sqlite';
 
 export default function DAppPage() {
 	const [searchText, setSearchText] = useState('');
+	const [dapps, setDapps] = useState<DApp[]>([]);
+	const [refreshing, setRefreshing] = useState(false);
+	const { isTbcAccount, getCurrentAccountType } = useAccount();
+
+	const loadDApps = useCallback(async () => {
+		const allDApps = await getAllDApps();
+		const filteredDApps = allDApps.filter(
+			(dapp) => isTbcAccount() || (!isTbcAccount() && !dapp.if_need_tbc_address),
+		);
+		setDapps(filteredDApps);
+	}, [isTbcAccount]);
+
+	useEffect(() => {
+		const accountType = getCurrentAccountType();
+		loadDApps();
+	}, [getCurrentAccountType(), loadDApps]);
+
+	const onRefresh = async () => {
+		try {
+			setRefreshing(true);
+			await syncDApps();
+			await loadDApps();
+		} catch (error) {
+			console.error('Failed to refresh DApps:', error);
+		} finally {
+			setRefreshing(false);
+		}
+	};
 
 	const handleDAppPress = (dapp: DApp) => {
 		router.push({
@@ -83,12 +56,6 @@ export default function DAppPage() {
 			params: { url: dapp.url, name: dapp.name },
 		});
 	};
-
-	const filteredDapps = dapps.filter(
-		(dapp) =>
-			dapp.name.toLowerCase().startsWith(searchText.toLowerCase()) ||
-			dapp.url.toLowerCase().includes(searchText.toLowerCase()),
-	);
 
 	return (
 		<ScreenWrapper bg="#f5f5f5">
@@ -111,16 +78,30 @@ export default function DAppPage() {
 					</View>
 				</View>
 
-				<ScrollView style={styles.scrollView}>
+				<ScrollView
+					style={styles.scrollView}
+					refreshControl={
+						<RefreshControl
+							refreshing={refreshing}
+							onRefresh={onRefresh}
+							colors={['#333']}
+							tintColor="#333"
+						/>
+					}
+				>
 					<View style={styles.listContainer}>
-						{filteredDapps.length > 0 ? (
-							filteredDapps.map((dapp) => (
+						{dapps.length > 0 ? (
+							dapps.map((dapp) => (
 								<TouchableOpacity
 									key={dapp.id}
 									style={styles.dappItem}
 									onPress={() => handleDAppPress(dapp)}
 								>
-									<Image source={dapp.icon} style={styles.icon} />
+									<Image
+										source={{ uri: dapp.icon }}
+										style={styles.icon}
+										onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
+									/>
 									<View style={styles.dappInfo}>
 										<Text style={styles.name}>{dapp.name}</Text>
 										<Text style={styles.description} numberOfLines={1}>

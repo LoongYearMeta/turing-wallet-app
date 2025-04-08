@@ -75,6 +75,15 @@ export interface FTPublic {
 	holds_count: number;
 }
 
+export interface DApp {
+	id: string;
+	name: string;
+	url: string;
+	icon: string;
+	description: string;
+	if_need_tbc_address: boolean;
+}
+
 export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 	try {
 		await db.execAsync(`
@@ -175,6 +184,15 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 
 			CREATE TABLE IF NOT EXISTS AddressBook (
 				address TEXT PRIMARY KEY
+			);
+
+			CREATE TABLE IF NOT EXISTS DApp (
+				id TEXT PRIMARY KEY,
+				name TEXT NOT NULL,
+				url TEXT NOT NULL,
+				icon TEXT NOT NULL,
+				description TEXT NOT NULL,
+				if_need_tbc_address INTEGER DEFAULT 0
 			);
 		`);
 	} catch (error) {
@@ -913,5 +931,29 @@ export async function clearAllData(): Promise<void> {
 		DELETE FROM MultiSig;
 		DELETE FROM FT_Public;
 		DELETE FROM AddressBook;
+		DELETE FROM DApp;
 	`);
+}
+
+export async function getAllDApps(): Promise<DApp[]> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	const results = await db.getAllAsync<DApp>('SELECT * FROM DApp');
+	return results.map((dapp) => ({
+		...dapp,
+		if_need_tbc_address: Boolean(dapp.if_need_tbc_address),
+	}));
+}
+
+export async function addDApp(dapp: DApp): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.runAsync(
+		`INSERT INTO DApp (id, name, url, icon, description, if_need_tbc_address)
+		 VALUES (?, ?, ?, ?, ?, ?)`,
+		[dapp.id, dapp.name, dapp.url, dapp.icon, dapp.description, dapp.if_need_tbc_address ? 1 : 0],
+	);
+}
+
+export async function getDAppByName(name: string): Promise<DApp | null> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	return await db.getFirstAsync<DApp>('SELECT * FROM DApp WHERE name = ?', [name]);
 }

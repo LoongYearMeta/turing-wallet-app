@@ -11,6 +11,7 @@ import {
 	ScrollView,
 	Modal,
 	Pressable,
+	Switch,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -24,6 +25,8 @@ import { theme } from '@/lib/theme';
 import { Account, AccountType } from '@/types';
 import { initializeWalletData } from '@/lib/init';
 import { MnemonicInput } from '@/components/ui/mnemonic-input';
+import { initDApps } from '@/actions/get-dapps';
+import { clearAllData } from '@/utils/sqlite';
 
 enum Tag {
 	Turing = 'turing',
@@ -33,11 +36,6 @@ enum Tag {
 }
 
 const RestorePage = () => {
-	const { getPassKey, getSalt, updateCurrentAccountUtxos } = useAccount();
-	const passKey = getPassKey();
-	const salt = getSalt();
-	const hasExistingAccount = passKey && salt;
-
 	const [mnemonic, setMnemonic] = useState('');
 	const [selectedTag, setSelectedTag] = useState<Tag>(Tag.Turing);
 	const [password, setPassword] = useState('');
@@ -45,8 +43,21 @@ const RestorePage = () => {
 	const [loading, setLoading] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isPickerVisible, setPickerVisible] = useState(false);
-	const { addAccount, setCurrentAccount, setPassKeyAndSalt, getAccountsCount } = useAccount();
+	const [shouldRestore, setShouldRestore] = useState(true);
+	const {
+		addAccount,
+		setCurrentAccount,
+		setPassKeyAndSalt,
+		getAccountsCount,
+		getPassKey,
+		getSalt,
+		clear,
+	} = useAccount();
 	const router = useRouter();
+
+	const passKey = getPassKey();
+	const salt = getSalt();
+	const hasExistingAccount = passKey && salt;
 
 	const walletTypes = [
 		{ label: 'Turing', value: Tag.Turing },
@@ -196,8 +207,10 @@ const RestorePage = () => {
 					type: AccountType.TBC,
 				};
 
-				await initializeWalletData(tbcAddress);
-				await initializeWalletData(taprootLegacyAddress);
+				if (shouldRestore) {
+					await initializeWalletData(tbcAddress);
+					await initializeWalletData(taprootLegacyAddress);
+				}
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
 			} else {
@@ -237,8 +250,11 @@ const RestorePage = () => {
 					paymentUtxos: [],
 					type: AccountType.TBC,
 				};
-				await initializeWalletData(tbcAddress);
-				await initializeWalletData(taprootLegacyAddress);
+				if (shouldRestore) {
+					await initializeWalletData(tbcAddress);
+					await initializeWalletData(taprootLegacyAddress);
+					await initDApps();
+				}
 				await setPassKeyAndSalt(passKey, salt);
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
@@ -247,6 +263,8 @@ const RestorePage = () => {
 			router.replace('/(tabs)/home');
 			showToast('success', 'Wallet restored successfully!');
 		} catch (error: any) {
+			await clearAllData();
+			await clear();
 			showToast('error', error.message);
 		} finally {
 			setLoading(false);
@@ -355,6 +373,17 @@ const RestorePage = () => {
 									value={confirmPassword}
 									onChangeText={setConfirmPassword}
 									editable={!isButtonDisabled}
+								/>
+							</View>
+
+							<View style={styles.switchContainer}>
+								<Text style={styles.switchLabel}>Restore wallet data from blockchain</Text>
+								<Switch
+									value={shouldRestore}
+									onValueChange={setShouldRestore}
+									disabled={isButtonDisabled}
+									trackColor={{ false: '#767577', true: theme.colors.primary }}
+									thumbColor={shouldRestore ? '#fff' : '#f4f3f4'}
 								/>
 							</View>
 						</View>
@@ -472,7 +501,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		borderRadius: theme.radius.xl,
 		borderCurve: 'continuous',
-		marginTop: hp(3),
+		marginTop: hp(2),
 	},
 	buttonSubmitting: {
 		backgroundColor: '#999',
@@ -543,6 +572,19 @@ const styles = StyleSheet.create({
 		color: theme.colors.text,
 		textAlign: 'center',
 		marginHorizontal: wp(10),
+	},
+	switchContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		paddingHorizontal: wp(2),
+		marginBottom: hp(1),
+	},
+	switchLabel: {
+		fontSize: hp(1.6),
+		color: theme.colors.text,
+		flex: 1,
+		marginRight: wp(2),
 	},
 });
 

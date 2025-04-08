@@ -9,6 +9,7 @@ import {
 	TouchableOpacity,
 	View,
 	ScrollView,
+	Switch,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -22,20 +23,30 @@ import { theme } from '@/lib/theme';
 import { Account, AccountType } from '@/types';
 import { initializeWalletData } from '@/lib/init';
 import { formatLongString } from '@/lib/util';
+import { initDApps } from '@/actions/get-dapps';
+import { clearAllData } from '@/utils/sqlite';
 
 const RestoreByPriKeyPage = () => {
-	const { getPassKey, getSalt } = useAccount();
-	const passKey = getPassKey();
-	const salt = getSalt();
-	const hasExistingAccount = passKey && salt;
-
 	const [privateKey, setPrivateKey] = useState('');
 	const [password, setPassword] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const { addAccount, setCurrentAccount, setPassKeyAndSalt, getAccountsCount } = useAccount();
+	const [shouldRestore, setShouldRestore] = useState(true);
+	const {
+		addAccount,
+		setCurrentAccount,
+		setPassKeyAndSalt,
+		getAccountsCount,
+		getPassKey,
+		getSalt,
+		clear,
+	} = useAccount();
 	const router = useRouter();
+
+	const passKey = getPassKey();
+	const salt = getSalt();
+	const hasExistingAccount = passKey && salt;
 
 	const validatePassword = (password: string) => {
 		if (password.length < 12) {
@@ -153,8 +164,10 @@ const RestoreByPriKeyPage = () => {
 					type: AccountType.TBC,
 				};
 
-				await initializeWalletData(tbcAddress);
-				await initializeWalletData(taprootLegacyAddress);
+				if (shouldRestore) {
+					await initializeWalletData(tbcAddress);
+					await initializeWalletData(taprootLegacyAddress);
+				}
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
 			} else {
@@ -195,8 +208,11 @@ const RestoreByPriKeyPage = () => {
 					type: AccountType.TBC,
 				};
 
-				await initializeWalletData(tbcAddress);
-				await initializeWalletData(taprootLegacyAddress);
+				if (shouldRestore) {
+					await initializeWalletData(tbcAddress);
+					await initializeWalletData(taprootLegacyAddress);
+					await initDApps();
+				}
 				await setPassKeyAndSalt(passKey, salt);
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
@@ -205,6 +221,8 @@ const RestoreByPriKeyPage = () => {
 			router.replace('/(tabs)/home');
 			showToast('success', 'Wallet restored successfully!');
 		} catch (error: any) {
+			await clearAllData();
+			await clear();
 			showToast('error', error.message);
 		} finally {
 			setLoading(false);
@@ -310,6 +328,17 @@ const RestoreByPriKeyPage = () => {
 									editable={!isButtonDisabled}
 								/>
 							</View>
+
+							<View style={styles.switchContainer}>
+								<Text style={styles.switchLabel}>Restore wallet data from blockchain</Text>
+								<Switch
+									value={shouldRestore}
+									onValueChange={setShouldRestore}
+									disabled={isButtonDisabled}
+									trackColor={{ false: '#767577', true: theme.colors.primary }}
+									thumbColor={shouldRestore ? '#fff' : '#f4f3f4'}
+								/>
+							</View>
 						</View>
 
 						<TouchableOpacity
@@ -408,6 +437,19 @@ const styles = StyleSheet.create({
 		color: theme.colors.text,
 		textAlign: 'center',
 		marginHorizontal: wp(10),
+	},
+	switchContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		paddingHorizontal: wp(2),
+		marginBottom: hp(1),
+	},
+	switchLabel: {
+		fontSize: hp(1.6),
+		color: theme.colors.text,
+		flex: 1,
+		marginRight: wp(2),
 	},
 });
 

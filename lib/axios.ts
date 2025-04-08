@@ -41,7 +41,7 @@ api.interceptors.request.use(async <T>(config: CustomRequestConfig<T>) => {
 api.interceptors.response.use(
 	(response: AxiosResponse) => {
 		const cacheKey = `${response.config.method}-${response.config.url}-${JSON.stringify(response.config.params)}`;
-		
+
 		cache.set(cacheKey, {
 			data: response.data,
 			timestamp: Date.now(),
