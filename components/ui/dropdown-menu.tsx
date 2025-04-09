@@ -1,8 +1,6 @@
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Toast from 'react-native-toast-message';
 
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
@@ -24,14 +22,6 @@ interface DropdownMenuProps {
 export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuProps) => {
 	const { getCurrentAccountName } = useAccount();
 	const username = getCurrentAccountName();
-
-	const copyToClipboard = async () => {
-		await Clipboard.setStringAsync(address);
-		Toast.show({
-			type: 'success',
-			text1: 'Address copied to clipboard',
-		});
-	};
 
 	const handleClose = useCallback(() => {
 		onClose();
