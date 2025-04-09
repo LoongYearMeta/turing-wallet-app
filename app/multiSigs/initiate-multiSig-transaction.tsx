@@ -260,7 +260,7 @@ export default function InitiateMultiSigTransactionPage() {
 
 	return (
 		<View style={styles.container}>
-			{/* From Address (MultiSig) */}
+
 			<View style={styles.inputGroup}>
 				<View style={styles.labelRow}>
 					<Text style={styles.label}>From</Text>
@@ -278,7 +278,6 @@ export default function InitiateMultiSigTransactionPage() {
 				)}
 			</View>
 
-			{/* Asset Selector */}
 			<View style={styles.inputGroup}>
 				<View style={styles.labelRow}>
 					<Text style={styles.label}>Asset</Text>
@@ -296,7 +295,6 @@ export default function InitiateMultiSigTransactionPage() {
 				{formErrors.asset && <Text style={styles.errorText}>{formErrors.asset}</Text>}
 			</View>
 
-			{/* To Address */}
 			<View style={styles.inputGroup}>
 				<Text style={styles.label}>To</Text>
 				<View style={styles.inputWrapper}>
@@ -334,7 +332,6 @@ export default function InitiateMultiSigTransactionPage() {
 				)}
 			</View>
 
-			{/* Amount Input */}
 			<View style={styles.inputGroup}>
 				<Text style={styles.label}>Amount</Text>
 				<View style={styles.inputWrapper}>
@@ -362,7 +359,6 @@ export default function InitiateMultiSigTransactionPage() {
 				{formErrors.amount && <Text style={styles.errorText}>{formErrors.amount}</Text>}
 			</View>
 
-			{/* Password */}
 			<View style={styles.inputGroup}>
 				<View style={styles.labelRow}>
 					<Text style={styles.label}>Password</Text>
@@ -393,7 +389,6 @@ export default function InitiateMultiSigTransactionPage() {
 				{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
 			</View>
 
-			{/* Submit Button */}
 			<TouchableOpacity
 				style={[styles.sendButton, isLoading && styles.sendButtonDisabled]}
 				onPress={handleSubmit}
@@ -406,7 +401,6 @@ export default function InitiateMultiSigTransactionPage() {
 				)}
 			</TouchableOpacity>
 
-			{/* Selectors */}
 			<MultiSigAddressSelector
 				visible={showMultiSigAddressSelector}
 				onClose={() => setShowMultiSigAddressSelector(false)}

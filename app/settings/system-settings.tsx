@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 import { Linking, Platform } from 'react-native';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { router } from 'expo-router';
 
 import { hp, wp } from '@/lib/common';
 
@@ -28,7 +29,7 @@ export default function SystemSettingsPage() {
 		<View style={styles.container}>
 			<ScrollView style={styles.scrollView}>
 				<View style={styles.listContainer}>
-					{/* 语言设置 */}
+			
 					<TouchableOpacity style={styles.settingItem}>
 						<View style={styles.settingInfo}>
 							<Text style={styles.settingName}>Language</Text>
@@ -39,7 +40,6 @@ export default function SystemSettingsPage() {
 						</View>
 					</TouchableOpacity>
 
-					{/* 应用版本 */}
 					<TouchableOpacity style={styles.settingItem}>
 						<View style={styles.settingInfo}>
 							<Text style={styles.settingName}>App Version</Text>
@@ -47,10 +47,21 @@ export default function SystemSettingsPage() {
 						</View>
 					</TouchableOpacity>
 
-					{/* 检查更新 */}
 					<TouchableOpacity style={styles.settingItem} onPress={handleCheckUpdate}>
 						<View style={styles.settingInfo}>
 							<Text style={styles.settingName}>Check for Updates</Text>
+							<View style={styles.settingValueContainer}>
+								<MaterialIcons name="chevron-right" size={24} color="#999" />
+							</View>
+						</View>
+					</TouchableOpacity>
+
+					<TouchableOpacity 
+						style={styles.settingItem} 
+						onPress={() => router.push('/settings/privacy-policy')}
+					>
+						<View style={styles.settingInfo}>
+							<Text style={styles.settingName}>Privacy Policy</Text>
 							<View style={styles.settingValueContainer}>
 								<MaterialIcons name="chevron-right" size={24} color="#999" />
 							</View>

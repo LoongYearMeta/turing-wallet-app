@@ -313,7 +313,7 @@ export default function MultiSigTransactionsPage() {
 	return (
 		<ScreenWrapper bg="#f5f5f5" disableTopPadding>
 			<View style={styles.container}>
-				{/* Tab选择器 */}
+		
 				<View style={styles.tabContainer}>
 					<ScrollView horizontal showsHorizontalScrollIndicator={false}>
 						{Object.values(TabType).map((type) => (

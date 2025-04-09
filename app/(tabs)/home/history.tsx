@@ -176,7 +176,7 @@ const HistoryPage = () => {
 
 	return (
 		<View style={styles.container}>
-			{/* 交易类型选择器 */}
+	
 			<View style={styles.tabContainer}>
 				<ScrollView horizontal showsHorizontalScrollIndicator={false}>
 					{availableTypes.map((type) => (

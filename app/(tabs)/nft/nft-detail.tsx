@@ -152,7 +152,6 @@ const NFTDetailPage = () => {
 							</TouchableOpacity>
 						)}
 
-						{/* 修改 View NFT History 按钮的样式，减小顶部边距 */}
 						<TouchableOpacity 
 							style={[styles.viewCollectionButton, { marginTop: hp(0.5) }]} 
 							onPress={() => router.push(`/(tabs)/nft/nft-history?id=${nft.id}`)}

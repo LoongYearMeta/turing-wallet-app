@@ -176,7 +176,7 @@ export default function InformationPage() {
 
 	return (
 		<ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-			{/* 账户信息部分 */}
+
 			<View style={styles.listContainer}>
 				<View style={styles.listItem}>
 					<View style={styles.itemLeft}>
@@ -324,7 +324,6 @@ export default function InformationPage() {
 				</View>
 			</View>
 
-			{/* 多签钱包部分 */}
 			<View style={styles.sectionHeader}>
 				<Text style={styles.sectionTitle}>MultiSig Wallets</Text>
 				<View style={styles.headerActions}>
@@ -419,7 +418,6 @@ export default function InformationPage() {
 					</View>
 				))}
 
-			{/* 修改账户名称模态框 */}
 			<Modal visible={modalVisible} transparent animationType="fade">
 				<View style={styles.modalOverlay}>
 					<View style={styles.modalContent}>
@@ -452,7 +450,6 @@ export default function InformationPage() {
 				</View>
 			</Modal>
 
-			{/* 恢复多签地址模态框 */}
 			<RestoreMultiSigModal
 				visible={multiSigModalVisible}
 				onClose={() => setMultiSigModalVisible(false)}

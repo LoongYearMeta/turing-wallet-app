@@ -477,7 +477,6 @@ export default function SendPage() {
 				)}
 			</View>
 
-			{/* Address Input */}
 			<View style={styles.inputGroup}>
 				<View style={styles.labelRow}>
 					<Text style={styles.label}>Recipient Address</Text>
@@ -519,7 +518,6 @@ export default function SendPage() {
 				{formErrors.addressTo && <Text style={styles.errorText}>{formErrors.addressTo}</Text>}
 			</View>
 
-			{/* Amount Input */}
 			<View style={styles.inputGroup}>
 				<Text style={styles.label}>Amount</Text>
 				<View style={styles.inputWrapper}>
@@ -541,7 +539,6 @@ export default function SendPage() {
 				{formErrors.amount && <Text style={styles.errorText}>{formErrors.amount}</Text>}
 			</View>
 
-			{/* Password Input */}
 			<View style={styles.inputGroup}>
 				<Text style={styles.label}>Password</Text>
 				<View style={styles.inputWrapper}>
