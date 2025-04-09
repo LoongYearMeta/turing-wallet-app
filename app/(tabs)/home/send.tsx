@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 
-import { AddressSelector } from '@/components/address-selector';
-import { AssetSelector } from '@/components/asset-selector';
+import { AddressSelector } from '@/components/selector/address-selector';
+import { AssetSelector } from '@/components/selector/asset-selector';
 import { useAccount } from '@/hooks/useAccount';
 import { useFtTransaction } from '@/hooks/useFtTransaction';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
@@ -206,7 +206,7 @@ export default function SendPage() {
 					password: 'Incorrect password',
 				}));
 			}
-		}, 1000),
+		}, 1500),
 		[getPassKey, getSalt],
 	);
 

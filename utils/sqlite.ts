@@ -145,31 +145,39 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 			CREATE INDEX IF NOT EXISTS idx_tx_timestamp ON TransactionHistory(timestamp DESC);
 
 			CREATE TABLE IF NOT EXISTS NFT_History (
-				id TEXT PRIMARY KEY,
+				id TEXT,
 				send_address TEXT,
 				receive_address TEXT,
 				timestamp INTEGER,
-				contract_id TEXT
+				contract_id TEXT,
+				user_address TEXT,
+				PRIMARY KEY (id, user_address)
 			);
-			CREATE INDEX IF NOT EXISTS idx_nft_history_contract ON NFT_History(contract_id, timestamp DESC);
+			CREATE INDEX IF NOT EXISTS idx_nft_history_contract ON NFT_History(contract_id, user_address, timestamp DESC);
+			CREATE INDEX IF NOT EXISTS idx_nft_history_user ON NFT_History(user_address, timestamp DESC);
 
 			CREATE TABLE IF NOT EXISTS FT_History (
-				id TEXT PRIMARY KEY,
+				id TEXT,
 				send_address TEXT,
 				receive_address TEXT,
 				fee REAL,
 				timestamp INTEGER,
 				contract_id TEXT,
-				balance_change REAL
+				balance_change REAL,
+				user_address TEXT,
+				PRIMARY KEY (id, user_address)
 			);
-			CREATE INDEX IF NOT EXISTS idx_ft_history_contract ON FT_History(contract_id, timestamp DESC);
+			CREATE INDEX IF NOT EXISTS idx_ft_history_contract ON FT_History(contract_id, user_address, timestamp DESC);
+			CREATE INDEX IF NOT EXISTS idx_ft_history_user ON FT_History(user_address, timestamp DESC);
 
 			CREATE TABLE IF NOT EXISTS MultiSig (
-				multiSig_address TEXT PRIMARY KEY,
+				multiSig_address TEXT,
 				pubKeys TEXT,
 				isDeleted INTEGER DEFAULT 0,
-				user_address TEXT
+				user_address TEXT,
+				PRIMARY KEY (multiSig_address, user_address)
 			);
+			
 			CREATE INDEX IF NOT EXISTS idx_multisig_user ON MultiSig(user_address, isDeleted);
 
 			CREATE TABLE IF NOT EXISTS FT_Public (
@@ -478,36 +486,38 @@ export async function getTransactionHistoryByType(
 	);
 }
 
-export async function addNFTHistory(history: NFTHistory): Promise<void> {
+export async function addNFTHistory(history: NFTHistory, user_address: string): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
-		`INSERT OR REPLACE INTO NFT_History (
-			id, send_address, receive_address, timestamp, contract_id
-		) VALUES (?, ?, ?, ?, ?);`,
+		`INSERT INTO NFT_History (id, send_address, receive_address, timestamp, contract_id, user_address) 
+		 VALUES (?, ?, ?, ?, ?, ?)`,
 		[
 			history.id,
 			history.send_address,
 			history.receive_address,
 			history.timestamp,
 			history.contract_id,
+			user_address,
 		],
 	);
 }
 
-export async function getNFTHistoryByContractId(contractId: string): Promise<NFTHistory[]> {
+export async function getNFTHistoryByContractId(
+	contractId: string,
+	userAddress: string,
+): Promise<NFTHistory[]> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	return await db.getAllAsync(
-		'SELECT * FROM NFT_History WHERE contract_id = ? ORDER BY timestamp DESC',
-		[contractId],
+	return await db.getAllAsync<NFTHistory>(
+		'SELECT * FROM NFT_History WHERE contract_id = ? AND user_address = ? ORDER BY timestamp DESC',
+		[contractId, userAddress],
 	);
 }
 
-export async function addFTHistory(history: FTHistory): Promise<void> {
+export async function addFTHistory(history: FTHistory, user_address: string): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
-		`INSERT OR REPLACE INTO FT_History (
-			id, send_address, receive_address, fee, timestamp, contract_id, balance_change
-		) VALUES (?, ?, ?, ?, ?, ?, ?);`,
+		`INSERT INTO FT_History (id, send_address, receive_address, fee, timestamp, contract_id, balance_change, user_address) 
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		[
 			history.id,
 			history.send_address,
@@ -516,15 +526,19 @@ export async function addFTHistory(history: FTHistory): Promise<void> {
 			history.timestamp,
 			history.contract_id,
 			history.balance_change,
+			user_address,
 		],
 	);
 }
 
-export async function getFTHistoryByContractId(contractId: string): Promise<FTHistory[]> {
+export async function getFTHistoryByContractId(
+	contractId: string,
+	userAddress: string,
+): Promise<FTHistory[]> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	return await db.getAllAsync(
-		'SELECT * FROM FT_History WHERE contract_id = ? ORDER BY timestamp DESC',
-		[contractId],
+	return await db.getAllAsync<FTHistory>(
+		'SELECT * FROM FT_History WHERE contract_id = ? AND user_address = ? ORDER BY timestamp DESC',
+		[contractId, userAddress],
 	);
 }
 
@@ -539,14 +553,23 @@ export async function getTransactionHistoryById(
 	);
 }
 
-export async function getNFTHistoryById(id: string): Promise<NFTHistory | null> {
+export async function getNFTHistoryById(
+	id: string,
+	userAddress: string,
+): Promise<NFTHistory | null> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	return await db.getFirstAsync('SELECT * FROM NFT_History WHERE id = ?', [id]);
+	return await db.getFirstAsync('SELECT * FROM NFT_History WHERE id = ? AND user_address = ?', [
+		id,
+		userAddress,
+	]);
 }
 
-export async function getFTHistoryById(id: string): Promise<FTHistory | null> {
+export async function getFTHistoryById(id: string, userAddress: string): Promise<FTHistory | null> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	return await db.getFirstAsync('SELECT * FROM FT_History WHERE id = ?', [id]);
+	return await db.getFirstAsync('SELECT * FROM FT_History WHERE id = ? AND user_address = ?', [
+		id,
+		userAddress,
+	]);
 }
 
 export async function addMultiSig(multiSig: MultiSig, userAddress: string): Promise<void> {
@@ -801,16 +824,16 @@ export async function updateFTPublicHoldsCount(id: string, holdsCount: number): 
 	await db.runAsync('UPDATE FT_Public SET holds_count = ? WHERE id = ?', [holdsCount, id]);
 }
 
-export async function updateFTHistory(history: FTHistory): Promise<void> {
+export async function updateFTHistory(history: FTHistory, user_address: string): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
-		`UPDATE ft_history SET 
+		`UPDATE FT_History SET 
 		 send_address = ?, 
 		 receive_address = ?, 
 		 fee = ?, 
 		 timestamp = ?, 
 		 balance_change = ? 
-		 WHERE id = ?`,
+		 WHERE id = ? AND user_address = ?`,
 		[
 			history.send_address,
 			history.receive_address,
@@ -818,6 +841,7 @@ export async function updateFTHistory(history: FTHistory): Promise<void> {
 			history.timestamp,
 			history.balance_change,
 			history.id,
+			user_address,
 		],
 	);
 }
@@ -895,7 +919,7 @@ export async function restoreNFT(id: string): Promise<void> {
 	await db.runAsync('UPDATE NFT SET isDeleted = 0 WHERE id = ?;', [id]);
 }
 
-export async function updateNFTHistory(history: NFTHistory): Promise<void> {
+export async function updateNFTHistory(history: NFTHistory, user_address: string): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	await db.runAsync(
 		`UPDATE NFT_History SET 
@@ -903,13 +927,14 @@ export async function updateNFTHistory(history: NFTHistory): Promise<void> {
 		 receive_address = ?, 
 		 timestamp = ?, 
 		 contract_id = ? 
-		 WHERE id = ?`,
+		 WHERE id = ? AND user_address = ?`,
 		[
 			history.send_address,
 			history.receive_address,
 			history.timestamp,
 			history.contract_id,
 			history.id,
+			user_address,
 		],
 	);
 }

@@ -64,7 +64,6 @@ export const MultiSigAddressSelector = ({
 		>
 			<View style={styles.addressInfo}>
 				<Text style={styles.addressText}>{formatLongString(item.multiSig_address, 12)}</Text>
-				<Text style={styles.pubKeysCount}>{item.pubKeys.length} Signers</Text>
 			</View>
 		</TouchableOpacity>
 	);
@@ -81,7 +80,7 @@ export const MultiSigAddressSelector = ({
 									<MaterialIcons name="search" size={20} color="#666" style={styles.searchIcon} />
 									<TextInput
 										style={styles.searchInput}
-										placeholder="Search addresses"
+										placeholder="Search"
 										value={searchText}
 										onChangeText={setSearchText}
 										autoCapitalize="none"
@@ -108,6 +107,7 @@ export const MultiSigAddressSelector = ({
 									keyExtractor={(item) => item.multiSig_address}
 									style={styles.list}
 									ItemSeparatorComponent={() => <View style={styles.separator} />}
+									showsVerticalScrollIndicator={false}
 								/>
 							) : (
 								<Text style={styles.emptyText}>

@@ -17,8 +17,8 @@ import {
 import Toast from 'react-native-toast-message';
 
 import { syncCollections } from '@/actions/get-collections';
-import { ConfirmModal } from '@/components/ui/confirm-modal';
-import { RestoreCollectionModal } from '@/components/restore-collection-modal';
+import { ConfirmModal } from '@/components/modals/confirm-modal';
+import { RestoreCollectionModal } from '@/components/modals/restore-collection-modal';
 import { Navbar } from '@/components/ui/navbar';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { useAccount } from '@/hooks/useAccount';
@@ -33,7 +33,7 @@ import {
 	softDeleteNFT,
 } from '@/utils/sqlite';
 import { syncNFTs } from '@/actions/get-nfts';
-import { RestoreNFTModal } from '@/components/restore-nft-modal';
+import { RestoreNFTModal } from '@/components/modals/restore-nft-modal';
 import { AccountType } from '@/types';
 
 const NFTPage = () => {
@@ -335,14 +335,11 @@ const NFTsTab = () => {
 		}, [loadNFTs]),
 	);
 
-	// 添加对账户类型变化的监听
 	useEffect(() => {
 		if (disableNFT) {
-			// 如果是禁用类型的账户，清空 NFT 数据
 			setNfts([]);
 			setLoading(false);
 		} else {
-			// 如果是允许的账户类型，重新加载数据
 			loadNFTs();
 		}
 	}, [disableNFT, loadNFTs]);
@@ -352,7 +349,7 @@ const NFTsTab = () => {
 			setRefreshing(true);
 			const userAddress = getCurrentAccountAddress();
 
-			await syncNFTs(userAddress); // 只在用户主动刷新时执行
+			await syncNFTs(userAddress); 
 			await loadNFTs();
 			Toast.show({
 				type: 'success',
@@ -454,13 +451,17 @@ const NFTsTab = () => {
 					<TouchableOpacity
 						style={[styles.actionButton, disableNFT && styles.disabledButton]}
 						onPress={handleRefresh}
-						disabled={disableNFT}
+						disabled={disableNFT || refreshing}
 					>
-						<MaterialIcons
-							name="refresh"
-							size={24}
-							color={disableNFT ? '#999' : theme.colors.primary}
-						/>
+						{refreshing ? (
+							<ActivityIndicator size="small" color={disableNFT ? '#999' : '#333'} />
+						) : (
+							<MaterialIcons 
+								name="refresh" 
+								size={24} 
+								color={disableNFT ? '#999' : '#333'} 
+							/>
+						)}
 					</TouchableOpacity>
 					<TouchableOpacity
 						style={[styles.actionButton, disableNFT && styles.disabledButton]}
@@ -470,7 +471,7 @@ const NFTsTab = () => {
 						<MaterialIcons
 							name="visibility"
 							size={24}
-							color={disableNFT ? '#999' : theme.colors.primary}
+							color={disableNFT ? '#999' : '#333'}
 						/>
 					</TouchableOpacity>
 				</View>

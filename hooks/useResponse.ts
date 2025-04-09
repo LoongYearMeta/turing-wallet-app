@@ -9,6 +9,19 @@ import { useNftTransaction } from '@/hooks/useNftTransaction';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
 import { retrieveKeys } from '@/lib/key';
 import { fetchUTXOs } from '@/actions/get-utxos';
+import {
+	addCollection,
+	addNFT,
+	getCollection,
+	getFT,
+	removeFT,
+	removeNFT,
+	transferFT,
+	updateNFTTransferTimes,
+	updateNFTUserAddress,
+	upsertFT,
+} from '@/utils/sqlite';
+import { fetchNFTCounts_byCollection } from '@/actions/get-nfts';
 
 export interface SendTransactionResponse {
 	txid?: string;
@@ -56,7 +69,12 @@ interface FTData {
 }
 
 export const useResponse = () => {
-	const { getCurrentAccountAddress, updateCurrentAccountUtxos } = useAccount();
+	const {
+		getCurrentAccountAddress,
+		updateCurrentAccountUtxos,
+		getAllAccountAddresses,
+		getAddresses,
+	} = useAccount();
 	const { sendTbc, finish_transaction } = useTbcTransaction();
 	const { getUTXO, mergeFT, sendFT, getFTUtxoByContractId } = useFtTransaction();
 	const { createCollection, createNFT, transferNFT } = useNftTransaction();
@@ -123,6 +141,18 @@ export const useResponse = () => {
 
 				if (!txid) {
 					throw new Error('Failed to broadcast transaction.');
+				} else {
+					await addCollection(
+						{
+							id: txid,
+							name: collection_data.collectionName,
+							supply: collection_data.supply,
+							creator: address_from,
+							icon: collection_data.file,
+							isDeleted: false,
+						},
+						address_from,
+					);
 				}
 
 				return { txid };
@@ -137,6 +167,10 @@ export const useResponse = () => {
 		async (collection_id: string, nft_data: contract.NFTData, password: string) => {
 			try {
 				const address_from = getCurrentAccountAddress();
+				const collection = await getCollection(collection_id);
+				if (!nft_data.file) {
+					nft_data.file = collection?.icon || '';
+				}
 				const { txHex, utxos } = await createNFT(collection_id, nft_data, address_from, password);
 				let txid: string | undefined;
 				try {
@@ -158,6 +192,24 @@ export const useResponse = () => {
 
 				if (!txid) {
 					throw new Error('Failed to broadcast transaction.');
+				} else {
+					const collectionIndex = await fetchNFTCounts_byCollection(collection_id);
+					await addNFT(
+						{
+							id: txid,
+							collection_id: collection_id,
+							collection_index: collectionIndex + 1,
+							name: nft_data.nftName,
+							symbol: nft_data.symbol,
+							description: nft_data.description,
+							attributes: nft_data.attributes,
+							transfer_times: 0,
+							icon: nft_data.file || '',
+							collection_name: collection?.name || '',
+							isDeleted: false,
+						},
+						address_from,
+					);
 				}
 
 				return { txid };
@@ -205,6 +257,18 @@ export const useResponse = () => {
 
 				if (!txid) {
 					throw new Error('Failed to broadcast transaction.');
+				} else {
+					if (address_to === address_from) {
+						await updateNFTTransferTimes(contract_id, transfer_times + 1);
+					} else {
+						const allAddresses = getAllAccountAddresses();
+
+						if (allAddresses.includes(address_to)) {
+							await updateNFTUserAddress(contract_id, address_to);
+						} else {
+							await removeNFT(contract_id);
+						}
+					}
 				}
 
 				return { txid };
@@ -265,7 +329,20 @@ export const useResponse = () => {
 				const txid = await contract.API.broadcastTXraw(txMintRaw);
 				if (!txid) {
 					return { error: 'broadcast-transaction-failed' };
+				} else {
+					await upsertFT(
+						{
+							id: txid,
+							name: ft_data.name,
+							symbol: ft_data.symbol,
+							decimal: ft_data.decimal,
+							amount: ft_data.amount,
+							isDeleted: false,
+						},
+						address_from,
+					);
 				}
+
 				return { txid };
 			} catch (error: any) {
 				return { error: error.message ?? 'unknown' };
@@ -304,7 +381,49 @@ export const useResponse = () => {
 				}
 				if (!txid) {
 					return { error: 'broadcast-transaction-failed' };
+				} else {
+					const allAccountAddresses = getAllAccountAddresses();
+
+					if (address_to === address_from) {
+					} else if (
+						allAccountAddresses.includes(address_to) ||
+						getAddresses().tbcAddress === address_to ||
+						getAddresses().taprootLegacyAddress === address_to
+					) {
+						const receiverToken = await getFT(contract_id, address_to);
+
+						if (receiverToken) {
+							await transferFT(contract_id, Number(amount), address_to);
+						} else {
+							const senderToken = await getFT(contract_id, address_from);
+							if (senderToken) {
+								await upsertFT(
+									{
+										id: contract_id,
+										name: senderToken.name,
+										decimal: senderToken.decimal,
+										amount: Number(amount),
+										symbol: senderToken.symbol,
+										isDeleted: false,
+									},
+									address_to,
+								);
+							}
+						}
+						await transferFT(contract_id, -Number(amount), address_from);
+						const updatedSenderToken = await getFT(contract_id, address_from);
+						if (updatedSenderToken && updatedSenderToken.amount <= 0) {
+							await removeFT(contract_id, address_from);
+						}
+					} else {
+						await transferFT(contract_id, -Number(amount), address_from);
+						const updatedSenderToken = await getFT(contract_id, address_from);
+						if (updatedSenderToken && updatedSenderToken.amount <= 0) {
+							await removeFT(contract_id, address_from);
+						}
+					}
 				}
+
 				return { txid };
 			} catch (error: any) {
 				return { error: error.message ?? 'unknown' };

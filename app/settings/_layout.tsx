@@ -50,6 +50,14 @@ export default function SettingsLayout() {
 					headerBackVisible: true,
 				}}
 			/>
+			<Stack.Screen
+				name="privacy-policy"
+				options={{
+					headerTitle: 'Privacy Policy',
+					headerTitleStyle: styles.headerTitle,
+					headerBackVisible: true,
+				}}
+			/>
 		</Stack>
 	);
 }

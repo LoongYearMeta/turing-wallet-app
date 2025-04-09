@@ -1,6 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
 	ActivityIndicator,
 	ScrollView,
@@ -11,6 +11,7 @@ import {
 	View,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { debounce } from 'lodash';
 
 import { useAccount } from '@/hooks/useAccount';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
@@ -48,6 +49,41 @@ export default function CreateMultiSigWalletPage() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [isFormValid, setIsFormValid] = useState(false);
 	const [displayPubKeys, setDisplayPubKeys] = useState<string[]>(['', '', '']);
+
+	const passKey = getPassKey();
+	const salt = getSalt();
+
+	const debouncedPasswordValidation = useCallback(
+		debounce(async (password: string) => {
+			if (!password) {
+				setFormErrors((prev) => ({ ...prev, password: 'Password is required' }));
+				return;
+			}
+
+			if (!passKey || !salt) {
+				setFormErrors((prev) => ({
+					...prev,
+					password: 'Account error, please try again',
+				}));
+				return;
+			}
+
+			try {
+				const isValid = verifyPassword(password, passKey, salt);
+				setFormErrors((prev) => ({
+					...prev,
+					password: isValid ? undefined : 'Incorrect password',
+				}));
+			} catch (error) {
+				console.error('Password validation error:', error);
+				setFormErrors((prev) => ({
+					...prev,
+					password: 'Incorrect password',
+				}));
+			}
+		}, 1500),
+		[getPassKey, getSalt],
+	);
 
 	useEffect(() => {
 		const currentPubKey = getCurrentAccountTbcPubKey();
@@ -132,12 +168,7 @@ export default function CreateMultiSigWalletPage() {
 		} else if (field === 'password') {
 			const cleanValue = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
 			setFormData((prev) => ({ ...prev, password: cleanValue }));
-			if (formErrors.password) {
-				setFormErrors((prev) => ({
-					...prev,
-					password: undefined,
-				}));
-			}
+			debouncedPasswordValidation(cleanValue);
 		}
 	};
 
@@ -252,19 +283,7 @@ export default function CreateMultiSigWalletPage() {
 				throw new Error('No account address found');
 			}
 
-			const salt = getSalt();
-			const passKey = getPassKey();
-			const isPasswordValid = verifyPassword(formData.password, passKey, salt);
-
-			if (!isPasswordValid) {
-				setFormErrors((prev) => ({
-					...prev,
-					password: 'Incorrect password',
-				}));
-				setFormData((prev) => ({
-					...prev,
-					password: '',
-				}));
+			if (formErrors.password) {
 				setIsLoading(false);
 				return;
 			}

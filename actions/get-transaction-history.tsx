@@ -30,6 +30,7 @@ export async function fetchTransactionHistory(
 ): Promise<TransactionHistoryResponse> {
 	const response = await api.get(
 		`https://turingwallet.xyz/v1/tbc/main/address/${address}/history/page/${page}`,
+		{ timeout: 20000 },
 	);
 	return response.data;
 }

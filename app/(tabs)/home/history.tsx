@@ -177,15 +177,15 @@ const HistoryPage = () => {
 	return (
 		<View style={styles.container}>
 			{/* 交易类型选择器 */}
-			<View style={styles.typeSelectorContainer}>
+			<View style={styles.tabContainer}>
 				<ScrollView horizontal showsHorizontalScrollIndicator={false}>
 					{availableTypes.map((type) => (
 						<TouchableOpacity
 							key={type}
-							style={[styles.typeTab, activeType === type && styles.activeTypeTab]}
+							style={[styles.tabButton, activeType === type && styles.activeTabButton]}
 							onPress={() => setActiveType(type)}
 						>
-							<Text style={[styles.typeText, activeType === type && styles.activeTypeText]}>
+							<Text style={[styles.tabText, activeType === type && styles.activeTabText]}>
 								{type}
 							</Text>
 						</TouchableOpacity>
@@ -292,28 +292,28 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: '#f5f5f5',
 	},
-	typeSelectorContainer: {
+	tabContainer: {
+		flexDirection: 'row',
+		borderBottomWidth: 1,
+		borderBottomColor: '#f0f0f0',
+		backgroundColor: '#f5f5f5',
+	},
+	tabButton: {
+		paddingVertical: hp(1.5),
 		paddingHorizontal: wp(4),
-		marginVertical: hp(1),
-		marginBottom: hp(1),
-		marginTop: hp(2),
+		alignItems: 'center',
 	},
-	typeTab: {
-		paddingHorizontal: wp(4),
-		paddingVertical: hp(1),
-		marginRight: wp(2),
-		borderRadius: 20,
-		backgroundColor: '#e8e8e8',
+	activeTabButton: {
+		borderBottomWidth: 3,
+		borderBottomColor: theme.colors.primary,
 	},
-	activeTypeTab: {
-		backgroundColor: theme.colors.primary,
-	},
-	typeText: {
+	tabText: {
 		fontSize: hp(1.6),
-		color: '#666',
+		fontWeight: '600',
+		color: '#999',
 	},
-	activeTypeText: {
-		color: '#fff',
+	activeTabText: {
+		color: theme.colors.text,
 	},
 	searchContainer: {
 		flexDirection: 'row',
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-between',
 		paddingHorizontal: wp(4),
 		marginBottom: hp(2),
-		marginTop: hp(1),
+		marginTop: hp(2),
 	},
 	searchWrapper: {
 		flex: 1,

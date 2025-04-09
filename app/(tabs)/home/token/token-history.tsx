@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, FlatList } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View, FlatList } from 'react-native';
 import { Menu, MenuItem } from 'react-native-material-menu';
 import Toast from 'react-native-toast-message';
 
@@ -29,13 +29,15 @@ const TokenHistoryPage = () => {
 	const [filterMenuVisible, setFilterMenuVisible] = useState(false);
 	const [refreshing, setRefreshing] = useState(false);
 
+	const address = getCurrentAccountAddress();
+
 	useEffect(() => {
 		loadHistories();
 	}, [contractId]);
 
 	const loadHistories = async () => {
 		try {
-			const data = await getFTHistoryByContractId(contractId);
+			const data = await getFTHistoryByContractId(contractId, address);
 			setHistories(data);
 		} catch (error) {
 			console.error('Failed to load histories:', error);
@@ -45,7 +47,6 @@ const TokenHistoryPage = () => {
 	const handleRefresh = async () => {
 		try {
 			setRefreshing(true);
-			const address = getCurrentAccountAddress();
 			await syncFTHistory(address, contractId);
 			await loadHistories();
 			Toast.show({

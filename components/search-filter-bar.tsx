@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Menu, MenuItem } from 'react-native-material-menu';
 
-import { AddContractModal } from '@/components/add-token-modal';
+import { AddContractModal } from '@/components/modals/add-token-modal';
 import { hp, wp } from '@/lib/common';
 
 type SortOption = 'amountHighToLow' | 'amountLowToHigh';

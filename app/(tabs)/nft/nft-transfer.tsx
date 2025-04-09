@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 
-import { AddressSelector } from '@/components/address-selector';
+import { AddressSelector } from '@/components/selector/address-selector';
 import { useAccount } from '@/hooks/useAccount';
 import { useNftTransaction } from '@/hooks/useNftTransaction';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
@@ -114,7 +114,7 @@ const NFTTransferPage = () => {
 					password: 'Incorrect password',
 				}));
 			}
-		}, 1000),
+		}, 1500),
 		[getPassKey, getSalt],
 	);
 
@@ -230,13 +230,14 @@ const NFTTransferPage = () => {
 
 		try {
 			let retried = false;
+			let txid: string | undefined;
 			try {
-				await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
+				txid = await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
 			} catch (error: any) {
 				if (
-					!retried && 
+					!retried &&
 					(error.message.includes('missing inputs') ||
-					error.message.includes('txn-mempool-conflict'))
+						error.message.includes('txn-mempool-conflict'))
 				) {
 					retried = true;
 					const utxos = await fetchUTXOs(currentAddress);
@@ -249,31 +250,33 @@ const NFTTransferPage = () => {
 						transferTimesCount,
 						formData.password,
 					);
-					await finish_transaction(result.txHex, result.utxos!);
+					txid = await finish_transaction(result.txHex, result.utxos!);
 				} else {
 					throw new Error('Failed to broadcast transaction.');
 				}
 			}
 
-			if (formData.addressTo === currentAddress) {
-				await updateNFTTransferTimes(id, transferTimesCount + 1);
-			} else {
-				const allAddresses = getAllAccountAddresses();
-
-				if (allAddresses.includes(formData.addressTo)) {
-					await updateNFTUserAddress(id, formData.addressTo);
+			if (txid) {
+				if (formData.addressTo === currentAddress) {
+					await updateNFTTransferTimes(id, transferTimesCount + 1);
 				} else {
-					await removeNFT(id);
+					const allAddresses = getAllAccountAddresses();
+
+					if (allAddresses.includes(formData.addressTo)) {
+						await updateNFTUserAddress(id, formData.addressTo);
+					} else {
+						await removeNFT(id);
+					}
 				}
+
+				Toast.show({
+					type: 'success',
+					text1: 'Success',
+					text2: 'NFT transferred successfully',
+				});
+
+				router.back();
 			}
-
-			Toast.show({
-				type: 'success',
-				text1: 'Success',
-				text2: 'NFT transferred successfully',
-			});
-
-			router.back();
 		} catch (error) {
 			console.error('Error transferring NFT:', error);
 			Toast.show({

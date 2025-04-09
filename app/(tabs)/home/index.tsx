@@ -6,12 +6,12 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
 import { syncFTs } from '@/actions/get-fts';
-import { AddContractModal } from '@/components/add-token-modal';
+import { AddContractModal } from '@/components/modals/add-token-modal';
 import { BalanceCard } from '@/components/balance-card';
 import { SearchFilterBar } from '@/components/search-filter-bar';
 import { AddedTokenCard } from '@/components/token-cards/added-token-card';
 import { OwnedTokenCard } from '@/components/token-cards/owned-token-card';
-import { ConfirmModal } from '@/components/ui/confirm-modal';
+import { ConfirmModal } from '@/components/modals/confirm-modal';
 import { Navbar } from '@/components/ui/navbar';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { useAccount } from '@/hooks/useAccount';

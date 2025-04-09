@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/ui/avatar';
-import { ConfirmModal } from '@/components/ui/confirm-modal';
+import { ConfirmModal } from '@/components/modals/confirm-modal';
 import { DropdownMenu } from '@/components/ui/dropdown-menu';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
@@ -14,6 +14,7 @@ export const Navbar = () => {
 	const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 	const router = useRouter();
 	const { clear, getCurrentAccountAddress } = useAccount();
+
 	const address = getCurrentAccountAddress();
 
 	const handleSignOut = () => {

@@ -26,7 +26,7 @@ import { Account, AccountType } from '@/types';
 import { initializeWalletData } from '@/lib/init';
 import { MnemonicInput } from '@/components/ui/mnemonic-input';
 import { initDApps } from '@/actions/get-dapps';
-import { clearAllData } from '@/utils/sqlite';
+import { clearAllData, deleteAccountData } from '@/utils/sqlite';
 
 enum Tag {
 	Turing = 'turing',
@@ -52,6 +52,7 @@ const RestorePage = () => {
 		getPassKey,
 		getSalt,
 		clear,
+		getAllAccounts,
 	} = useAccount();
 	const router = useRouter();
 
@@ -172,7 +173,12 @@ const RestorePage = () => {
 			setLoading(true);
 
 			if (hasExistingAccount) {
-				const result = generateKeysEncrypted_byMnemonic(password, mnemonic, selectedTag, salt);
+				const result = generateKeysEncrypted_byMnemonic(
+					confirmPassword,
+					mnemonic,
+					selectedTag,
+					salt,
+				);
 				if (!result) {
 					throw new Error('Failed to generate keys');
 				}
@@ -185,6 +191,18 @@ const RestorePage = () => {
 					taprootLegacyAddress,
 					legacyAddress,
 				} = result;
+
+				const accounts = getAllAccounts();
+				const isDuplicate = accounts.some(
+					(account) =>
+						account.addresses.tbcAddress === tbcAddress ||
+						account.addresses.taprootAddress === taprootAddress ||
+						account.pubKey.tbcPubKey === pubKey,
+				);
+
+				if (isDuplicate) {
+					throw new Error('This account already exists in your wallet');
+				}
 
 				const accountsCount = getAccountsCount();
 				const newAccount: Account = {
@@ -208,9 +226,19 @@ const RestorePage = () => {
 				};
 
 				if (shouldRestore) {
-					await initializeWalletData(tbcAddress);
-					await initializeWalletData(taprootLegacyAddress);
+					try {
+						await initializeWalletData(tbcAddress);
+					} catch (error) {
+						await deleteAccountData(tbcAddress);
+						throw new Error('Failed to restore wallet data from blockchain.');
+					}
+					try {
+						await initializeWalletData(taprootLegacyAddress);
+					} catch (error) {
+						await deleteAccountData(taprootLegacyAddress);
+					}
 				}
+
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
 			} else {
@@ -251,9 +279,18 @@ const RestorePage = () => {
 					type: AccountType.TBC,
 				};
 				if (shouldRestore) {
-					await initializeWalletData(tbcAddress);
-					await initializeWalletData(taprootLegacyAddress);
-					await initDApps();
+					try {
+						await initializeWalletData(tbcAddress);
+						await initDApps();
+					} catch (error) {
+						await clearAllData();
+						throw new Error('Failed to restore wallet data from blockchain.');
+					}
+					try {
+						await initializeWalletData(taprootLegacyAddress);
+					} catch (error) {
+						await deleteAccountData(taprootLegacyAddress);
+					}
 				}
 				await setPassKeyAndSalt(passKey, salt);
 				await addAccount(newAccount);
@@ -263,8 +300,11 @@ const RestorePage = () => {
 			router.replace('/(tabs)/home');
 			showToast('success', 'Wallet restored successfully!');
 		} catch (error: any) {
-			await clearAllData();
-			await clear();
+			if (hasExistingAccount) {
+			} else {
+				await clearAllData();
+				await clear();
+			}
 			showToast('error', error.message);
 		} finally {
 			setLoading(false);

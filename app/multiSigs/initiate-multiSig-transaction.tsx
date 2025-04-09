@@ -11,20 +11,18 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 
-import {
-	getFTBalance_byMultiSigAddress,
-	getTbcBalance_byMultiSigAddress,
-} from '@/actions/get-balance';
-import { AddressSelector } from '@/components/address-selector';
-import { AssetSelector } from '@/components/asset-selector';
-import { MultiSigAddressSelector } from '@/components/multiSig-address-selector';
+import { getTbcBalance_byMultiSigAddress } from '@/actions/get-balance';
+import { AddressSelector } from '@/components/selector/address-selector';
+import { AssetSelector } from '@/components/selector/asset-selector';
+import { MultiSigAddressSelector } from '@/components/selector/multiSig-address-selector';
 import { useAccount } from '@/hooks/useAccount';
 import { useFtTransaction } from '@/hooks/useFtTransaction';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
 import { theme } from '@/lib/theme';
 import { formatBalance } from '@/lib/util';
-import { getActiveMultiSigs, getAllFTPublics } from '@/utils/sqlite';
+import { getActiveMultiSigs } from '@/utils/sqlite';
+import { fetchFTs_multiSig } from '@/actions/get-fts';
 
 interface FormData {
 	senderAddress: string;
@@ -55,7 +53,7 @@ interface MultiSigAddress {
 }
 
 export default function InitiateMultiSigTransactionPage() {
-	const { getCurrentAccountType, getCurrentAccountAddress, getPassKey, getSalt } = useAccount();
+	const { getCurrentAccountAddress, getPassKey, getSalt } = useAccount();
 	const { createMultiSigTransaction } = useFtTransaction();
 
 	const [formData, setFormData] = useState<FormData>({
@@ -78,7 +76,6 @@ export default function InitiateMultiSigTransactionPage() {
 	const passKey = getPassKey();
 	const salt = getSalt();
 
-	// Load multi-signature addresses
 	useEffect(() => {
 		loadMultiSigAddresses();
 	}, []);
@@ -89,11 +86,9 @@ export default function InitiateMultiSigTransactionPage() {
 			setMultiSigAddresses(activeMultiSigs);
 
 			if (activeMultiSigs.length > 0) {
-				// Auto-select the first multi-signature address
 				const firstAddress = activeMultiSigs[0].multiSig_address;
 				setFormData((prev) => ({ ...prev, senderAddress: firstAddress }));
 
-				// Load assets for the selected address
 				await loadAssets(firstAddress);
 			}
 		} catch (error) {
@@ -107,34 +102,23 @@ export default function InitiateMultiSigTransactionPage() {
 		}
 	};
 
-	// Load assets for the selected multi-signature address
 	const loadAssets = async (address: string) => {
 		try {
-			// Start with TBC asset
 			const tbcBalance = await getTbcBalance_byMultiSigAddress(address);
 			const assetList: Asset[] = [{ label: 'TBC', value: 'TBC', balance: tbcBalance || 0 }];
+			const response = await fetchFTs_multiSig(address);
 
-			// Add token assets
-			const ftPublics = await getAllFTPublics();
-
-			// For each token, get its balance for the multi-signature address
-			for (const ft of ftPublics) {
-				try {
-					const ftBalance = await getFTBalance_byMultiSigAddress(ft.id, address);
-					assetList.push({
-						label: ft.symbol || ft.name,
-						value: ft.id,
-						balance: ftBalance,
-						contractId: ft.id,
-					});
-				} catch (error) {
-					console.error(`Failed to get balance for token ${ft.id}:`, error);
-				}
+			for (const token of response.token_list) {
+				assetList.push({
+					label: token.ft_symbol || token.ft_name,
+					value: token.ft_contract_id,
+					balance: token.ft_balance * Math.pow(10, -token.ft_decimal),
+					contractId: token.ft_contract_id,
+				});
 			}
 
 			setAssets(assetList);
 
-			// Auto-select TBC as the default asset
 			const tbcAsset = assetList.find((asset) => asset.value === 'TBC');
 			if (tbcAsset) {
 				setSelectedAsset(tbcAsset);
@@ -151,25 +135,48 @@ export default function InitiateMultiSigTransactionPage() {
 		}
 	};
 
-	// Handle multi-signature address selection
 	const handleSelectMultiSigAddress = async (address: string) => {
 		setFormData((prev) => ({ ...prev, senderAddress: address }));
+		setSelectedAsset(null);
 		await loadAssets(address);
 	};
 
-	// Handle receiver address selection
 	const handleSelectReceiverAddress = (address: string) => {
 		setFormData((prev) => ({ ...prev, receiverAddress: address }));
 		setFormErrors((prev) => ({ ...prev, receiverAddress: undefined }));
 	};
 
-	// Handle asset selection
 	const handleAssetSelect = (asset: Asset) => {
 		setSelectedAsset(asset);
 		setFormData((prev) => ({ ...prev, asset: asset.value }));
 	};
 
-	// Validate form
+	const validateAmount = (amountStr: string) => {
+		if (!amountStr) return 'Amount is required';
+		if (!selectedAsset) return 'Please select an asset first';
+
+		const num = Number(amountStr);
+		if (isNaN(num) || num <= 0) return 'Please enter a valid positive number';
+		if (num > selectedAsset.balance) return 'Amount exceeds your balance';
+		return '';
+	};
+
+	const handleInputChange = (field: keyof FormData, value: string) => {
+		if (field === 'password') {
+			value = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
+		}
+
+		const updatedFormData = { ...formData, [field]: value };
+		setFormData(updatedFormData);
+
+		let error = '';
+		if (field === 'amount') {
+			error = validateAmount(value);
+		} 
+
+		setFormErrors((prev) => ({ ...prev, [field]: error }));
+	};
+
 	const validateForm = (): boolean => {
 		const errors: FormErrors = {};
 
@@ -187,12 +194,13 @@ export default function InitiateMultiSigTransactionPage() {
 			errors.receiverAddress = 'Invalid address format';
 		}
 
-		if (!formData.amount || isNaN(Number(formData.amount))) {
-			errors.amount = 'Valid amount is required';
-		} else if (Number(formData.amount) <= 0) {
-			errors.amount = 'Amount must be greater than zero';
-		} else if (selectedAsset && Number(formData.amount) > selectedAsset.balance) {
-			errors.amount = 'Insufficient balance';
+		if (!formData.amount) {
+			errors.amount = 'Amount is required';
+		} else {
+			const amountError = validateAmount(formData.amount);
+			if (amountError) {
+				errors.amount = amountError;
+			}
 		}
 
 		if (!formData.password) {
@@ -203,7 +211,6 @@ export default function InitiateMultiSigTransactionPage() {
 		return Object.keys(errors).length === 0;
 	};
 
-	// Handle form submission
 	const handleSubmit = async () => {
 		if (!validateForm()) {
 			return;
@@ -220,7 +227,6 @@ export default function InitiateMultiSigTransactionPage() {
 				return;
 			}
 
-			// Create multi-signature transaction
 			const contractId = selectedAsset?.value !== 'TBC' ? selectedAsset?.contractId : undefined;
 
 			await createMultiSigTransaction(
@@ -238,7 +244,6 @@ export default function InitiateMultiSigTransactionPage() {
 				visibilityTime: 3000,
 			});
 
-			// Navigate back to the multi-signature transactions page
 			router.back();
 		} catch (error) {
 			console.error('Failed to initiate transaction:', error);
@@ -255,67 +260,72 @@ export default function InitiateMultiSigTransactionPage() {
 
 	return (
 		<View style={styles.container}>
-			<Text style={styles.title}>Initiate Multi-Signature Transaction</Text>
-
-			{/* Sender Address Field */}
-			<View style={styles.formGroup}>
-				<Text style={styles.label}>From MultiSig Address</Text>
-				<View style={styles.inputContainer}>
-					<TextInput
-						style={[styles.input, formErrors.senderAddress && styles.inputError]}
-						value={formData.senderAddress}
-						onChangeText={(text) => {
-							setFormData((prev) => ({ ...prev, senderAddress: text }));
-							setFormErrors((prev) => ({ ...prev, senderAddress: undefined }));
-						}}
-						placeholder="Select sender address"
-						editable={false}
-					/>
-					<TouchableOpacity
-						style={styles.iconButton}
-						onPress={() => setShowMultiSigAddressSelector(true)}
-					>
-						<MaterialIcons name="account-balance-wallet" size={24} color={theme.colors.primary} />
+			{/* From Address (MultiSig) */}
+			<View style={styles.inputGroup}>
+				<View style={styles.labelRow}>
+					<Text style={styles.label}>From</Text>
+					<TouchableOpacity onPress={() => setShowMultiSigAddressSelector(true)}>
+						<MaterialIcons name="menu-book" size={24} color={theme.colors.primary} />
 					</TouchableOpacity>
 				</View>
+				{formData.senderAddress && (
+					<View style={styles.selectedAssetWrapper}>
+						<Text style={styles.selectedAssetText}>{formData.senderAddress}</Text>
+					</View>
+				)}
 				{formErrors.senderAddress && (
 					<Text style={styles.errorText}>{formErrors.senderAddress}</Text>
 				)}
 			</View>
 
-			{/* Asset Selection Field */}
-			<View style={styles.formGroup}>
-				<Text style={styles.label}>Asset</Text>
-				<TouchableOpacity
-					style={[styles.assetSelector, formErrors.asset && styles.inputError]}
-					onPress={() => setShowAssetSelector(true)}
-				>
-					<Text style={styles.assetText}>
-						{selectedAsset
-							? `${selectedAsset.label} (${formatBalance(selectedAsset.balance)})`
-							: 'Select asset'}
-					</Text>
-					<MaterialIcons name="arrow-drop-down" size={24} color="#666" />
-				</TouchableOpacity>
+			{/* Asset Selector */}
+			<View style={styles.inputGroup}>
+				<View style={styles.labelRow}>
+					<Text style={styles.label}>Asset</Text>
+					<TouchableOpacity onPress={() => setShowAssetSelector(true)}>
+						<MaterialIcons name="account-balance-wallet" size={24} color={theme.colors.primary} />
+					</TouchableOpacity>
+				</View>
+				{selectedAsset && (
+					<View style={styles.selectedAssetWrapper}>
+						<Text style={styles.selectedAssetText}>
+							{selectedAsset.label}: {formatBalance(selectedAsset.balance)}
+						</Text>
+					</View>
+				)}
 				{formErrors.asset && <Text style={styles.errorText}>{formErrors.asset}</Text>}
 			</View>
 
-			{/* Receiver Address Field */}
-			<View style={styles.formGroup}>
-				<Text style={styles.label}>To Address</Text>
-				<View style={styles.inputContainer}>
+			{/* To Address */}
+			<View style={styles.inputGroup}>
+				<Text style={styles.label}>To</Text>
+				<View style={styles.inputWrapper}>
 					<TextInput
 						style={[styles.input, formErrors.receiverAddress && styles.inputError]}
 						value={formData.receiverAddress}
-						onChangeText={(text) => {
-							setFormData((prev) => ({ ...prev, receiverAddress: text }));
-							setFormErrors((prev) => ({ ...prev, receiverAddress: undefined }));
-						}}
+						onChangeText={(text) => handleInputChange('receiverAddress', text)}
 						placeholder="Enter receiver address"
 						autoCapitalize="none"
 						autoCorrect={false}
 					/>
-					<TouchableOpacity style={styles.iconButton} onPress={() => setShowAddressSelector(true)}>
+					{formData.receiverAddress.length > 0 && (
+						<TouchableOpacity
+							style={styles.clearButton}
+							onPress={() => {
+								setFormData((prev) => ({ ...prev, receiverAddress: '' }));
+								setFormErrors((prev) => ({ ...prev, receiverAddress: undefined }));
+							}}
+						>
+							<MaterialIcons name="close" size={20} color="#666" />
+						</TouchableOpacity>
+					)}
+					<TouchableOpacity
+						style={[
+							styles.addressBookButton,
+							{ right: formData.receiverAddress.length > 0 ? wp(8) : wp(2) },
+						]}
+						onPress={() => setShowAddressSelector(true)}
+					>
 						<MaterialIcons name="menu-book" size={24} color={theme.colors.primary} />
 					</TouchableOpacity>
 				</View>
@@ -324,52 +334,85 @@ export default function InitiateMultiSigTransactionPage() {
 				)}
 			</View>
 
-			{/* Amount Field */}
-			<View style={styles.formGroup}>
+			{/* Amount Input */}
+			<View style={styles.inputGroup}>
 				<Text style={styles.label}>Amount</Text>
-				<TextInput
-					style={[styles.input, formErrors.amount && styles.inputError]}
-					value={formData.amount}
-					onChangeText={(text) => {
-						setFormData((prev) => ({ ...prev, amount: text }));
-						setFormErrors((prev) => ({ ...prev, amount: undefined }));
-					}}
-					placeholder="Enter amount"
-					keyboardType="numeric"
-				/>
+				<View style={styles.inputWrapper}>
+					<TextInput
+						style={[styles.input, formErrors.amount && styles.inputError]}
+						value={formData.amount}
+						onChangeText={(text) => handleInputChange('amount', text)}
+						placeholder="Enter amount"
+						keyboardType="decimal-pad"
+						autoCapitalize="none"
+						autoCorrect={false}
+					/>
+					{formData.amount.length > 0 && (
+						<TouchableOpacity
+							style={styles.clearButton}
+							onPress={() => {
+								setFormData((prev) => ({ ...prev, amount: '' }));
+								setFormErrors((prev) => ({ ...prev, amount: '' }));
+							}}
+						>
+							<MaterialIcons name="close" size={20} color="#666" />
+						</TouchableOpacity>
+					)}
+				</View>
 				{formErrors.amount && <Text style={styles.errorText}>{formErrors.amount}</Text>}
 			</View>
 
-			{/* Password Field */}
-			<View style={styles.formGroup}>
-				<Text style={styles.label}>Password</Text>
-				<TextInput
-					style={[styles.input, formErrors.password && styles.inputError]}
-					value={formData.password}
-					onChangeText={(text) => {
-						setFormData((prev) => ({ ...prev, password: text }));
-						setFormErrors((prev) => ({ ...prev, password: undefined }));
-					}}
-					placeholder="Enter your password"
-					secureTextEntry
-				/>
+			{/* Password */}
+			<View style={styles.inputGroup}>
+				<View style={styles.labelRow}>
+					<Text style={styles.label}>Password</Text>
+				</View>
+				<View style={styles.inputWrapper}>
+					<TextInput
+						style={[styles.input, formErrors.password && styles.inputError]}
+						value={formData.password}
+						onChangeText={(text) => {
+							setFormData((prev) => ({ ...prev, password: text }));
+							setFormErrors((prev) => ({ ...prev, password: undefined }));
+						}}
+						placeholder="Enter your password"
+						secureTextEntry
+					/>
+					{formData.password.length > 0 && (
+						<TouchableOpacity
+							style={styles.clearButton}
+							onPress={() => {
+								setFormData((prev) => ({ ...prev, password: '' }));
+								setFormErrors((prev) => ({ ...prev, password: undefined }));
+							}}
+						>
+							<MaterialIcons name="close" size={20} color="#666" />
+						</TouchableOpacity>
+					)}
+				</View>
 				{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
 			</View>
 
 			{/* Submit Button */}
 			<TouchableOpacity
-				style={[styles.button, isLoading && styles.buttonDisabled]}
+				style={[styles.sendButton, isLoading && styles.sendButtonDisabled]}
 				onPress={handleSubmit}
 				disabled={isLoading}
 			>
 				{isLoading ? (
 					<ActivityIndicator color="#fff" size="small" />
 				) : (
-					<Text style={styles.buttonText}>Initiate Transaction</Text>
+					<Text style={styles.sendButtonText}>Initiate Transaction</Text>
 				)}
 			</TouchableOpacity>
 
-			{/* Asset Selector */}
+			{/* Selectors */}
+			<MultiSigAddressSelector
+				visible={showMultiSigAddressSelector}
+				onClose={() => setShowMultiSigAddressSelector(false)}
+				onSelect={handleSelectMultiSigAddress}
+				addresses={multiSigAddresses}
+			/>
 			<AssetSelector
 				visible={showAssetSelector}
 				onClose={() => setShowAssetSelector(false)}
@@ -377,16 +420,6 @@ export default function InitiateMultiSigTransactionPage() {
 				assets={assets}
 				selectedAsset={selectedAsset}
 			/>
-
-			{/* MultiSig Address Selector */}
-			<MultiSigAddressSelector
-				visible={showMultiSigAddressSelector}
-				onClose={() => setShowMultiSigAddressSelector(false)}
-				onSelect={handleSelectMultiSigAddress}
-				addresses={multiSigAddresses}
-			/>
-
-			{/* Address Selector for Receiver */}
 			<AddressSelector
 				visible={showAddressSelector}
 				onClose={() => setShowAddressSelector(false)}
@@ -400,79 +433,99 @@ export default function InitiateMultiSigTransactionPage() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		padding: wp(5),
 		backgroundColor: '#fff',
+		padding: wp(4),
+		paddingTop: hp(3),
 	},
-	title: {
-		fontSize: hp(2.2),
-		fontWeight: '600',
-		marginBottom: hp(3),
-		textAlign: 'center',
+	inputGroup: {
+		marginBottom: hp(2),
 	},
-	formGroup: {
-		marginBottom: hp(2.5),
+	labelRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		marginBottom: hp(1),
+		paddingHorizontal: wp(1),
 	},
 	label: {
 		fontSize: hp(1.6),
-		marginBottom: hp(0.8),
 		color: '#333',
 		fontWeight: '500',
 	},
-	input: {
-		height: hp(6),
-		borderWidth: 1,
-		borderColor: '#ddd',
-		borderRadius: 8,
-		paddingHorizontal: wp(3),
-		fontSize: hp(1.8),
-		backgroundColor: '#f9f9f9',
-		flex: 1,
+	balanceText: {
+		fontSize: hp(1.4),
+		color: '#666',
 	},
-	inputContainer: {
+	inputWrapper: {
+		position: 'relative',
 		flexDirection: 'row',
 		alignItems: 'center',
 	},
-	iconButton: {
-		padding: wp(2),
-		marginLeft: wp(2),
+	input: {
+		flex: 1,
+		borderWidth: 1,
+		borderColor: '#e0e0e0',
+		borderRadius: 8,
+		paddingHorizontal: wp(3),
+		paddingVertical: hp(1.5),
+		fontSize: hp(1.6),
+		backgroundColor: '#f8f8f8',
+		paddingRight: wp(10), // 为清除按钮留出空间
+	},
+	inputText: {
+		fontSize: hp(1.6),
+		color: '#333',
 	},
 	inputError: {
-		borderColor: '#e53935',
+		borderColor: '#ff4444',
 	},
 	errorText: {
-		color: '#e53935',
+		color: '#ff4444',
 		fontSize: hp(1.4),
 		marginTop: hp(0.5),
+		marginLeft: wp(1),
 	},
-	button: {
+	addressBookButton: {
+		position: 'absolute',
+		right: wp(2),
+		padding: wp(2),
+	},
+	sendButton: {
 		backgroundColor: theme.colors.primary,
-		height: hp(6),
+		padding: wp(4),
 		borderRadius: 8,
-		justifyContent: 'center',
 		alignItems: 'center',
 		marginTop: hp(2),
 	},
-	buttonDisabled: {
+	sendButtonDisabled: {
 		opacity: 0.6,
 	},
-	buttonText: {
+	sendButtonText: {
 		color: '#fff',
 		fontSize: hp(1.8),
 		fontWeight: '600',
 	},
-	assetSelector: {
-		height: hp(6),
-		borderWidth: 1,
-		borderColor: '#ddd',
-		borderRadius: 8,
-		paddingHorizontal: wp(3),
-		backgroundColor: '#f9f9f9',
+	selectedAssetWrapper: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
+		marginLeft: wp(1),
+		marginTop: hp(0.5),
+		backgroundColor: '#f8f8f8',
+		padding: wp(2),
+		borderRadius: 8,
 	},
-	assetText: {
-		fontSize: hp(1.8),
+	selectedAssetText: {
+		fontSize: hp(1.6),
 		color: '#333',
+		fontWeight: '500',
+	},
+	clearButton: {
+		position: 'absolute',
+		right: wp(2),
+		height: '100%',
+		justifyContent: 'center',
+		alignItems: 'center',
+		padding: wp(1),
 	},
 });

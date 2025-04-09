@@ -64,17 +64,14 @@ const CreateCollectionPage = () => {
 
 	const currentAddress = getCurrentAccountAddress();
 
-	// 验证集合名称
 	const validateName = (name: string) => {
 		if (!name) return 'Collection name is required';
 		if (name.length < 1 || name.length > 20) return 'Name must be 1-20 characters';
 
-		// 检查首尾不能有空格，中间可以有空格
 		if (name.startsWith(' ') || name.endsWith(' ')) {
 			return 'Name cannot start or end with spaces';
 		}
 
-		// 只允许字母、数字和空格
 		if (!/^[a-zA-Z0-9 ]+$/.test(name)) {
 			return 'Name can only contain letters, numbers and spaces';
 		}
@@ -82,14 +79,12 @@ const CreateCollectionPage = () => {
 		return '';
 	};
 
-	// 验证描述
 	const validateDescription = (description: string) => {
 		if (!description) return 'Description is required';
 		if (description.length > 100) return 'Description must be less than 100 characters';
 		return '';
 	};
 
-	// 验证供应量
 	const validateSupply = (supply: string) => {
 		if (!supply) return 'Supply is required';
 		const num = Number(supply);
@@ -99,26 +94,9 @@ const CreateCollectionPage = () => {
 		return '';
 	};
 
-	// 验证图片
 	const validateImage = (image: string | null) => {
 		if (!image) return 'Collection image is required';
 		return '';
-	};
-
-	// 检查表单是否有效
-	const isFormValid = (password?: string) => {
-		const nameError = validateName(formData.name);
-		const descriptionError = validateDescription(formData.description);
-		const supplyError = validateSupply(formData.supply);
-		const imageError = validateImage(formData.image);
-
-		// 如果提供了密码参数，则使用它，否则使用表单中的密码
-		const passwordToCheck = password !== undefined ? password : formData.password;
-
-		// 检查是否有任何错误
-		return (
-			!nameError && !descriptionError && !supplyError && !imageError && passwordToCheck.length > 0
-		);
 	};
 
 	const debouncedPasswordValidation = useCallback(
@@ -152,7 +130,7 @@ const CreateCollectionPage = () => {
 					password: 'Incorrect password',
 				}));
 			}
-		}, 1000),
+		}, 1500),
 		[getPassKey, getSalt],
 	);
 
@@ -217,12 +195,10 @@ const CreateCollectionPage = () => {
 		}
 	}, [formData]);
 
-	// 添加useEffect钩子，与转移token页面完全一致
 	useEffect(() => {
 		calculateEstimatedFee();
 	}, [formData]);
 
-	// 修改handleInputChange函数中的密码处理部分，与转移token页面完全一致
 	const handleInputChange = (field: keyof FormData, value: string) => {
 		if (field === 'password') {
 			value = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
@@ -247,7 +223,6 @@ const CreateCollectionPage = () => {
 		setFormErrors((prev) => ({ ...prev, [field]: error }));
 	};
 
-	// 处理清除输入 - 完全按照转移token页面的逻辑
 	const handleClearInput = (field: keyof FormData) => {
 		setFormData((prev) => ({ ...prev, [field]: field === 'image' ? null : '' }));
 		setFormErrors((prev) => ({ ...prev, [field]: '' }));
@@ -263,7 +238,6 @@ const CreateCollectionPage = () => {
 		}
 	};
 
-	// 处理图片选择
 	const handlePickImage = async () => {
 		try {
 			const result = await ImagePicker.launchImageLibraryAsync({
@@ -277,7 +251,6 @@ const CreateCollectionPage = () => {
 			if (!result.canceled && result.assets && result.assets.length > 0) {
 				const selectedAsset = result.assets[0];
 
-				// 检查文件大小
 				const base64 = selectedAsset.base64;
 				if (base64) {
 					const fileSizeInBytes = Math.round((base64.length * 3) / 4);
@@ -292,7 +265,6 @@ const CreateCollectionPage = () => {
 						return;
 					}
 
-					// 更新表单数据
 					const updatedFormData = { ...formData, image: `data:image/jpeg;base64,${base64}` };
 					setFormData(updatedFormData);
 					setFormErrors((prev) => ({ ...prev, image: '' }));
@@ -399,7 +371,6 @@ const CreateCollectionPage = () => {
 	return (
 		<View style={styles.container}>
 			<ScrollView showsVerticalScrollIndicator={false}>
-				{/* 合集名称 */}
 				<View style={styles.formGroup}>
 					<Text style={styles.label}>Collection Name</Text>
 					<View style={styles.inputWrapper}>
@@ -419,7 +390,6 @@ const CreateCollectionPage = () => {
 					{formErrors.name ? <Text style={styles.errorText}>{formErrors.name}</Text> : null}
 				</View>
 
-				{/* 描述 */}
 				<View style={styles.formGroup}>
 					<Text style={styles.label}>Description</Text>
 					<View style={styles.inputWrapper}>
@@ -451,7 +421,6 @@ const CreateCollectionPage = () => {
 					) : null}
 				</View>
 
-				{/* 供应量 */}
 				<View style={styles.formGroup}>
 					<Text style={styles.label}>Supply</Text>
 					<View style={styles.inputWrapper}>
@@ -475,7 +444,6 @@ const CreateCollectionPage = () => {
 					{formErrors.supply ? <Text style={styles.errorText}>{formErrors.supply}</Text> : null}
 				</View>
 
-				{/* 图片选择 */}
 				<View style={styles.formGroup}>
 					<Text style={styles.label}>Collection Image</Text>
 					<TouchableOpacity style={styles.imagePickerButton} onPress={handlePickImage}>
@@ -502,7 +470,6 @@ const CreateCollectionPage = () => {
 					{formErrors.image ? <Text style={styles.errorText}>{formErrors.image}</Text> : null}
 				</View>
 
-				{/* 密码 */}
 				<View style={styles.formGroup}>
 					<Text style={styles.label}>Password</Text>
 					<View style={styles.inputWrapper}>
@@ -525,7 +492,6 @@ const CreateCollectionPage = () => {
 					{formErrors.password ? <Text style={styles.errorText}>{formErrors.password}</Text> : null}
 				</View>
 
-				{/* 估计手续费 */}
 				<View style={styles.feeContainer}>
 					<Text style={styles.feeLabel}>Estimated Fee:</Text>
 					<View style={styles.feeValueContainer}>
@@ -539,7 +505,6 @@ const CreateCollectionPage = () => {
 					</View>
 				</View>
 
-				{/* 创建按钮 */}
 				<TouchableOpacity
 					style={[
 						styles.createButton,
@@ -700,6 +665,5 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 	},
 });
-
 
 export default CreateCollectionPage;

@@ -94,7 +94,6 @@ export const useBtcTransaction = () => {
 			}
 		}
 
-		// 如果所有API都失败，返回默认值
 		return {
 			fast: 20,
 			medium: 10,

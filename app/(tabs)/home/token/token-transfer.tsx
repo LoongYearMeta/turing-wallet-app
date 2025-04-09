@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 
-import { AddressSelector } from '@/components/address-selector';
+import { AddressSelector } from '@/components/selector/address-selector';
 import { useAccount } from '@/hooks/useAccount';
 import { useFtTransaction } from '@/hooks/useFtTransaction';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
@@ -134,7 +134,7 @@ const TokenTransferPage = () => {
 					password: 'Incorrect password',
 				}));
 			}
-		}, 1000),
+		}, 1500),
 		[getPassKey, getSalt],
 	);
 
@@ -252,8 +252,9 @@ const TokenTransferPage = () => {
 		}
 
 		try {
+			let txid: string | undefined;
 			try {
-				await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
+				txid = await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
 			} catch (error: any) {
 				if (
 					error.message.includes('missing inputs') ||
@@ -268,60 +269,62 @@ const TokenTransferPage = () => {
 						Number(formData.amount),
 						formData.password,
 					);
-					await finish_transaction(result.txHex, result.utxos!);
+					txid = await finish_transaction(result.txHex, result.utxos!);
 				} else {
 					throw new Error('Failed to broadcast transaction!');
 				}
 			}
 
-			const allAccountAddresses = getAllAccountAddresses();
+			if (txid) {
+				const allAccountAddresses = getAllAccountAddresses();
 
-			if (formData.addressTo === currentAddress) {
-			} else if (
-				allAccountAddresses.includes(formData.addressTo) ||
-				getAddresses().tbcAddress === formData.addressTo ||
-				getAddresses().taprootLegacyAddress === formData.addressTo
-			) {
-				const receiverToken = await getFT(contractId, formData.addressTo);
+				if (formData.addressTo === currentAddress) {
+				} else if (
+					allAccountAddresses.includes(formData.addressTo) ||
+					getAddresses().tbcAddress === formData.addressTo ||
+					getAddresses().taprootLegacyAddress === formData.addressTo
+				) {
+					const receiverToken = await getFT(contractId, formData.addressTo);
 
-				if (receiverToken) {
-					await transferFT(contractId, Number(formData.amount), formData.addressTo);
+					if (receiverToken) {
+						await transferFT(contractId, Number(formData.amount), formData.addressTo);
+					} else {
+						const senderToken = await getFT(contractId, currentAddress);
+						if (senderToken) {
+							await upsertFT(
+								{
+									id: contractId,
+									name: senderToken.name,
+									decimal: senderToken.decimal,
+									amount: Number(formData.amount),
+									symbol: senderToken.symbol,
+									isDeleted: false,
+								},
+								formData.addressTo,
+							);
+						}
+					}
+					await transferFT(contractId, -Number(formData.amount), currentAddress);
+					const updatedSenderToken = await getFT(contractId, currentAddress);
+					if (updatedSenderToken && updatedSenderToken.amount <= 0) {
+						await removeFT(contractId, currentAddress);
+					}
 				} else {
-					const senderToken = await getFT(contractId, currentAddress);
-					if (senderToken) {
-						await upsertFT(
-							{
-								id: contractId,
-								name: senderToken.name,
-								decimal: senderToken.decimal,
-								amount: Number(formData.amount),
-								symbol: senderToken.symbol,
-								isDeleted: false,
-							},
-							formData.addressTo,
-						);
+					await transferFT(contractId, -Number(formData.amount), currentAddress);
+					const updatedSenderToken = await getFT(contractId, currentAddress);
+					if (updatedSenderToken && updatedSenderToken.amount <= 0) {
+						await removeFT(contractId, currentAddress);
 					}
 				}
-				await transferFT(contractId, -Number(formData.amount), currentAddress);
-				const updatedSenderToken = await getFT(contractId, currentAddress);
-				if (updatedSenderToken && updatedSenderToken.amount <= 0) {
-					await removeFT(contractId, currentAddress);
-				}
-			} else {
-				await transferFT(contractId, -Number(formData.amount), currentAddress);
-				const updatedSenderToken = await getFT(contractId, currentAddress);
-				if (updatedSenderToken && updatedSenderToken.amount <= 0) {
-					await removeFT(contractId, currentAddress);
-				}
+
+				Toast.show({
+					type: 'success',
+					text1: 'Success',
+					text2: 'Token transferred successfully',
+				});
+
+				router.back();
 			}
-
-			Toast.show({
-				type: 'success',
-				text1: 'Success',
-				text2: 'Token transferred successfully',
-			});
-
-			router.back();
 		} catch (error) {
 			Toast.show({
 				type: 'error',

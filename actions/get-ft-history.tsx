@@ -25,6 +25,7 @@ export async function fetchFTHistory(
 ): Promise<FTHistoryResponse> {
 	const response = await api.get(
 		`https://turingwallet.xyz/v1/tbc/main/ft/history/address/${address}/contract/${contract_id}/page/${page}/size/10`,
+		{ timeout: 20000 },
 	);
 	return response.data;
 }
@@ -39,7 +40,7 @@ export async function syncFTHistory(address: string, contract_id: string): Promi
 			let foundExistingWithSameTimestamp = false;
 
 			for (const tx of response.result) {
-				const existingHistory = await getFTHistoryById(tx.txid);
+				const existingHistory = await getFTHistoryById(tx.txid, address);
 
 				if (
 					existingHistory &&
@@ -51,10 +52,13 @@ export async function syncFTHistory(address: string, contract_id: string): Promi
 				}
 
 				if (existingHistory) {
-					await updateFTHistory({
-						...existingHistory,
-						timestamp: tx.time_stamp || currentTimestamp,
-					});
+					await updateFTHistory(
+						{
+							...existingHistory,
+							timestamp: tx.time_stamp || currentTimestamp,
+						},
+						address,
+					);
 					continue;
 				}
 
@@ -68,7 +72,7 @@ export async function syncFTHistory(address: string, contract_id: string): Promi
 					balance_change: tx.ft_balance_change,
 				};
 
-				await addFTHistory(history);
+				await addFTHistory(history, address);
 			}
 
 			if (foundExistingWithSameTimestamp || response.result.length < 10) {

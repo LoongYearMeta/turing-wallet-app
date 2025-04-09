@@ -58,7 +58,7 @@ interface CategorizedTransactions {
 	waitSigned: MultiSigTransaction[];
 }
 
-const useMultiSigTransaction = create<MultiSigTransactionState>((set) => ({
+const useMultiSigTransaction = create<MultiSigTransactionState>((set, get) => ({
 	completedTxs: [],
 	waitBroadcastedTxs: [],
 	waitOtherSignTxs: [],
@@ -68,11 +68,34 @@ const useMultiSigTransaction = create<MultiSigTransactionState>((set) => ({
 	isLoading: false,
 	error: null,
 
-	fetchTransactions: async (address: string, page: number) => {
+	fetchTransactions: async (pubKey: string, page: number) => {
+		const currentState = get();
+
+		if (page === 0) {
+			set({
+				completedTxs: [],
+				waitBroadcastedTxs: [],
+				waitOtherSignTxs: [],
+				waitSignedTxs: [],
+				totalCount: 0,
+				currentPage: 0,
+			});
+		}
+
+		const currentTotal =
+			currentState.completedTxs.length +
+			currentState.waitBroadcastedTxs.length +
+			currentState.waitOtherSignTxs.length +
+			currentState.waitSignedTxs.length;
+
+		if (currentTotal >= currentState.totalCount && page > 0) {
+			return;
+		}
+
 		set({ isLoading: true, error: null });
 		try {
 			const response = await api.get<MultiSigTransactionResponse>(
-				`https://turingwallet.xyz/multy/sig/history/address/${address}/page/${page}/size/50`,
+				`https://turingwallet.xyz/multy/sig/history/address/${pubKey}/page/${page}/size/20`,
 			);
 			const { history_count, history_list } = response.data;
 
@@ -103,10 +126,22 @@ const useMultiSigTransaction = create<MultiSigTransactionState>((set) => ({
 			);
 
 			set({
-				completedTxs: categorizedTxs.completed,
-				waitBroadcastedTxs: categorizedTxs.waitBroadcasted,
-				waitOtherSignTxs: categorizedTxs.waitOtherSign,
-				waitSignedTxs: categorizedTxs.waitSigned,
+				completedTxs:
+					page === 0
+						? categorizedTxs.completed
+						: [...currentState.completedTxs, ...categorizedTxs.completed],
+				waitBroadcastedTxs:
+					page === 0
+						? categorizedTxs.waitBroadcasted
+						: [...currentState.waitBroadcastedTxs, ...categorizedTxs.waitBroadcasted],
+				waitOtherSignTxs:
+					page === 0
+						? categorizedTxs.waitOtherSign
+						: [...currentState.waitOtherSignTxs, ...categorizedTxs.waitOtherSign],
+				waitSignedTxs:
+					page === 0
+						? categorizedTxs.waitSigned
+						: [...currentState.waitSignedTxs, ...categorizedTxs.waitSigned],
 				totalCount: history_count,
 				currentPage: page,
 				isLoading: false,

@@ -14,7 +14,7 @@ export const deriveKey = (password: string, salt: string): string => {
 		const key = CryptoJS.PBKDF2(password, salt, {
 			keySize: 512 / 32,
 			iterations: 10000,
-			hasher: CryptoJS.algo.SHA256
+			hasher: CryptoJS.algo.SHA256,
 		});
 		const finalKey = CryptoJS.SHA256(key);
 		return finalKey.toString();

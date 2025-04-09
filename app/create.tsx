@@ -129,7 +129,7 @@ const CreatePage = () => {
 			setLoading(true);
 
 			if (initialHasAccount) {
-				const result = generateKeysEncrypted_mnemonic(password, salt);
+				const result = generateKeysEncrypted_mnemonic(confirmPassword, salt);
 				if (!result) {
 					throw new Error('Failed to generate keys');
 				}

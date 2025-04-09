@@ -1,5 +1,6 @@
 import { addFTPublic, type FTPublic, getFTPublic, updateFTPublicHoldsCount } from '@/utils/sqlite';
 import { api } from '@/lib/axios';
+
 interface FTInfoResponse {
 	ftContractId: string;
 	ftCodeScript: string;

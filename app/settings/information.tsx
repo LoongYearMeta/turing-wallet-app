@@ -14,8 +14,8 @@ import {
 import Toast from 'react-native-toast-message';
 
 import { syncMultiSigs } from '@/actions/get-multiSigs';
-import { RestoreMultiSigModal } from '@/components/restore-multisig-modal';
-import { ConfirmModal } from '@/components/ui/confirm-modal';
+import { RestoreMultiSigModal } from '@/components/modals/restore-multisig-modal';
+import { ConfirmModal } from '@/components/modals/confirm-modal';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
@@ -150,7 +150,7 @@ export default function InformationPage() {
 
 		try {
 			await softDeleteMultiSig(multiSigToDelete);
-			await loadMultiSigAddresses(); // 刷新列表
+			await loadMultiSigAddresses(); 
 			Toast.show({
 				type: 'success',
 				text1: 'MultiSig wallet deleted successfully',
@@ -481,8 +481,8 @@ const styles = StyleSheet.create({
 	},
 	scrollContent: {
 		padding: wp(4),
-		paddingBottom: hp(4), // 添加底部间距确保内容可以完全滚动
-		flexGrow: 1, // 允许内容拉伸
+		paddingBottom: hp(4), 
+		flexGrow: 1, 
 	},
 	listContainer: {
 		marginBottom: hp(1),

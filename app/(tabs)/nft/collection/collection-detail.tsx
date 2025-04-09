@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 
-import { ConfirmModal } from '@/components/ui/confirm-modal';
+import { ConfirmModal } from '@/components/modals/confirm-modal';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';

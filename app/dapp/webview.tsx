@@ -191,7 +191,7 @@ export default function DAppWebView() {
 					isValid: false,
 				});
 			}
-		}, 1000),
+		}, 1500),
 		[getPassKey, getSalt],
 	);
 

@@ -64,7 +64,6 @@ const CreateNFTPage = () => {
 
 	const currentAddress = getCurrentAccountAddress();
 
-	// 加载合集信息
 	useEffect(() => {
 		const loadCollection = async () => {
 			if (!collectionId) return;
@@ -72,7 +71,7 @@ const CreateNFTPage = () => {
 			try {
 				const collectionData = await getCollection(collectionId);
 				setCollection(collectionData);
-				// 使用合集图片作为默认图片
+
 				setFormData((prev) => ({
 					...prev,
 					image: collectionData!.icon,
@@ -90,17 +89,14 @@ const CreateNFTPage = () => {
 		loadCollection();
 	}, [collectionId]);
 
-	// 验证NFT名称
 	const validateName = (name: string) => {
 		if (!name) return 'NFT name is required';
 		if (name.length < 1 || name.length > 20) return 'Name must be 1-20 characters';
 
-		// 检查首尾不能有空格，中间可以有空格
 		if (name.startsWith(' ') || name.endsWith(' ')) {
 			return 'Name cannot start or end with spaces';
 		}
 
-		// 只允许字母、数字和空格
 		if (!/^[a-zA-Z0-9 ]+$/.test(name)) {
 			return 'Name can only contain letters, numbers and spaces';
 		}
@@ -108,14 +104,12 @@ const CreateNFTPage = () => {
 		return '';
 	};
 
-	// 验证描述
 	const validateDescription = (description: string) => {
 		if (!description) return 'Description is required';
 		if (description.length > 100) return 'Description must be less than 100 characters';
 		return '';
 	};
 
-	// 验证图片
 	const validateImage = (image: string | null) => {
 		if (!image) return 'NFT image is required';
 		return '';
@@ -152,11 +146,10 @@ const CreateNFTPage = () => {
 					password: 'Incorrect password',
 				}));
 			}
-		}, 1000),
+		}, 1500),
 		[getPassKey, getSalt],
 	);
 
-	// 计算估计手续费
 	const calculateEstimatedFee = useCallback(async () => {
 		if (
 			!formData.name ||
@@ -243,7 +236,6 @@ const CreateNFTPage = () => {
 		setFormErrors((prev) => ({ ...prev, [field]: error }));
 	};
 
-	// 处理清除输入
 	const handleClearInput = (field: keyof FormData) => {
 		setFormData((prev) => ({ ...prev, [field]: field === 'image' ? null : '' }));
 		setFormErrors((prev) => ({ ...prev, [field]: '' }));
@@ -253,7 +245,6 @@ const CreateNFTPage = () => {
 		}
 	};
 
-	// 处理图片选择
 	const handlePickImage = async () => {
 		try {
 			const result = await ImagePicker.launchImageLibraryAsync({
@@ -267,7 +258,6 @@ const CreateNFTPage = () => {
 			if (!result.canceled && result.assets && result.assets.length > 0) {
 				const selectedAsset = result.assets[0];
 
-				// 检查文件大小
 				const base64 = selectedAsset.base64;
 				if (base64) {
 					const fileSizeInBytes = Math.round((base64.length * 3) / 4);
@@ -281,8 +271,6 @@ const CreateNFTPage = () => {
 						});
 						return;
 					}
-
-					// 更新表单数据
 					const updatedFormData = { ...formData, image: `data:image/jpeg;base64,${base64}` };
 					setFormData(updatedFormData);
 					setFormErrors((prev) => ({ ...prev, image: '' }));
@@ -397,7 +385,6 @@ const CreateNFTPage = () => {
 	return (
 		<View style={styles.container}>
 			<ScrollView showsVerticalScrollIndicator={false}>
-				{/* NFT名称 */}
 				<View style={styles.formGroup}>
 					<Text style={styles.label}>NFT Name</Text>
 					<View style={styles.inputWrapper}>
@@ -417,7 +404,6 @@ const CreateNFTPage = () => {
 					{formErrors.name ? <Text style={styles.errorText}>{formErrors.name}</Text> : null}
 				</View>
 
-				{/* 描述 */}
 				<View style={styles.formGroup}>
 					<Text style={styles.label}>Description</Text>
 					<View style={styles.inputWrapper}>
@@ -449,7 +435,6 @@ const CreateNFTPage = () => {
 					) : null}
 				</View>
 
-				{/* 图片选择 */}
 				<View style={styles.formGroup}>
 					<Text style={styles.label}>NFT Image</Text>
 					<TouchableOpacity style={styles.imagePickerButton} onPress={handlePickImage}>
@@ -459,7 +444,6 @@ const CreateNFTPage = () => {
 								<TouchableOpacity
 									style={styles.imageCloseButton}
 									onPress={() => {
-										// 完全清除图片，不重置为合集图片
 										setFormData((prev) => ({
 											...prev,
 											image: null,
@@ -480,7 +464,6 @@ const CreateNFTPage = () => {
 					{formErrors.image ? <Text style={styles.errorText}>{formErrors.image}</Text> : null}
 				</View>
 
-				{/* 密码 */}
 				<View style={styles.formGroup}>
 					<Text style={styles.label}>Password</Text>
 					<View style={styles.inputWrapper}>
@@ -503,7 +486,6 @@ const CreateNFTPage = () => {
 					{formErrors.password ? <Text style={styles.errorText}>{formErrors.password}</Text> : null}
 				</View>
 
-				{/* 估计手续费 */}
 				<View style={styles.feeContainer}>
 					<Text style={styles.feeLabel}>Estimated Fee:</Text>
 					<View style={styles.feeValueContainer}>
@@ -517,7 +499,6 @@ const CreateNFTPage = () => {
 					</View>
 				</View>
 
-				{/* 创建按钮 */}
 				<TouchableOpacity
 					style={[
 						styles.createButton,

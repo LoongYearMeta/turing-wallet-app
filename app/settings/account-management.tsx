@@ -3,14 +3,14 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { ConfirmModal } from '@/components/ui/confirm-modal';
+import { ConfirmModal } from '@/components/modals/confirm-modal';
 import { Modal } from '@/components/ui/modal';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
 import { AccountType } from '@/types';
 import { deleteAccountData, clearAllData } from '@/utils/sqlite';
-import { SwitchTypeModal } from '@/components/switch-type-modal';
+import { SwitchTypeModal } from '@/components/modals/switch-type-modal';
 
 export default function AccountManagementPage() {
 	const { accounts, currentAccount, removeAccount, switchAccount, clear } = useAccount();

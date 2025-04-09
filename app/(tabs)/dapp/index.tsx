@@ -10,10 +10,11 @@ import {
 	RefreshControl,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+
 import { Navbar } from '@/components/ui/navbar';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { wp, hp } from '@/lib/common';
-import { router } from 'expo-router';
 import { useAccount } from '@/hooks/useAccount';
 import { getAllDApps } from '@/utils/sqlite';
 import { syncDApps } from '@/actions/get-dapps';

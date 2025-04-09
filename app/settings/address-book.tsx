@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
-import { AddAddressModal } from '@/components/add-address-modal';
-import { ConfirmModal } from '@/components/ui/confirm-modal';
+import { AddAddressModal } from '@/components/modals/add-address-modal';
+import { ConfirmModal } from '@/components/modals/confirm-modal';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import {

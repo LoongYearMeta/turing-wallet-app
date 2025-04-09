@@ -48,7 +48,7 @@ export async function syncNFTHistory(address: string, contract_id?: string): Pro
 					continue;
 				}
 
-				const existingHistory = await getNFTHistoryById(tx.txid);
+				const existingHistory = await getNFTHistoryById(tx.txid, address);
 
 				if (
 					existingHistory &&
@@ -60,10 +60,13 @@ export async function syncNFTHistory(address: string, contract_id?: string): Pro
 				}
 
 				if (existingHistory) {
-					await updateNFTHistory({
-						...existingHistory,
-						timestamp: tx.time_stamp || currentTimestamp,
-					});
+					await updateNFTHistory(
+						{
+							...existingHistory,
+							timestamp: tx.time_stamp || currentTimestamp,
+						},
+						address,
+					);
 					continue;
 				}
 
@@ -75,7 +78,7 @@ export async function syncNFTHistory(address: string, contract_id?: string): Pro
 					contract_id: tx.nft_contract_id,
 				};
 
-				await addNFTHistory(history);
+				await addNFTHistory(history, address);
 			}
 
 			if (foundExisting || response.result.length < 10) {

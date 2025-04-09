@@ -109,6 +109,7 @@ export const AssetSelector = ({
 									keyExtractor={(item) => item.value}
 									style={styles.list}
 									ItemSeparatorComponent={() => <View style={styles.separator} />}
+									showsVerticalScrollIndicator={false}
 								/>
 							) : (
 								<Text style={styles.emptyText}>

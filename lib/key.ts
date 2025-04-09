@@ -151,7 +151,7 @@ export const verifyPassword = (password: string, passKey: string, salt: string):
 		if (derivedKey.length !== passKey.length) {
 			return false;
 		}
-		
+
 		let result = 0;
 		for (let i = 0; i < derivedKey.length; i++) {
 			result |= derivedKey.charCodeAt(i) ^ passKey.charCodeAt(i);

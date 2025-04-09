@@ -7,6 +7,7 @@ import {
 	type NFT,
 } from '@/utils/sqlite';
 import { api } from '@/lib/axios';
+
 interface NFTResponse {
 	nftTotalCount: number;
 	nftList: {
@@ -33,7 +34,9 @@ interface NFTResponse {
 export async function fetchNFTs(address: string, page: number): Promise<NFTResponse> {
 	const response = await api.get(
 		`https://turingwallet.xyz/v1/tbc/main/nft/address/${address}/page/${page}/size/10?if_extra_collection_info_needed=false`,
+		{ timeout: 60000 },
 	);
+
 	return response.data;
 }
 
@@ -98,7 +101,6 @@ export async function syncNFTs(address: string): Promise<void> {
 
 		for (let page = 0; page <= maxPage; page++) {
 			const response = await fetchNFTs(address, page);
-
 			for (const nft of response.nftList) {
 				apiNFTIds.add(nft.nftContractId);
 				const existingNFT = await getNFT(nft.nftContractId);

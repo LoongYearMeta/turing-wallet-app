@@ -30,7 +30,6 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 	const { getCurrentAccountAddress } = useAccount();
 	const formattedId = formatLongString(contractId.trim());
 
-	// 当模态框关闭时清空输入框
 	useEffect(() => {
 		if (!visible) {
 			setContractId('');
@@ -39,7 +38,6 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 
 	const handleClose = () => {
 		onClose();
-		// 不需要在这里清空，因为useEffect会处理
 	};
 
 	const handleSubmit = async () => {
@@ -58,14 +56,12 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 		setIsLoading(true);
 
 		try {
-			// 检查是否同时存在于 owned 和 added 列表中
 			const [existingFT, existingPublic] = await Promise.all([
 				getFT(trimmedId, userAddress),
 				getFTPublic(trimmedId),
 			]);
 
 			if (existingFT && !existingFT.isDeleted && existingPublic) {
-				// 如果同时存在于两个列表中（且 owned 未删除），报错
 				Toast.show({
 					type: 'error',
 					text1: 'Error',
@@ -75,10 +71,8 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 			}
 
 			if (existingFT?.isDeleted) {
-				// 如果在 owned 中是软删除状态
 				await restoreFT(trimmedId, userAddress);
 				if (!existingPublic) {
-					// 如果还不在 added 列表中，同时添加到 added 列表
 					await syncFTInfo(trimmedId);
 					Toast.show({
 						type: 'success',
@@ -93,7 +87,6 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 					});
 				}
 			} else if (!existingPublic) {
-				// 如果不在 added 列表中，添加它
 				await syncFTInfo(trimmedId);
 				Toast.show({
 					type: 'success',

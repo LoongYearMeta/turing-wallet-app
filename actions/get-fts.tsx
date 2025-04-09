@@ -1,3 +1,6 @@
+import '@/shim';
+import * as contract from 'tbc-contract';
+
 import { api } from '@/lib/axios';
 import { getAllFTs, getFT, removeFT, upsertFT, type FT } from '@/utils/sqlite';
 
@@ -13,9 +16,29 @@ interface FTResponse {
 	}[];
 }
 
+interface FTResponse_multiSig {
+	combine_script: string;
+	token_count: number;
+	token_list: {
+		ft_contract_id: string;
+		ft_decimal: number;
+		ft_balance: number;
+		ft_name: string;
+		ft_symbol: string;
+	}[];
+}
+
 export async function fetchFTs(address: string): Promise<FTResponse> {
 	const response = await api.get(
 		`https://turingwallet.xyz/v1/tbc/main/ft/tokens/held/by/address/${address}`,
+	);
+	return response.data;
+}
+
+export async function fetchFTs_multiSig(multiSigAddress: string): Promise<FTResponse_multiSig> {
+	const combine_hash = contract.MultiSig.getCombineHash(multiSigAddress);
+	const response = await api.get(
+		`https://turingwallet.xyz/v1/tbc/main/ft/tokens/held/by/combine/script/${combine_hash}`,
 	);
 	return response.data;
 }
