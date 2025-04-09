@@ -383,7 +383,7 @@ export default function CreateMultiSigWalletPage() {
 								placeholder={`Enter public key ${index + 1}`}
 								autoCapitalize="none"
 								autoCorrect={false}
-								editable={!isLoading && index !== 0} // 第一个公钥不可编辑
+								editable={!isLoading && index !== 0} 
 							/>
 							{displayPubKeys[index].length > 0 && index !== 0 && (
 								<TouchableOpacity

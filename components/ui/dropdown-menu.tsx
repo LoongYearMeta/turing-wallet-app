@@ -42,12 +42,7 @@ export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuP
 	}
 
 	return (
-		<Modal
-			visible={visible}
-			transparent
-			animationType="none" // 移除动画
-			onRequestClose={handleClose}
-		>
+		<Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
 			<TouchableOpacity style={styles.overlay} onPress={handleClose} activeOpacity={1}>
 				<View style={styles.menuContainer}>
 					<View style={styles.header}>
@@ -80,7 +75,6 @@ export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuP
 	);
 };
 
-// Helper function to map menu items to Ionicons names
 const getIconName = (label: string): any => {
 	switch (label) {
 		case 'Scan QR Code':

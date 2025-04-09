@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
 		paddingVertical: hp(1.5),
 		fontSize: hp(1.6),
 		backgroundColor: '#f8f8f8',
-		paddingRight: wp(10), // 为清除按钮留出空间
+		paddingRight: wp(10), 
 	},
 	inputText: {
 		fontSize: hp(1.6),
