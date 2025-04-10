@@ -18,6 +18,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 import { Input } from '@/components/ui/input';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
+import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { generateKeysEncrypted_byMnemonic, verifyPassword, verifyMnemonic } from '@/lib/key';
@@ -77,10 +78,7 @@ const RestorePage = () => {
 		const hasNumbers = /[0-9]/.test(password);
 
 		if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
-			showToast(
-				'error',
-				'Password must contain uppercase letters, lowercase letters, and numbers',
-			);
+			showToast('error', 'Password must contain uppercase letters, lowercase letters, and numbers');
 			return false;
 		}
 
@@ -324,8 +322,8 @@ const RestorePage = () => {
 	};
 
 	return (
-		<ScreenWrapper bg={'white'}>
-			<StatusBar style="auto" />
+		<ScreenWrapper bg="white">
+			<StatusBar style="dark" />
 			{loading ? (
 				<View style={styles.loadingContent}>
 					<ActivityIndicator size="large" color={theme.colors.primary} />
@@ -334,107 +332,109 @@ const RestorePage = () => {
 					</Text>
 				</View>
 			) : (
-				<ScrollView
-					style={styles.content}
-					showsVerticalScrollIndicator={false}
-					contentContainerStyle={styles.contentContainer}
-					bounces={true}
-					keyboardShouldPersistTaps="handled"
-				>
-					<View style={styles.container}>
-						<View>
-							<Text style={styles.welcomeText}>Restore Wallet</Text>
-						</View>
-						<View style={styles.form}>
-							<Text style={styles.description}>
-								Please set a password to protect your wallet.
-								{'\n\n'}The password must:
-								{'\n\n'}- Be at least 10 characters long
-								{'\n\n'}- Include uppercase letters, lowercase letters, and numbers
-								{'\n\n'}- Not contain three consecutive identical characters
-								{'\n\n'}Special characters are optional.
+				<KeyboardAvoidingWrapper>
+					<ScrollView
+						style={styles.container}
+						contentContainerStyle={styles.contentContainer}
+						showsVerticalScrollIndicator={false}
+					>
+						<View style={styles.content}>
+							<Text style={styles.welcomeText}>
+								{hasExistingAccount ? 'Import a new wallet' : 'Restore your wallet'}
 							</Text>
+							<View style={styles.form}>
+								<Text style={styles.description}>
+									Please set a password to protect your wallet.
+									{'\n\n'}The password must:
+									{'\n\n'}- Be at least 10 characters long
+									{'\n\n'}- Include uppercase letters, lowercase letters, and numbers
+									{'\n\n'}- Not contain three consecutive identical characters
+									{'\n\n'}Special characters are optional.
+								</Text>
 
-							<View style={styles.inputGroup}>
-								<View style={styles.labelContainer}>
-									<Text style={styles.label}>Mnemonic Phrase</Text>
-									{mnemonic && (
-										<TouchableOpacity onPress={handleClearAll} disabled={isButtonDisabled}>
-											<MaterialIcons name="close" size={20} color={theme.colors.text} />
-										</TouchableOpacity>
-									)}
-								</View>
-								<MnemonicInput
-									value={mnemonic}
-									onChangeText={setMnemonic}
-									editable={!isButtonDisabled}
-									onClearAll={handleClearAll}
-								/>
-							</View>
-
-							<View style={styles.inputGroup}>
-								<Text style={styles.label}>Derivation Path</Text>
-								<Pressable
-									style={styles.pickerButton}
-									onPress={() => setPickerVisible(true)}
-									disabled={isButtonDisabled}
-								>
-									<Text style={styles.pickerButtonText}>
-										{walletTypes.find((type) => type.value === selectedTag)?.label}
-									</Text>
-									<MaterialIcons name="arrow-drop-down" size={24} color={theme.colors.text} />
-								</Pressable>
-							</View>
-
-							{!hasExistingAccount && (
 								<View style={styles.inputGroup}>
-									<Text style={styles.label}>Password</Text>
+									<View style={styles.labelContainer}>
+										<Text style={styles.label}>Mnemonic Phrase</Text>
+										{mnemonic && (
+											<TouchableOpacity onPress={handleClearAll} disabled={isButtonDisabled}>
+												<MaterialIcons name="close" size={20} color={theme.colors.text} />
+											</TouchableOpacity>
+										)}
+									</View>
+									<MnemonicInput
+										value={mnemonic}
+										onChangeText={setMnemonic}
+										editable={!isButtonDisabled}
+										onClearAll={handleClearAll}
+									/>
+								</View>
+
+								<View style={styles.inputGroup}>
+									<Text style={styles.label}>Derivation Path</Text>
+									<Pressable
+										style={styles.pickerButton}
+										onPress={() => setPickerVisible(true)}
+										disabled={isButtonDisabled}
+									>
+										<Text style={styles.pickerButtonText}>
+											{walletTypes.find((type) => type.value === selectedTag)?.label}
+										</Text>
+										<MaterialIcons name="arrow-drop-down" size={24} color={theme.colors.text} />
+									</Pressable>
+								</View>
+
+								{!hasExistingAccount && (
+									<View style={styles.inputGroup}>
+										<Text style={styles.label}>Password</Text>
+										<Input
+											icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
+											secureTextEntry
+											placeholder="Set your password"
+											value={password}
+											onChangeText={setPassword}
+											editable={!isButtonDisabled}
+										/>
+									</View>
+								)}
+
+								<View style={styles.inputGroup}>
+									<Text style={styles.label}>Confirm Password</Text>
 									<Input
 										icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
 										secureTextEntry
-										placeholder="Set your password"
-										value={password}
-										onChangeText={setPassword}
+										placeholder={
+											hasExistingAccount ? 'Enter your password' : 'Confirm your password'
+										}
+										value={confirmPassword}
+										onChangeText={setConfirmPassword}
 										editable={!isButtonDisabled}
 									/>
 								</View>
-							)}
 
-							<View style={styles.inputGroup}>
-								<Text style={styles.label}>Confirm Password</Text>
-								<Input
-									icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
-									secureTextEntry
-									placeholder={hasExistingAccount ? 'Enter your password' : 'Confirm your password'}
-									value={confirmPassword}
-									onChangeText={setConfirmPassword}
-									editable={!isButtonDisabled}
-								/>
+								<View style={styles.switchContainer}>
+									<Text style={styles.switchLabel}>Restore wallet data from blockchain</Text>
+									<Switch
+										value={shouldRestore}
+										onValueChange={setShouldRestore}
+										disabled={isButtonDisabled}
+										trackColor={{ false: '#767577', true: theme.colors.primary }}
+										thumbColor={shouldRestore ? '#fff' : '#f4f3f4'}
+									/>
+								</View>
 							</View>
 
-							<View style={styles.switchContainer}>
-								<Text style={styles.switchLabel}>Restore wallet data from blockchain</Text>
-								<Switch
-									value={shouldRestore}
-									onValueChange={setShouldRestore}
-									disabled={isButtonDisabled}
-									trackColor={{ false: '#767577', true: theme.colors.primary }}
-									thumbColor={shouldRestore ? '#fff' : '#f4f3f4'}
-								/>
-							</View>
+							<TouchableOpacity
+								style={buttonStyle}
+								onPress={onSubmit}
+								disabled={isButtonDisabled}
+								activeOpacity={0.5}
+								pressRetentionOffset={{ top: 10, left: 10, bottom: 10, right: 10 }}
+							>
+								<Text style={styles.buttonText}>Restore wallet</Text>
+							</TouchableOpacity>
 						</View>
-
-						<TouchableOpacity
-							style={buttonStyle}
-							onPress={onSubmit}
-							disabled={isButtonDisabled}
-							activeOpacity={0.5}
-							pressRetentionOffset={{ top: 10, left: 10, bottom: 10, right: 10 }}
-						>
-							<Text style={styles.buttonText}>Restore wallet</Text>
-						</TouchableOpacity>
-					</View>
-				</ScrollView>
+					</ScrollView>
+				</KeyboardAvoidingWrapper>
 			)}
 
 			<Modal

@@ -30,6 +30,7 @@ export interface FT {
 	amount: number;
 	symbol: string;
 	isDeleted: boolean;
+	is_pin?: boolean;
 }
 
 export interface TransactionHistory {
@@ -73,6 +74,7 @@ export interface FTPublic {
 	decimal: number;
 	supply: number;
 	holds_count: number;
+	is_pin?: boolean;
 }
 
 export interface DApp {
@@ -124,10 +126,12 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				symbol TEXT,
 				isDeleted INTEGER DEFAULT 0,
 				user_address TEXT,
+				is_pin INTEGER DEFAULT 0,
 				PRIMARY KEY (id, user_address)
 			);
 			CREATE INDEX IF NOT EXISTS idx_ft_user ON FT(user_address, isDeleted);
 			CREATE INDEX IF NOT EXISTS idx_ft_name ON FT(name, user_address, isDeleted);
+			CREATE INDEX IF NOT EXISTS idx_ft_pin ON FT(is_pin, user_address);
 
 			CREATE TABLE IF NOT EXISTS TransactionHistory (
 				id TEXT,
@@ -186,9 +190,11 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				symbol TEXT NOT NULL,
 				decimal INTEGER NOT NULL,
 				supply REAL NOT NULL,
-				holds_count INTEGER NOT NULL
+				holds_count INTEGER NOT NULL,
+				is_pin INTEGER DEFAULT 0
 			);
 			CREATE INDEX IF NOT EXISTS idx_ft_public_name ON FT_Public(name);
+			CREATE INDEX IF NOT EXISTS idx_ft_public_pin ON FT_Public(is_pin);
 
 			CREATE TABLE IF NOT EXISTS AddressBook (
 				address TEXT PRIMARY KEY
@@ -204,7 +210,7 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 			);
 		`);
 	} catch (error) {
-		console.error('Database initialization error:', error);
+		console.error('Error initializing database:', error);
 	}
 };
 
@@ -366,29 +372,27 @@ export async function getNFT(id: string): Promise<NFT | null> {
 export async function upsertFT(ft: FT, userAddress: string): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 
-	const existingFT = await db.getFirstAsync('SELECT * FROM FT WHERE id = ? AND user_address = ?', [
-		ft.id,
-		userAddress,
-	]);
+	const existingFT = await db.getFirstAsync<{ is_pin: number }>(
+		'SELECT is_pin FROM FT WHERE id = ? AND user_address = ?',
+		[ft.id, userAddress],
+	);
 
-	if (existingFT) {
-		await db.runAsync(
-			`UPDATE FT SET 
-			 name = ?, 
-			 decimal = ?, 
-			 amount = ?, 
-			 symbol = ?, 
-			 isDeleted = ? 
-			 WHERE id = ? AND user_address = ?`,
-			[ft.name, ft.decimal, ft.amount, ft.symbol, ft.isDeleted ? 1 : 0, ft.id, userAddress],
-		);
-	} else {
-		await db.runAsync(
-			`INSERT INTO FT (id, name, decimal, amount, symbol, user_address, isDeleted)
-			 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			[ft.id, ft.name, ft.decimal, ft.amount, ft.symbol, userAddress, ft.isDeleted ? 1 : 0],
-		);
-	}
+	const isPinned = existingFT ? Boolean(existingFT.is_pin) : false;
+
+	await db.runAsync(
+		`INSERT OR REPLACE INTO FT (id, name, decimal, amount, symbol, isDeleted, user_address, is_pin)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		[
+			ft.id,
+			ft.name,
+			ft.decimal,
+			ft.amount,
+			ft.symbol,
+			ft.isDeleted ? 1 : 0,
+			userAddress,
+			isPinned ? 1 : 0,
+		],
+	);
 }
 
 export async function getFT(id: string, userAddress: string): Promise<FT | null> {
@@ -715,32 +719,39 @@ export async function getAllNFTs(userAddress: string): Promise<NFT[]> {
 
 export async function getActiveFTs(userAddress: string): Promise<FT[]> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	return await db.getAllAsync('SELECT * FROM FT WHERE user_address = ? AND isDeleted = 0', [
-		userAddress,
-	]);
+	const results = await db.getAllAsync<FT>(
+		`SELECT id, name, decimal, amount, symbol, isDeleted, is_pin 
+		 FROM FT 
+		 WHERE user_address = ? AND isDeleted = 0
+		 ORDER BY is_pin DESC, name ASC`,
+		[userAddress],
+	);
+	return results.map((ft) => ({
+		...ft,
+		isDeleted: Boolean(ft.isDeleted),
+		is_pin: Boolean(ft.is_pin),
+	}));
 }
 
 export async function getAllFTs(userAddress: string): Promise<FT[]> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	return await db.getAllAsync('SELECT * FROM FT WHERE user_address = ? AND isDeleted = 0', [
-		userAddress,
-	]);
+	return await db.getAllAsync('SELECT * FROM FT WHERE user_address = ?', [userAddress]);
 }
 
-export async function addFTPublic(ftPublic: FTPublic): Promise<void> {
+export async function addFTPublic(ft: FTPublic): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
+
+	const existingFT = await db.getFirstAsync<{ is_pin: number }>(
+		'SELECT is_pin FROM FT_Public WHERE id = ?',
+		[ft.id],
+	);
+
+	const isPinned = existingFT ? Boolean(existingFT.is_pin) : false;
+
 	await db.runAsync(
-		`INSERT OR REPLACE INTO FT_Public (
-			id, name, symbol, decimal, supply, holds_count
-		) VALUES (?, ?, ?, ?, ?, ?);`,
-		[
-			ftPublic.id,
-			ftPublic.name,
-			ftPublic.symbol,
-			ftPublic.decimal,
-			ftPublic.supply,
-			ftPublic.holds_count,
-		],
+		`INSERT OR REPLACE INTO FT_Public (id, name, symbol, decimal, supply, holds_count, is_pin)
+		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		[ft.id, ft.name, ft.symbol, ft.decimal, ft.supply, ft.holds_count, isPinned ? 1 : 0],
 	);
 }
 
@@ -751,7 +762,15 @@ export async function removeFTPublic(id: string): Promise<void> {
 
 export async function getAllFTPublics(): Promise<FTPublic[]> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	return await db.getAllAsync('SELECT * FROM FT_Public');
+	const results = await db.getAllAsync<FTPublic>(
+		`SELECT id, name, symbol, decimal, supply, holds_count, is_pin 
+		 FROM FT_Public
+		 ORDER BY is_pin DESC, name ASC`,
+	);
+	return results.map((ft) => ({
+		...ft,
+		is_pin: Boolean(ft.is_pin),
+	}));
 }
 
 export async function deleteAccountData(address: string): Promise<void> {
@@ -786,24 +805,6 @@ export async function getAllMultiSigAddresses(userAddress: string): Promise<stri
 		[userAddress],
 	);
 	return multiSigs.map((row) => row.multiSig_address);
-}
-
-export async function getFTByName(name: string, userAddress: string): Promise<FT> {
-	const db = await SQLite.openDatabaseAsync('wallet.db');
-	const result = await db.getAllAsync<FT>(
-		'SELECT * FROM FT WHERE name = ? AND user_address = ? AND isDeleted = 0',
-		[name, userAddress],
-	);
-
-	if (result.length > 1) {
-		throw new Error('Multiple FTs found with the same name');
-	}
-
-	if (result.length === 0) {
-		throw new Error('No FT found with the given name');
-	}
-
-	return result[0];
 }
 
 export async function restoreFT(id: string, userAddress: string): Promise<void> {
@@ -946,18 +947,22 @@ export async function updateNFTUserAddress(nftId: string, userAddress: string): 
 
 export async function clearAllData(): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	await db.execAsync(`
-		DELETE FROM TransactionHistory;
-		DELETE FROM NFT_History;
-		DELETE FROM FT_History;
-		DELETE FROM NFT;
-		DELETE FROM FT;
-		DELETE FROM Collection;
-		DELETE FROM MultiSig;
-		DELETE FROM FT_Public;
-		DELETE FROM AddressBook;
-		DELETE FROM DApp;
-	`);
+	try {
+		await db.execAsync(`
+			DROP TABLE IF EXISTS TransactionHistory;
+			DROP TABLE IF EXISTS NFT_History;
+			DROP TABLE IF EXISTS FT_History;
+			DROP TABLE IF EXISTS NFT;
+			DROP TABLE IF EXISTS FT;
+			DROP TABLE IF EXISTS Collection;
+			DROP TABLE IF EXISTS MultiSig;
+			DROP TABLE IF EXISTS FT_Public;
+			DROP TABLE IF EXISTS AddressBook;
+			DROP TABLE IF EXISTS DApp;
+		`);
+	} catch (error) {
+		console.error('Error resetting database structure:', error);
+	}
 }
 
 export async function getAllDApps(): Promise<DApp[]> {
@@ -981,4 +986,22 @@ export async function addDApp(dapp: DApp): Promise<void> {
 export async function getDAppByName(name: string): Promise<DApp | null> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getFirstAsync<DApp>('SELECT * FROM DApp WHERE name = ?', [name]);
+}
+
+export async function toggleFTPin(
+	id: string,
+	userAddress: string,
+	isPinned: boolean,
+): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.runAsync('UPDATE FT SET is_pin = ? WHERE id = ? AND user_address = ?', [
+		isPinned ? 1 : 0,
+		id,
+		userAddress,
+	]);
+}
+
+export async function toggleFTPublicPin(id: string, isPinned: boolean): Promise<void> {
+	const db = await SQLite.openDatabaseAsync('wallet.db');
+	await db.runAsync('UPDATE FT_Public SET is_pin = ? WHERE id = ?', [isPinned ? 1 : 0, id]);
 }

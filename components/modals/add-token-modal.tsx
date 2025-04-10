@@ -14,7 +14,6 @@ import { syncFTInfo } from '@/actions/get-ft';
 import { Modal } from '@/components/ui/modal';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
-import { formatLongString } from '@/lib/util';
 import { getFT, getFTPublic, restoreFT } from '@/utils/sqlite';
 
 interface AddContractModalProps {
@@ -27,7 +26,6 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 	const [contractId, setContractId] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 	const { getCurrentAccountAddress } = useAccount();
-	const formattedId = formatLongString(contractId.trim());
 
 	useEffect(() => {
 		if (!visible) {
@@ -39,11 +37,16 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 		onClose();
 	};
 
+	const handleContractIdChange = (text: string) => {
+		const hexOnly = text.replace(/[^0-9a-fA-F]/g, '');
+		setContractId(hexOnly);
+	};
+
 	const handleSubmit = async () => {
 		const trimmedId = contractId.trim();
 		const userAddress = getCurrentAccountAddress();
 
-		if (!trimmedId || trimmedId.length !== 64 || !/^[0-9a-fA-F]{64}$/.test(trimmedId)) {
+		if (!trimmedId || trimmedId.length !== 64) {
 			Toast.show({
 				type: 'error',
 				text1: 'Error',
@@ -107,6 +110,10 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 		}
 	};
 
+	const displayContractId = contractId.length > 41 
+		? `${contractId.substring(0, 20)}...${contractId.substring(contractId.length - 20)}`
+		: contractId;
+
 	return (
 		<Modal visible={visible} onClose={handleClose}>
 			<View style={styles.container}>
@@ -115,8 +122,8 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 					<TextInput
 						style={styles.input}
 						placeholder="Enter contract ID"
-						value={contractId}
-						onChangeText={setContractId}
+						value={displayContractId}
+						onChangeText={handleContractIdChange}
 						autoCapitalize="none"
 						autoCorrect={false}
 						editable={!isLoading}
@@ -131,11 +138,13 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 						</TouchableOpacity>
 					)}
 				</View>
-				{contractId.trim() && <Text style={styles.preview}>Preview: {formattedId}</Text>}
 				<TouchableOpacity
-					style={[styles.button, isLoading && styles.buttonDisabled]}
+					style={[
+						styles.button, 
+						(isLoading || contractId.length !== 64) && styles.buttonDisabled
+					]}
 					onPress={handleSubmit}
-					disabled={isLoading}
+					disabled={isLoading || contractId.length !== 64}
 				>
 					{isLoading ? (
 						<ActivityIndicator color="#fff" size="small" />
@@ -187,11 +196,6 @@ const styles = StyleSheet.create({
 		color: '#fff',
 		fontSize: hp(1.6),
 		fontWeight: '500',
-	},
-	preview: {
-		fontSize: hp(1.4),
-		color: '#666',
-		marginBottom: hp(2),
 	},
 	clearIcon: {
 		position: 'absolute',

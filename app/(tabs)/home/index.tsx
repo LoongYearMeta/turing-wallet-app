@@ -21,6 +21,8 @@ import {
 	getAllFTPublics,
 	removeFTPublic,
 	softDeleteFT,
+	toggleFTPin,
+	toggleFTPublicPin,
 	type FT,
 	type FTPublic,
 } from '@/utils/sqlite';
@@ -39,6 +41,8 @@ export default function HomePage() {
 	const [addModalVisible, setAddModalVisible] = useState(false);
 	const accountType = getCurrentAccountType();
 	const disableTokens = accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY;
+	const [pinModalVisible, setPinModalVisible] = useState(false);
+	const [tokenToPin, setTokenToPin] = useState<FT | FTPublic | null>(null);
 
 	useEffect(() => {
 		if (disableTokens) {
@@ -236,6 +240,43 @@ export default function HomePage() {
 		setAddModalVisible(false);
 	};
 
+	const handleTokenLongPress = (token: FT | FTPublic) => {
+		setTokenToPin(token);
+		setPinModalVisible(true);
+	};
+
+	const handleConfirmPin = async () => {
+		if (!tokenToPin) return;
+
+		try {
+			const isPinned = tokenToPin.is_pin;
+			
+			if ('amount' in tokenToPin) {
+				await toggleFTPin(tokenToPin.id, getCurrentAccountAddress(), !isPinned);
+				await loadOwnedTokens();
+			} else {
+				await toggleFTPublicPin(tokenToPin.id, !isPinned);
+				await loadAddedTokens();
+			}
+			
+			Toast.show({
+				type: 'success',
+				text1: 'Success',
+				text2: isPinned ? 'Token unpinned successfully' : 'Token pinned successfully',
+			});
+		} catch (error) {
+			console.error('Failed to toggle pin status:', error);
+			Toast.show({
+				type: 'error',
+				text1: 'Error',
+				text2: 'Failed to update token pin status',
+			});
+		} finally {
+			setPinModalVisible(false);
+			setTokenToPin(null);
+		}
+	};
+
 	return (
 		<ScreenWrapper bg="white">
 			<Navbar />
@@ -266,6 +307,7 @@ export default function HomePage() {
 									onHistoryPress={handleHistoryPress}
 									onTransferPress={handleTransferPress}
 									onDeletePress={handleOwnedTokenDelete}
+									onLongPress={handleTokenLongPress}
 								/>
 							))
 						: filteredAddedTokens.map((token) => (
@@ -274,6 +316,7 @@ export default function HomePage() {
 									token={token}
 									onDeletePress={handleAddedTokenDelete}
 									onRefresh={loadAddedTokens}
+									onLongPress={handleTokenLongPress}
 								/>
 							))}
 				</View>
@@ -292,6 +335,22 @@ export default function HomePage() {
 				onCancel={() => {
 					setDeleteModalVisible(false);
 					setTokenToDelete(null);
+				}}
+			/>
+			<ConfirmModal
+				visible={pinModalVisible}
+				title={tokenToPin?.is_pin ? 'Unpin Token' : 'Pin Token'}
+				message={`Are you sure you want to ${tokenToPin?.is_pin ? 'unpin' : 'pin'} ${
+					tokenToPin?.name || 'this token'
+				}? ${
+					tokenToPin?.is_pin 
+						? 'This will remove it from the top of the list.' 
+						: 'This will keep it at the top of the list.'
+				}`}
+				onConfirm={handleConfirmPin}
+				onCancel={() => {
+					setPinModalVisible(false);
+					setTokenToPin(null);
 				}}
 			/>
 			<AddContractModal

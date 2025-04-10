@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, TouchableWithoutFeedback } from 'react-native';
 import Toast from 'react-native-toast-message';
 
 import { hp, wp } from '@/lib/common';
@@ -13,6 +13,7 @@ interface OwnedTokenCardProps {
 	onHistoryPress: (token: FT) => void;
 	onTransferPress: (token: FT) => void;
 	onDeletePress: (token: FT) => void;
+	onLongPress: (token: FT) => void;
 }
 
 export const OwnedTokenCard = ({
@@ -20,6 +21,7 @@ export const OwnedTokenCard = ({
 	onHistoryPress,
 	onTransferPress,
 	onDeletePress,
+	onLongPress,
 }: OwnedTokenCardProps) => {
 	const handleCopyId = async () => {
 		await Clipboard.setStringAsync(token.id);
@@ -30,34 +32,36 @@ export const OwnedTokenCard = ({
 	};
 
 	return (
-		<View style={styles.card}>
-			<View style={styles.topContent}>
-				<View style={styles.leftContent}>
-					<Text style={styles.title}>{token.name}</Text>
-					<View style={styles.actions}>
-						<TouchableOpacity style={styles.actionButton} onPress={() => onHistoryPress(token)}>
-							<MaterialIcons name="history" size={22} color="#666" />
-						</TouchableOpacity>
-						<TouchableOpacity style={styles.actionButton} onPress={() => onTransferPress(token)}>
-							<MaterialIcons name="send" size={22} color="#666" />
-						</TouchableOpacity>
-						<TouchableOpacity style={styles.actionButton} onPress={() => onDeletePress(token)}>
-							<MaterialIcons name="visibility-off" size={22} color="#666" />
-						</TouchableOpacity>
+		<TouchableWithoutFeedback onLongPress={() => onLongPress(token)}>
+			<View style={[styles.card, token.is_pin && styles.pinnedCard]}>
+				<View style={styles.topContent}>
+					<View style={styles.leftContent}>
+						<Text style={styles.title}>{token.name}</Text>
+						<View style={styles.actions}>
+							<TouchableOpacity style={styles.actionButton} onPress={() => onHistoryPress(token)}>
+								<MaterialIcons name="history" size={22} color="#666" />
+							</TouchableOpacity>
+							<TouchableOpacity style={styles.actionButton} onPress={() => onTransferPress(token)}>
+								<MaterialIcons name="send" size={22} color="#666" />
+							</TouchableOpacity>
+							<TouchableOpacity style={styles.actionButton} onPress={() => onDeletePress(token)}>
+								<MaterialIcons name="visibility-off" size={22} color="#666" />
+							</TouchableOpacity>
+						</View>
 					</View>
-				</View>
-				<View style={styles.rightContent}>
-					<Text style={styles.amount}>{formatBalance(token.amount)}</Text>
-					<View style={styles.valueContainer}>
-						<Text style={styles.contractId}>{formatContractId(token.id)}</Text>
-						<TouchableOpacity onPress={handleCopyId} style={styles.copyButton}>
-							<MaterialIcons name="content-copy" size={16} color="#666" />
-						</TouchableOpacity>
+					<View style={styles.rightContent}>
+						<Text style={styles.amount}>{formatBalance(token.amount)}</Text>
+						<View style={styles.valueContainer}>
+							<Text style={styles.contractId}>{formatContractId(token.id)}</Text>
+							<TouchableOpacity onPress={handleCopyId} style={styles.copyButton}>
+								<MaterialIcons name="content-copy" size={16} color="#666" />
+							</TouchableOpacity>
+						</View>
+						<Text style={styles.symbol}>symbol: {token.symbol}</Text>
 					</View>
-					<Text style={styles.symbol}>symbol: {token.symbol}</Text>
 				</View>
 			</View>
-		</View>
+		</TouchableWithoutFeedback>
 	);
 };
 
@@ -70,6 +74,10 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderBottomColor: '#eee',
 		marginTop: hp(0.5),
+		position: 'relative',
+	},
+	pinnedCard: {
+		backgroundColor: '#f0f8ff',
 	},
 	topContent: {
 		flexDirection: 'row',

@@ -15,6 +15,7 @@ import Toast from 'react-native-toast-message';
 import Icon from '@/assets/icons';
 import { Input } from '@/components/ui/input';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
+import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { generateKeysEncrypted_mnemonic, verifyPassword } from '@/lib/key';
@@ -244,68 +245,69 @@ const CreatePage = () => {
 					</Text>
 				</View>
 			) : (
-				<ScrollView
-					style={styles.content}
-					showsVerticalScrollIndicator={false}
-					contentContainerStyle={styles.contentContainer}
-					bounces={true}
-				>
-					<View style={styles.container}>
-						<View>
-							<Text style={styles.welcomeText}>Create a new wallet</Text>
-						</View>
+				<KeyboardAvoidingWrapper>
+					<ScrollView
+						style={styles.container}
+						contentContainerStyle={styles.contentContainer}
+						showsVerticalScrollIndicator={false}
+					>
+						<View style={styles.content}>
+							<Text style={styles.welcomeText}>
+								{initialHasAccount ? 'Create a new account' : 'Create your wallet'}
+							</Text>
+							
+							<View style={styles.form}>
+								{!initialHasAccount && (
+									<Text style={styles.description}>
+										Please set a password to protect your wallet.
+										{'\n\n'}The password must:
+										{'\n\n'}- Be at least 10 characters long
+										{'\n\n'}- Include uppercase letters, lowercase letters, and numbers
+										{'\n\n'}- Not contain three consecutive identical characters
+										{'\n\n'}Special characters are optional.
+										{'\n\n'}Once you forget it, you can set a new one by re-importing your wallet.
+									</Text>
+								)}
 
-						<View style={styles.form}>
-							{!initialHasAccount && (
-								<Text style={styles.description}>
-									Please set a password to protect your wallet.
-									{'\n\n'}The password must:
-									{'\n\n'}- Be at least 10 characters long
-									{'\n\n'}- Include uppercase letters, lowercase letters, and numbers
-									{'\n\n'}- Not contain three consecutive identical characters
-									{'\n\n'}Special characters are optional.
-									{'\n\n'}Once you forget it, you can set a new one by re-importing your wallet.
-								</Text>
-							)}
+								{!initialHasAccount ? (
+									<View style={styles.inputGroup}>
+										<Text style={styles.label}>Password</Text>
+										<Input
+											icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
+											secureTextEntry
+											placeholder="Set your password"
+											value={password}
+											onChangeText={setPassword}
+											editable={!isButtonDisabled}
+										/>
+									</View>
+								) : null}
 
-							{!initialHasAccount ? (
 								<View style={styles.inputGroup}>
-									<Text style={styles.label}>Password</Text>
+									<Text style={styles.label}>Confirm Password</Text>
 									<Input
 										icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
 										secureTextEntry
-										placeholder="Set your password"
-										value={password}
-										onChangeText={setPassword}
+										placeholder={initialHasAccount ? 'Enter your password' : 'Confirm your password'}
+										value={confirmPassword}
+										onChangeText={setConfirmPassword}
 										editable={!isButtonDisabled}
 									/>
 								</View>
-							) : null}
-
-							<View style={styles.inputGroup}>
-								<Text style={styles.label}>Confirm Password</Text>
-								<Input
-									icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
-									secureTextEntry
-									placeholder={initialHasAccount ? 'Enter your password' : 'Confirm your password'}
-									value={confirmPassword}
-									onChangeText={setConfirmPassword}
-									editable={!isButtonDisabled}
-								/>
 							</View>
-						</View>
 
-						<TouchableOpacity
-							style={buttonStyle}
-							onPress={onSubmit}
-							disabled={isButtonDisabled}
-							activeOpacity={0.5}
-							pressRetentionOffset={{ top: 10, left: 10, bottom: 10, right: 10 }}
-						>
-							<Text style={styles.buttonText}>Create account</Text>
-						</TouchableOpacity>
-					</View>
-				</ScrollView>
+							<TouchableOpacity
+								style={buttonStyle}
+								onPress={onSubmit}
+								disabled={isButtonDisabled}
+								activeOpacity={0.5}
+								pressRetentionOffset={{ top: 10, left: 10, bottom: 10, right: 10 }}
+							>
+								<Text style={styles.buttonText}>Create account</Text>
+							</TouchableOpacity>
+						</View>
+					</ScrollView>
+				</KeyboardAvoidingWrapper>
 			)}
 		</ScreenWrapper>
 	);

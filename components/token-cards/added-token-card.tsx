@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, TouchableWithoutFeedback } from 'react-native';
 import Toast from 'react-native-toast-message';
 
 import { syncFTInfo } from '@/actions/get-ft';
@@ -13,9 +13,10 @@ interface AddedTokenCardProps {
 	token: FTPublic;
 	onDeletePress: (token: FTPublic) => void;
 	onRefresh: () => void;
+	onLongPress: (token: FTPublic) => void;
 }
 
-export const AddedTokenCard = ({ token, onDeletePress, onRefresh }: AddedTokenCardProps) => {
+export const AddedTokenCard = ({ token, onDeletePress, onRefresh, onLongPress }: AddedTokenCardProps) => {
 	const handleCopyId = async () => {
 		await Clipboard.setStringAsync(token.id);
 		Toast.show({
@@ -41,34 +42,36 @@ export const AddedTokenCard = ({ token, onDeletePress, onRefresh }: AddedTokenCa
 	};
 
 	return (
-		<View style={styles.card}>
-			<View style={styles.topContent}>
-				<View style={styles.leftContent}>
-					<Text style={styles.title}>{token.name}</Text>
-					<View style={styles.actions}>
-						<TouchableOpacity style={styles.actionButton} onPress={handleRefresh}>
-							<MaterialIcons name="refresh" size={22} color="#666" />
-						</TouchableOpacity>
-						<TouchableOpacity style={styles.actionButton} onPress={() => onDeletePress(token)}>
-							<MaterialIcons name="delete" size={22} color="#666" />
-						</TouchableOpacity>
+		<TouchableWithoutFeedback onLongPress={() => onLongPress(token)}>
+			<View style={[styles.card, token.is_pin && styles.pinnedCard]}>
+				<View style={styles.topContent}>
+					<View style={styles.leftContent}>
+						<Text style={styles.title}>{token.name}</Text>
+						<View style={styles.actions}>
+							<TouchableOpacity style={styles.actionButton} onPress={handleRefresh}>
+								<MaterialIcons name="refresh" size={22} color="#666" />
+							</TouchableOpacity>
+							<TouchableOpacity style={styles.actionButton} onPress={() => onDeletePress(token)}>
+								<MaterialIcons name="delete" size={22} color="#666" />
+							</TouchableOpacity>
+						</View>
 					</View>
-				</View>
-				<View style={styles.rightContent}>
-					<Text style={styles.amount}>{formatBalance(token.supply)}</Text>
-					<View style={styles.valueContainer}>
-						<Text style={styles.contractId}>{formatContractId(token.id)}</Text>
-						<TouchableOpacity onPress={handleCopyId} style={styles.copyButton}>
-							<MaterialIcons name="content-copy" size={16} color="#666" />
-						</TouchableOpacity>
-					</View>
-					<View style={styles.infoRow}>
-						<Text style={styles.info}>symbol: {token.symbol}</Text>
-						<Text style={styles.info}>holders: {token.holds_count}</Text>
+					<View style={styles.rightContent}>
+						<Text style={styles.amount}>{formatBalance(token.supply)}</Text>
+						<View style={styles.valueContainer}>
+							<Text style={styles.contractId}>{formatContractId(token.id)}</Text>
+							<TouchableOpacity onPress={handleCopyId} style={styles.copyButton}>
+								<MaterialIcons name="content-copy" size={16} color="#666" />
+							</TouchableOpacity>
+						</View>
+						<View style={styles.infoRow}>
+							<Text style={styles.info}>symbol: {token.symbol}</Text>
+							<Text style={styles.info}>holders: {token.holds_count}</Text>
+						</View>
 					</View>
 				</View>
 			</View>
-		</View>
+		</TouchableWithoutFeedback>
 	);
 };
 
@@ -81,6 +84,10 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderBottomColor: '#eee',
 		marginTop: hp(0.5),
+		position: 'relative',
+	},
+	pinnedCard: {
+		backgroundColor: '#f0f8ff',
 	},
 	topContent: {
 		flexDirection: 'row',
