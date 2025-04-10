@@ -1,6 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
 	ActivityIndicator,
 	StyleSheet,
@@ -10,6 +10,7 @@ import {
 	View,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { debounce } from 'lodash';
 
 import { getTbcBalance_byMultiSigAddress } from '@/actions/get-balance';
 import { AddressSelector } from '@/components/selector/address-selector';
@@ -136,8 +137,18 @@ export default function InitiateMultiSigTransactionPage() {
 	};
 
 	const handleSelectMultiSigAddress = async (address: string) => {
-		setFormData((prev) => ({ ...prev, senderAddress: address }));
+		setFormData((prev) => ({ 
+			...prev, 
+			senderAddress: address,
+			asset: '',  // 重置资产
+			amount: ''  // 重置金额
+		}));
 		setSelectedAsset(null);
+		setFormErrors((prev) => ({ 
+			...prev, 
+			asset: '',
+			amount: '' 
+		}));
 		await loadAssets(address);
 	};
 
@@ -148,7 +159,15 @@ export default function InitiateMultiSigTransactionPage() {
 
 	const handleAssetSelect = (asset: Asset) => {
 		setSelectedAsset(asset);
-		setFormData((prev) => ({ ...prev, asset: asset.value }));
+		setFormData((prev) => ({ 
+			...prev, 
+			asset: asset.value,
+			amount: ''  // 重置金额
+		}));
+		setFormErrors((prev) => ({
+			...prev,
+			amount: ''
+		}));
 	};
 
 	const validateAmount = (amountStr: string) => {
@@ -161,6 +180,23 @@ export default function InitiateMultiSigTransactionPage() {
 		return '';
 	};
 
+	const debouncedAmountValidation = useCallback(
+		debounce(async (amountStr: string) => {
+			const error = validateAmount(amountStr);
+			setFormErrors((prev) => ({ ...prev, amount: error }));
+		}, 1000),
+		[selectedAsset],
+	);
+
+	const debouncedReceiverAddressValidation = useCallback(
+		debounce(async (address: string) => {
+			// 这里可以添加地址验证逻辑
+			const error = address ? '' : 'Receiver address is required';
+			setFormErrors((prev) => ({ ...prev, receiverAddress: error }));
+		}, 1500),
+		[],
+	);
+
 	const handleInputChange = (field: keyof FormData, value: string) => {
 		if (field === 'password') {
 			value = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
@@ -169,12 +205,14 @@ export default function InitiateMultiSigTransactionPage() {
 		const updatedFormData = { ...formData, [field]: value };
 		setFormData(updatedFormData);
 
-		let error = '';
-		if (field === 'amount') {
-			error = validateAmount(value);
-		} 
+		// 清除当前字段的错误
+		setFormErrors((prev) => ({ ...prev, [field]: '' }));
 
-		setFormErrors((prev) => ({ ...prev, [field]: error }));
+		if (field === 'amount') {
+			debouncedAmountValidation(value);
+		} else if (field === 'receiverAddress') {
+			debouncedReceiverAddressValidation(value);
+		}
 	};
 
 	const validateForm = (): boolean => {
@@ -296,36 +334,32 @@ export default function InitiateMultiSigTransactionPage() {
 			</View>
 
 			<View style={styles.inputGroup}>
-				<Text style={styles.label}>To</Text>
+				<View style={styles.labelRow}>
+					<Text style={styles.label}>To</Text>
+					<TouchableOpacity
+						onPress={() => setShowAddressSelector(true)}
+					>
+						<MaterialIcons name="contacts" size={24} color="#666" />
+					</TouchableOpacity>
+				</View>
 				<View style={styles.inputWrapper}>
 					<TextInput
 						style={[styles.input, formErrors.receiverAddress && styles.inputError]}
 						value={formData.receiverAddress}
 						onChangeText={(text) => handleInputChange('receiverAddress', text)}
 						placeholder="Enter receiver address"
-						autoCapitalize="none"
-						autoCorrect={false}
 					/>
 					{formData.receiverAddress.length > 0 && (
 						<TouchableOpacity
 							style={styles.clearButton}
 							onPress={() => {
 								setFormData((prev) => ({ ...prev, receiverAddress: '' }));
-								setFormErrors((prev) => ({ ...prev, receiverAddress: undefined }));
+								setFormErrors((prev) => ({ ...prev, receiverAddress: '' }));
 							}}
 						>
 							<MaterialIcons name="close" size={20} color="#666" />
 						</TouchableOpacity>
 					)}
-					<TouchableOpacity
-						style={[
-							styles.addressBookButton,
-							{ right: formData.receiverAddress.length > 0 ? wp(8) : wp(2) },
-						]}
-						onPress={() => setShowAddressSelector(true)}
-					>
-						<MaterialIcons name="menu-book" size={24} color={theme.colors.primary} />
-					</TouchableOpacity>
 				</View>
 				{formErrors.receiverAddress && (
 					<Text style={styles.errorText}>{formErrors.receiverAddress}</Text>

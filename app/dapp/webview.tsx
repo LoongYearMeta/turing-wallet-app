@@ -1,4 +1,4 @@
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import React, { useRef, useState, useCallback } from 'react';
 import {
 	ScrollView,
@@ -560,6 +560,12 @@ export default function DAppWebView() {
 				injectedJavaScript={injectedJavaScript}
 				onMessage={handleMessage}
 				style={styles.webview}
+				onShouldStartLoadWithRequest={() => true}
+				originWhitelist={['*']}
+				domStorageEnabled={true}
+				javaScriptEnabled={true}
+				allowsInlineMediaPlayback={true}
+				mediaPlaybackRequiresUserAction={false}
 			/>
 			{showTransactionForm && (
 				<View style={styles.modalOverlay}>

@@ -23,8 +23,11 @@ import type { DApp } from '@/utils/sqlite';
 export default function DAppPage() {
 	const [searchText, setSearchText] = useState('');
 	const [dapps, setDapps] = useState<DApp[]>([]);
+	const [filteredDapps, setFilteredDapps] = useState<DApp[]>([]);
 	const [refreshing, setRefreshing] = useState(false);
 	const { isTbcAccount, getCurrentAccountType } = useAccount();
+	const [isSearching, setIsSearching] = useState(false);
+	const [noResults, setNoResults] = useState(false);
 
 	const loadDApps = useCallback(async () => {
 		const allDApps = await getAllDApps();
@@ -38,6 +41,36 @@ export default function DAppPage() {
 		const accountType = getCurrentAccountType();
 		loadDApps();
 	}, [getCurrentAccountType(), loadDApps]);
+
+	useEffect(() => {
+		if (!searchText.trim()) {
+			setFilteredDapps(dapps);
+			setIsSearching(false);
+			setNoResults(false);
+			return;
+		}
+
+		setIsSearching(true);
+
+		const searchTerms = searchText
+			.toLowerCase()
+			.split(/\s+/)
+			.filter((term) => term.length > 0);
+
+		const filtered = dapps.filter((dapp) => {
+			const name = dapp.name.toLowerCase();
+			const url = dapp.url.toLowerCase();
+			const description = dapp.description ? dapp.description.toLowerCase() : '';
+
+			return searchTerms.every(
+				(term) => name.includes(term) || url.includes(term) || description.includes(term),
+			);
+		});
+
+		setFilteredDapps(filtered);
+		setNoResults(filtered.length === 0);
+		setIsSearching(false);
+	}, [searchText, dapps]);
 
 	const onRefresh = async () => {
 		try {
@@ -91,8 +124,19 @@ export default function DAppPage() {
 					}
 				>
 					<View style={styles.listContainer}>
-						{dapps.length > 0 ? (
-							dapps.map((dapp) => (
+						{isSearching ? (
+							<View style={styles.emptyContainer}>
+								<Text style={styles.emptyText}>Searching...</Text>
+							</View>
+						) : noResults ? (
+							<View style={styles.emptyContainer}>
+								<Text style={styles.emptyText}>No DApps found matching "{searchText}"</Text>
+								<Text style={styles.emptySubText}>
+									Try different keywords or check your spelling
+								</Text>
+							</View>
+						) : filteredDapps.length > 0 ? (
+							filteredDapps.map((dapp) => (
 								<TouchableOpacity
 									key={dapp.id}
 									style={styles.dappItem}
@@ -113,9 +157,7 @@ export default function DAppPage() {
 							))
 						) : (
 							<View style={styles.emptyContainer}>
-								<Text style={styles.emptyText}>
-									{searchText ? 'No matching DApps found' : 'No DApps found'}
-								</Text>
+								<Text style={styles.emptyText}>No DApps available</Text>
 							</View>
 						)}
 					</View>
@@ -196,5 +238,10 @@ const styles = StyleSheet.create({
 	emptyText: {
 		fontSize: hp(1.8),
 		color: '#999',
+	},
+	emptySubText: {
+		fontSize: hp(1.4),
+		color: '#999',
+		marginTop: hp(0.5),
 	},
 });

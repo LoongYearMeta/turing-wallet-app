@@ -139,7 +139,7 @@ const CollectionDetailPage = () => {
 
 	return (
 		<ScreenWrapper bg="#f5f5f5" disableTopPadding>
-			<ScrollView 
+			<ScrollView
 				style={styles.container}
 				showsVerticalScrollIndicator={false}
 				contentContainerStyle={styles.scrollContent}
@@ -147,7 +147,11 @@ const CollectionDetailPage = () => {
 				automaticallyAdjustContentInsets={false}
 			>
 				<View style={styles.collectionHeader}>
-					<Image source={{ uri: collection.icon }} style={styles.collectionImage} />
+					<Image
+						source={{ uri: collection.icon }}
+						style={styles.collectionImage}
+						resizeMode="cover"
+					/>
 					<View style={styles.collectionInfo}>
 						<Text style={styles.collectionName}>{collection.name}</Text>
 						<View style={styles.idContainer}>
@@ -185,10 +189,10 @@ const CollectionDetailPage = () => {
 					<TouchableOpacity
 						style={[
 							styles.addButton,
-							(collection.supply - createdNFTCount) <= 0 && styles.disabledButton
+							collection.supply - createdNFTCount <= 0 && styles.disabledButton,
 						]}
 						onPress={() => {
-							if ((collection.supply - createdNFTCount) > 0) {
+							if (collection.supply - createdNFTCount > 0) {
 								router.push(`/(tabs)/nft/create-nft?collectionId=${collection.id}`);
 							} else {
 								Toast.show({
@@ -198,12 +202,12 @@ const CollectionDetailPage = () => {
 								});
 							}
 						}}
-						disabled={(collection.supply - createdNFTCount) <= 0}
+						disabled={collection.supply - createdNFTCount <= 0}
 					>
-						<MaterialIcons 
-							name="add" 
-							size={24} 
-							color={(collection.supply - createdNFTCount) <= 0 ? "#999" : "#333"} 
+						<MaterialIcons
+							name="add"
+							size={24}
+							color={collection.supply - createdNFTCount <= 0 ? '#999' : '#333'}
 						/>
 					</TouchableOpacity>
 				</View>
@@ -211,13 +215,13 @@ const CollectionDetailPage = () => {
 				{filteredNFTs.length > 0 ? (
 					<View style={styles.nftGrid}>
 						{filteredNFTs.map((nft) => (
-							<TouchableOpacity 
-								key={nft.id} 
+							<TouchableOpacity
+								key={nft.id}
 								style={styles.nftItem}
 								onPress={() => router.push(`/(tabs)/nft/nft-detail?id=${nft.id}`)}
 							>
 								<Image source={{ uri: nft.icon }} style={styles.image} resizeMode="cover" />
-								<TouchableOpacity 
+								<TouchableOpacity
 									style={styles.deleteButton}
 									onPress={(e) => {
 										e.stopPropagation();
@@ -274,7 +278,7 @@ const styles = StyleSheet.create({
 	},
 	collectionImage: {
 		width: '100%',
-		height: hp(30),
+		height: hp(35),
 		borderRadius: 0,
 		marginTop: hp(2.5),
 		marginBottom: hp(2),

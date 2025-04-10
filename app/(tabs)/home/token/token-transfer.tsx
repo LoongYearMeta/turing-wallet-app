@@ -106,6 +106,22 @@ const TokenTransferPage = () => {
 		return '';
 	};
 
+	const debouncedAddressValidation = useCallback(
+		debounce(async (address: string) => {
+			const error = validateAddress(address);
+			setFormErrors((prev) => ({ ...prev, addressTo: error }));
+		}, 1500),
+		[],
+	);
+
+	const debouncedAmountValidation = useCallback(
+		debounce(async (amountStr: string) => {
+			const error = validateAmount(amountStr);
+			setFormErrors((prev) => ({ ...prev, amount: error }));
+		}, 1000),
+		[availableAmount],
+	);
+
 	const debouncedPasswordValidation = useCallback(
 		debounce(async (password: string) => {
 			if (!password) {
@@ -135,7 +151,7 @@ const TokenTransferPage = () => {
 				}));
 			}
 		}, 1500),
-		[getPassKey, getSalt],
+		[passKey, salt],
 	);
 
 	const handleInputChange = async (field: keyof FormData, value: string) => {
@@ -146,16 +162,15 @@ const TokenTransferPage = () => {
 		const updatedFormData = { ...formData, [field]: value };
 		setFormData(updatedFormData);
 
-		let error = '';
+		setFormErrors((prev) => ({ ...prev, [field]: '' }));
+
 		if (field === 'addressTo') {
-			error = validateAddress(value);
+			debouncedAddressValidation(value);
 		} else if (field === 'amount') {
-			error = validateAmount(value);
+			debouncedAmountValidation(value);
 		} else if (field === 'password') {
 			debouncedPasswordValidation(value);
-			return;
 		}
-		setFormErrors((prev) => ({ ...prev, [field]: error }));
 	};
 
 	const handleClearField = (field: keyof FormData) => {
@@ -171,58 +186,56 @@ const TokenTransferPage = () => {
 		handleInputChange('addressTo', address);
 	};
 
-	const calculateEstimatedFee = useCallback(async () => {
-		if (!formData.addressTo || !formData.amount || !formData.password) return;
+	// 防抖计算费用
+	const debouncedCalculateFee = useCallback(
+		debounce(async (formData: FormData, hasErrors: boolean) => {
+			if (!formData.addressTo || !formData.amount || !formData.password || hasErrors) return;
 
-		const addressError = validateAddress(formData.addressTo);
-		const amountError = validateAmount(formData.amount);
-		if (addressError || amountError) return;
-
-		if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
-			return;
-		}
-
-		setIsCalculatingFee(true);
-		try {
-			const result = await sendFT(
-				contractId,
-				currentAddress,
-				formData.addressTo,
-				Number(formData.amount),
-				formData.password,
-			);
-			setEstimatedFee(result.fee);
-			setPendingTransaction({
-				txHex: result.txHex,
-				utxos: result.utxos || [],
-			});
-		} catch (error: any) {
-			if (
-				error instanceof Error &&
-				!error.message.includes('Invalid') &&
-				!error.message.includes('Password') &&
-				!error.message.includes('required')
-			) {
-				Toast.show({
-					type: 'error',
-					text1: 'Error',
-					text2: error.message,
+			setIsCalculatingFee(true);
+			try {
+				const result = await sendFT(
+					contractId,
+					currentAddress,
+					formData.addressTo,
+					Number(formData.amount),
+					formData.password,
+				);
+				setEstimatedFee(result.fee);
+				setPendingTransaction({
+					txHex: result.txHex,
+					utxos: result.utxos || [],
 				});
+			} catch (error: any) {
+				if (
+					error instanceof Error &&
+					!error.message.includes('Invalid') &&
+					!error.message.includes('Password') &&
+					!error.message.includes('required')
+				) {
+					Toast.show({
+						type: 'error',
+						text1: 'Error',
+						text2: error.message,
+					});
+				}
+				setEstimatedFee(null);
+				setPendingTransaction(null);
+			} finally {
+				setIsCalculatingFee(false);
 			}
-			setEstimatedFee(null);
-			setPendingTransaction(null);
-		} finally {
-			setIsCalculatingFee(false);
-		}
-	}, [formData, contractId, formErrors.password]);
+		}, 1000),
+		[contractId, currentAddress, sendFT],
+	);
 
 	useEffect(() => {
-		calculateEstimatedFee();
-	}, [formData]);
+		const hasErrors = Object.values(formErrors).some((error) => error);
+		debouncedCalculateFee(formData, hasErrors);
+	}, [formData, formErrors]);
 
 	const handleSubmit = async () => {
 		const addressError = validateAddress(formData.addressTo);
 		const amountError = validateAmount(formData.amount);
+
 		const passwordError = formErrors.password;
 
 		const newErrors = {
@@ -246,7 +259,7 @@ const TokenTransferPage = () => {
 			Toast.show({
 				type: 'error',
 				text1: 'Error',
-				text2: 'Please wait for transaction preparation',
+				text2: 'Please wait for fee calculation',
 			});
 			return;
 		}

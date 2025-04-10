@@ -1,12 +1,14 @@
 import { Image } from 'expo-image';
 import { useNavigation, useRouter } from 'expo-router';
-import React, { useEffect, useLayoutEffect } from 'react';
-import { Animated, Dimensions, Easing, StyleSheet, View } from 'react-native';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
+import { Animated, Dimensions, Easing, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
+
+Image.prefetch(require('@/assets/images/welcome.png'));
 
 const { width } = Dimensions.get('window');
 const ANIMATION_DURATION = 1200;
@@ -16,6 +18,7 @@ const TEXT_ANIMATION_DELAY = 300;
 const WelcomePage = () => {
 	const router = useRouter();
 	const navigation = useNavigation();
+	const [imageLoaded, setImageLoaded] = useState(false);
 	const imageOpacity = new Animated.Value(0);
 	const imageScale = new Animated.Value(0.9);
 	const textOpacity = new Animated.Value(0);
@@ -30,38 +33,56 @@ const WelcomePage = () => {
 	}, [navigation]);
 
 	useEffect(() => {
-		Animated.parallel([
-			Animated.timing(imageOpacity, {
-				toValue: 1,
-				duration: ANIMATION_DURATION,
-				easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-				useNativeDriver: true,
-			}),
-			Animated.timing(imageScale, {
-				toValue: 1,
-				duration: ANIMATION_DURATION,
-				easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-				useNativeDriver: true,
-			}),
-		]).start();
+		const loadingTimeout = setTimeout(() => {
+			if (!imageLoaded) {
+				setImageLoaded(true);
+			}
+		}, 1000);
 
-		setTimeout(() => {
-			Animated.stagger(200, [
-				Animated.timing(textOpacity, {
+		return () => clearTimeout(loadingTimeout);
+	}, []);
+
+	const handleImageLoad = () => {
+		setImageLoaded(true);
+	};
+
+	useEffect(() => {
+		if (imageLoaded) {
+			Animated.parallel([
+				Animated.timing(imageOpacity, {
 					toValue: 1,
 					duration: ANIMATION_DURATION,
 					easing: Easing.bezier(0.25, 0.1, 0.25, 1),
 					useNativeDriver: true,
 				}),
-				Animated.timing(textTranslateY, {
-					toValue: 0,
+				Animated.timing(imageScale, {
+					toValue: 1,
 					duration: ANIMATION_DURATION,
-					easing: Easing.bezier(0, 0, 0.2, 1),
+					easing: Easing.bezier(0.25, 0.1, 0.25, 1),
 					useNativeDriver: true,
 				}),
 			]).start();
-		}, TEXT_ANIMATION_DELAY);
 
+			setTimeout(() => {
+				Animated.parallel([
+					Animated.timing(textOpacity, {
+						toValue: 1,
+						duration: ANIMATION_DURATION,
+						easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+						useNativeDriver: true,
+					}),
+					Animated.timing(textTranslateY, {
+						toValue: 0,
+						duration: ANIMATION_DURATION,
+						easing: Easing.bezier(0, 0, 0.2, 1),
+						useNativeDriver: true,
+					}),
+				]).start();
+			}, TEXT_ANIMATION_DELAY);
+		}
+	}, [imageLoaded]);
+
+	useEffect(() => {
 		const timer = setTimeout(() => {
 			try {
 				const address = getCurrentAccountAddress();
@@ -96,6 +117,9 @@ const WelcomePage = () => {
 							source={require('@/assets/images/welcome.png')}
 							style={styles.image}
 							contentFit="contain"
+							onLoad={handleImageLoad}
+							priority="high"
+							cachePolicy="memory-disk"
 						/>
 					</Animated.View>
 
@@ -108,10 +132,10 @@ const WelcomePage = () => {
 							},
 						]}
 					>
-						<Animated.Text style={styles.title}>Welcome!</Animated.Text>
-						<Animated.Text style={styles.punchline}>
+						<Text style={styles.title}>Welcome!</Text>
+						<Text style={styles.punchline}>
 							Experience digital asset management with security and simplicity.
-						</Animated.Text>
+						</Text>
 					</Animated.View>
 				</View>
 			</View>
@@ -141,6 +165,19 @@ const styles = StyleSheet.create({
 	image: {
 		width: '100%',
 		height: '100%',
+	},
+	fallbackContainer: {
+		position: 'absolute',
+		justifyContent: 'center',
+		alignItems: 'center',
+		width: width * 0.8,
+		height: width * 0.8,
+	},
+	fallbackImage: {
+		width: width * 0.5,
+		height: width * 0.5,
+		backgroundColor: '#f0f0f0',
+		borderRadius: 20,
 	},
 	textContainer: {
 		gap: 15,

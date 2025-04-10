@@ -210,6 +210,22 @@ export default function SendPage() {
 		[getPassKey, getSalt],
 	);
 
+	const debouncedAddressValidation = useCallback(
+		debounce(async (address: string) => {
+			const error = validateAddress(address);
+			setFormErrors((prev) => ({ ...prev, addressTo: error }));
+		}, 1500),
+		[accountType],
+	);
+
+	const debouncedAmountValidation = useCallback(
+		debounce(async (amountStr: string) => {
+			const error = validateAmount(amountStr);
+			setFormErrors((prev) => ({ ...prev, amount: error }));
+		}, 1000),
+		[selectedAsset],
+	);
+
 	const handleInputChange = (field: keyof FormData, value: string) => {
 		if (field === 'password') {
 			value = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
@@ -218,18 +234,15 @@ export default function SendPage() {
 		const updatedFormData = { ...formData, [field]: value };
 		setFormData(updatedFormData);
 
-		let error = '';
+		setFormErrors((prev) => ({ ...prev, [field]: '' }));
+
 		if (field === 'addressTo') {
-			error = validateAddress(value);
+			debouncedAddressValidation(value);
 		} else if (field === 'amount') {
-			error = validateAmount(value);
+			debouncedAmountValidation(value);
 		} else if (field === 'password') {
 			debouncedPasswordValidation(value);
-
-			return;
 		}
-
-		setFormErrors((prev) => ({ ...prev, [field]: error }));
 	};
 
 	const handleClearField = (field: keyof FormData) => {
@@ -243,99 +256,132 @@ export default function SendPage() {
 
 	const handleAssetChange = (item: Asset) => {
 		setSelectedAsset(item);
-		setFormData((prev) => ({ ...prev, asset: item.value }));
+		setFormData((prev) => ({ 
+			...prev, 
+			asset: item.value,
+			amount: ''
+		}));
+		setFormErrors((prev) => ({
+			...prev,
+			amount: ''
+		}));
 		setEstimatedFee(null);
 	};
 
-	const calculateEstimatedFee = useCallback(async () => {
-		if (!formData.addressTo || !formData.amount || !selectedAsset) return;
-		if (!formData.password || formData.password.length < 6) return;
-
-		const addressError = validateAddress(formData.addressTo);
-		const amountError = validateAmount(formData.amount);
-		if (addressError || amountError || formErrors.password) return;
-
-		if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
-			return;
-		}
-
-		setIsCalculatingFee(true);
-		try {
-			let result;
-			if (accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY) {
-				const utxos = await getUTXOsFromBlockstream(currentAddress);
-				const feeRates = await getFeeRates();
-				const { selectedUtxos, totalInputAmount } = selectOptimalUtxos(
-					utxos,
-					Number(formData.amount),
-					feeRates.medium,
-				);
-				const txHex =
-					accountType === AccountType.TAPROOT
-						? await createTransaction_taproot(
-								formData.addressTo,
-								Number(formData.amount),
-								feeRates.medium,
-								selectedUtxos,
-								totalInputAmount,
-								formData.password,
-							)
-						: await createTransaction_legacy(
-								formData.addressTo,
-								Number(formData.amount),
-								feeRates.medium,
-								selectedUtxos,
-								totalInputAmount,
-								formData.password,
-							);
-				const feeInfo = calculateTransactionFee(txHex, totalInputAmount);
-				setEstimatedFee(feeInfo.fee);
-				setPendingTransaction({ txHex, utxos: selectedUtxos });
-			} else {
-				if (selectedAsset.value === 'TBC') {
-					result = await sendTbc(
-						currentAddress,
-						formData.addressTo,
-						Number(formData.amount),
-						formData.password,
-					);
-					setEstimatedFee(result.fee);
-					setPendingTransaction(result);
-				} else {
-					result = await sendFT(
-						selectedAsset.contractId!,
-						currentAddress,
-						formData.addressTo,
-						Number(formData.amount),
-						formData.password,
-					);
-					setEstimatedFee(result.fee);
-					setPendingTransaction(result);
-				}
-			}
-		} catch (error) {
+	const debouncedCalculateFee = useCallback(
+		debounce(async (formData: FormData, hasErrors: boolean) => {
 			if (
-				error instanceof Error &&
-				!error.message.includes('Invalid') &&
-				!error.message.includes('Password') &&
-				!error.message.includes('required')
-			) {
-				Toast.show({
-					type: 'error',
-					text1: 'Error',
-					text2: error.message,
-				});
+				!formData.asset ||
+				!formData.addressTo ||
+				!formData.amount ||
+				!formData.password ||
+				hasErrors
+			)
+				return;
+
+			const addressError = validateAddress(formData.addressTo);
+			const amountError = validateAmount(formData.amount);
+			if (addressError || amountError || formErrors.password) return;
+
+			if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
+				return;
 			}
-			setEstimatedFee(null);
-			setPendingTransaction(null);
-		} finally {
-			setIsCalculatingFee(false);
-		}
-	}, [formData, selectedAsset, formErrors.password]);
+
+			setIsCalculatingFee(true);
+			try {
+				let result;
+				if (accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY) {
+					const utxos = await getUTXOsFromBlockstream(currentAddress);
+					const feeRates = await getFeeRates();
+					const { selectedUtxos, totalInputAmount } = selectOptimalUtxos(
+						utxos,
+						Number(formData.amount),
+						feeRates.medium,
+					);
+					const txHex =
+						accountType === AccountType.TAPROOT
+							? await createTransaction_taproot(
+									formData.addressTo,
+									Number(formData.amount),
+									feeRates.medium,
+									selectedUtxos,
+									totalInputAmount,
+									formData.password,
+								)
+							: await createTransaction_legacy(
+									formData.addressTo,
+									Number(formData.amount),
+									feeRates.medium,
+									selectedUtxos,
+									totalInputAmount,
+									formData.password,
+								);
+					const feeInfo = calculateTransactionFee(txHex, totalInputAmount);
+					setEstimatedFee(feeInfo.fee);
+					setPendingTransaction({ txHex, utxos: selectedUtxos });
+				} else {
+					if (selectedAsset?.value === 'TBC') {
+						result = await sendTbc(
+							currentAddress,
+							formData.addressTo,
+							Number(formData.amount),
+							formData.password,
+						);
+						setEstimatedFee(result.fee);
+						setPendingTransaction(result);
+					} else {
+						result = await sendFT(
+							selectedAsset?.contractId!,
+							currentAddress,
+							formData.addressTo,
+							Number(formData.amount),
+							formData.password,
+						);
+						setEstimatedFee(result.fee);
+						setPendingTransaction(result);
+					}
+				}
+			} catch (error) {
+				if (
+					error instanceof Error &&
+					!error.message.includes('Invalid') &&
+					!error.message.includes('Password') &&
+					!error.message.includes('required')
+				) {
+					Toast.show({
+						type: 'error',
+						text1: 'Error',
+						text2: error.message,
+					});
+				}
+				setEstimatedFee(null);
+				setPendingTransaction(null);
+			} finally {
+				setIsCalculatingFee(false);
+			}
+		}, 1000),
+		[
+			formData.asset,
+			selectedAsset,
+			accountType,
+			currentAddress,
+			sendTbc,
+			sendFT,
+			createTransaction_taproot,
+			createTransaction_legacy,
+			calculateTransactionFee,
+			getUTXOsFromBlockstream,
+			getFeeRates,
+			selectOptimalUtxos,
+			passKey,
+			salt,
+		],
+	);
 
 	useEffect(() => {
-		calculateEstimatedFee();
-	}, [formData]);
+		const hasErrors = Object.values(formErrors).some((error) => error);
+		debouncedCalculateFee(formData, hasErrors);
+	}, [formData, formErrors]);
 
 	const handleSubmit = async () => {
 		if (!selectedAsset || !pendingTransaction) {

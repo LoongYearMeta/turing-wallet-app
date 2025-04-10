@@ -534,7 +534,7 @@ export const useFtTransaction = () => {
 					await updateCurrentAccountUtxos(utxos, address);
 					let utxo_amount = utxos.reduce((acc, utxo) => acc + utxo.satoshis, 0);
 					if (utxo_amount < satoshis_amount) {
-						throw new Error('Insufficient balance.');
+						throw new Error('Insufficient tbc balance.');
 					}
 				} else {
 					let utxo_amount = utxos.reduce((acc, utxo) => acc + utxo.satoshis, 0);
@@ -546,7 +546,7 @@ export const useFtTransaction = () => {
 						await updateCurrentAccountUtxos(utxos, address);
 						utxo_amount = utxos.reduce((acc, utxo) => acc + utxo.satoshis, 0);
 						if (utxo_amount < satoshis_amount) {
-							throw new Error('Insufficient balance.');
+							throw new Error('Insufficient tbc balance.');
 						}
 					}
 				}

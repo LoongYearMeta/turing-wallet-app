@@ -83,6 +83,14 @@ const NFTTransferPage = () => {
 		return '';
 	};
 
+	const debouncedAddressValidation = useCallback(
+		debounce(async (address: string) => {
+			const error = validateAddress(address);
+			setFormErrors((prev) => ({ ...prev, addressTo: error }));
+		}, 1500),
+		[],
+	);
+
 	const debouncedPasswordValidation = useCallback(
 		debounce(async (password: string) => {
 			if (!password) {
@@ -126,14 +134,13 @@ const NFTTransferPage = () => {
 		const updatedFormData = { ...formData, [field]: value };
 		setFormData(updatedFormData);
 
-		let error = '';
+		setFormErrors((prev) => ({ ...prev, [field]: '' }));
+
 		if (field === 'addressTo') {
-			error = validateAddress(value);
+			debouncedAddressValidation(value);
 		} else if (field === 'password') {
 			debouncedPasswordValidation(value);
-			return;
 		}
-		setFormErrors((prev) => ({ ...prev, [field]: error }));
 	};
 
 	const handleClearField = (field: keyof FormData) => {
@@ -195,9 +202,56 @@ const NFTTransferPage = () => {
 		}
 	}, [formData, id, transferTimesCount]);
 
+	const debouncedCalculateFee = useCallback(
+		debounce(async (formData: FormData, hasErrors: boolean) => {
+			if (!formData.addressTo || !formData.password || hasErrors) return;
+
+			const passKey = getPassKey();
+			const salt = getSalt();
+			if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
+				return;
+			}
+
+			setIsCalculatingFee(true);
+			try {
+				const result = await transferNFT(
+					id,
+					currentAddress,
+					formData.addressTo,
+					transferTimesCount,
+					formData.password,
+				);
+				setEstimatedFee(result.fee);
+				setPendingTransaction({
+					txHex: result.txHex,
+					utxos: result.utxos || [],
+				});
+			} catch (error: any) {
+				if (
+					error instanceof Error &&
+					!error.message.includes('Invalid') &&
+					!error.message.includes('Password') &&
+					!error.message.includes('required')
+				) {
+					Toast.show({
+						type: 'error',
+						text1: 'Error',
+						text2: error.message,
+					});
+				}
+				setEstimatedFee(null);
+				setPendingTransaction(null);
+			} finally {
+				setIsCalculatingFee(false);
+			}
+		}, 1000),
+		[id, currentAddress, transferNFT, transferTimesCount, getPassKey, getSalt],
+	);
+
 	useEffect(() => {
-		calculateEstimatedFee();
-	}, [formData]);
+		const hasErrors = Object.values(formErrors).some((error) => error);
+		debouncedCalculateFee(formData, hasErrors);
+	}, [formData, formErrors]);
 
 	const handleSubmit = async () => {
 		const addressError = validateAddress(formData.addressTo);

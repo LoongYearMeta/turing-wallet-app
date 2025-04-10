@@ -115,7 +115,7 @@ const NFTDetailPage = () => {
 				automaticallyAdjustContentInsets={false}
 			>
 				<View style={styles.nftHeader}>
-					<Image source={{ uri: nft.icon }} style={styles.nftImage} />
+					<Image source={{ uri: nft.icon }} style={styles.nftImage} resizeMode="cover" />
 					<View style={styles.nftInfo}>
 						<Text style={styles.nftName}>{nft.name}</Text>
 						<View style={styles.idContainer}>
@@ -152,16 +152,20 @@ const NFTDetailPage = () => {
 							</TouchableOpacity>
 						)}
 
-						<TouchableOpacity 
-							style={[styles.viewCollectionButton, { marginTop: hp(0.5) }]} 
+						<TouchableOpacity
+							style={[styles.viewCollectionButton, { marginTop: hp(0.5) }]}
 							onPress={() => router.push(`/(tabs)/nft/nft-history?id=${nft.id}`)}
 						>
 							<Text style={styles.viewCollectionText}>View NFT History</Text>
 						</TouchableOpacity>
 
-						<TouchableOpacity 
-							style={[styles.viewCollectionButton, { marginTop: hp(0.5) }]} 
-							onPress={() => router.push(`/(tabs)/nft/nft-transfer?id=${nft.id}&transferTimes=${nft.transfer_times}`)}
+						<TouchableOpacity
+							style={[styles.viewCollectionButton, { marginTop: hp(0.5) }]}
+							onPress={() =>
+								router.push(
+									`/(tabs)/nft/nft-transfer?id=${nft.id}&transferTimes=${nft.transfer_times}`,
+								)
+							}
 						>
 							<Text style={styles.viewCollectionText}>Transfer NFT</Text>
 						</TouchableOpacity>
@@ -200,7 +204,7 @@ const styles = StyleSheet.create({
 	},
 	nftImage: {
 		width: '100%',
-		height: hp(30),
+		height: hp(35),
 		borderRadius: 0,
 		marginTop: hp(2.5),
 		marginBottom: hp(2),

@@ -326,8 +326,6 @@ export default function CreateMultiSigWalletPage() {
 	return (
 		<ScrollView style={styles.container}>
 			<View style={styles.content}>
-				<Text style={styles.title}>Create MultiSig Wallet</Text>
-
 				<Text style={styles.description}>
 					Creating a MultiSig wallet will deposit 0.005 TBC to the MultiSig address. The MultiSig
 					address and the list of public keys will be stored on the blockchain.
@@ -349,7 +347,9 @@ export default function CreateMultiSigWalletPage() {
 				</View>
 
 				<View style={styles.inputGroup}>
-					<Text style={styles.label}>Required Signatures</Text>
+					<Text style={styles.label}>
+						Required Signatures(1-6 && less than number of public keys)
+					</Text>
 					<View style={styles.inputWrapper}>
 						<TextInput
 							style={[styles.input, formErrors.requiredSignatures && styles.inputError]}
@@ -383,7 +383,7 @@ export default function CreateMultiSigWalletPage() {
 								placeholder={`Enter public key ${index + 1}`}
 								autoCapitalize="none"
 								autoCorrect={false}
-								editable={!isLoading && index !== 0} 
+								editable={!isLoading && index !== 0}
 							/>
 							{displayPubKeys[index].length > 0 && index !== 0 && (
 								<TouchableOpacity
@@ -449,12 +449,6 @@ const styles = StyleSheet.create({
 	content: {
 		padding: wp(4),
 		paddingTop: hp(2),
-	},
-	title: {
-		fontSize: hp(2.2),
-		fontWeight: '600',
-		marginBottom: hp(1),
-		textAlign: 'center',
 	},
 	description: {
 		fontSize: hp(1.6),
