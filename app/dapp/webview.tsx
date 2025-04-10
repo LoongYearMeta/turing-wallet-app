@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState } from 'react';
 import {
 	ScrollView,
 	StyleSheet,
@@ -21,6 +21,11 @@ import { useResponse } from '@/hooks/useResponse';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
 import { getNFT } from '@/utils/sqlite';
+
+const sslExceptionDomains = [
+	'dev.shellswap.org',
+	'utxopump.fun'
+];
 
 export default function DAppWebView() {
 	const { url, name } = useLocalSearchParams();
@@ -403,11 +408,10 @@ export default function DAppWebView() {
 				});
 				return;
 			}
-			
+
 			setIsProcessing(true);
 			const response = await processTransaction();
-			
-			// 返回结果给 DApp
+
 			webViewRef.current?.injectJavaScript(`
 				window.dispatchEvent(new CustomEvent('TuringResponse', {
 					detail: { 
@@ -431,8 +435,7 @@ export default function DAppWebView() {
 			}
 		} catch (error) {
 			console.error('Transaction error:', error);
-			
-			// 返回错误给 DApp
+
 			webViewRef.current?.injectJavaScript(`
 				window.dispatchEvent(new CustomEvent('TuringResponse', {
 					detail: { 
@@ -441,7 +444,7 @@ export default function DAppWebView() {
 					}
 				}));
 			`);
-			
+
 			Toast.show({
 				type: 'error',
 				text1: 'Transaction Failed',
@@ -559,26 +562,39 @@ export default function DAppWebView() {
 			<WebView
 				ref={webViewRef}
 				source={{ uri: url as string }}
+				style={styles.webview}
 				injectedJavaScript={injectedJavaScript}
 				onMessage={handleMessage}
-				style={styles.webview}
-				onShouldStartLoadWithRequest={() => true}
+				onLoadStart={() => {}}
+				onLoadEnd={() => {}}
+				onError={(syntheticEvent) => {
+					const { nativeEvent } = syntheticEvent;
+					console.error('WebView error:', nativeEvent);
+					Toast.show({
+						type: 'error',
+						text1: 'Error loading page',
+						text2: nativeEvent.description,
+					});
+				}}
+				onShouldStartLoadWithRequest={(request) => {
+					const { url } = request;
+					const isExceptionDomain = sslExceptionDomains.some(domain => url.includes(domain));
+					
+					return isExceptionDomain || true;
+				}}
 				originWhitelist={['*']}
 				domStorageEnabled={true}
 				javaScriptEnabled={true}
-				allowsInlineMediaPlayback={true}
-				mediaPlaybackRequiresUserAction={false}
+				thirdPartyCookiesEnabled={true}
+				mixedContentMode="always"
 			/>
 			{showTransactionForm && (
 				<View style={styles.modalOverlay}>
-					<KeyboardAvoidingView 
+					<KeyboardAvoidingView
 						behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 						style={{ flex: 1 }}
 					>
-						<ScrollView 
-							contentContainerStyle={{ flexGrow: 1 }}
-							keyboardShouldPersistTaps="handled"
-						>
+						<ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
 							<View style={styles.formContainer}>
 								{isProcessing ? (
 									<View style={styles.loadingContainer}>
@@ -644,7 +660,9 @@ export default function DAppWebView() {
 												<Text
 													style={[
 														styles.buttonText,
-														password.length > 0 ? styles.confirmButtonText : styles.disabledButtonText,
+														password.length > 0
+															? styles.confirmButtonText
+															: styles.disabledButtonText,
 													]}
 												>
 													Confirm

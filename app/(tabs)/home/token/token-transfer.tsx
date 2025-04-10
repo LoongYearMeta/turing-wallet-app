@@ -187,7 +187,6 @@ const TokenTransferPage = () => {
 		handleInputChange('addressTo', address);
 	};
 
-	// 防抖计算费用
 	const debouncedCalculateFee = useCallback(
 		debounce(async (formData: FormData, hasErrors: boolean) => {
 			if (!formData.addressTo || !formData.amount || !formData.password || hasErrors) return;

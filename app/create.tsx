@@ -46,24 +46,18 @@ const CreatePage = () => {
 	const router = useRouter();
 
 	const validatePassword = (password: string) => {
-		if (password.length < 10) {
-			showToast('error', 'Password must be at least 10 characters long');
-			return false;
-		}
-		const hasUpperCase = /[A-Z]/.test(password);
-		const hasLowerCase = /[a-z]/.test(password);
-		const hasNumbers = /[0-9]/.test(password);
-
-		if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
-			showToast('error', 'Password must contain uppercase letters, lowercase letters, and numbers');
+		if (password.length < 8) {
+			showToast('error', 'Password must be at least 8 characters long');
 			return false;
 		}
 
-		for (let i = 0; i < password.length - 2; i++) {
-			if (password[i] === password[i + 1] && password[i] === password[i + 2]) {
-				showToast('error', 'Password cannot contain three consecutive identical characters');
-				return false;
-			}
+		const validChars = /^[a-zA-Z0-9!@#$%*]+$/;
+		if (!validChars.test(password)) {
+			showToast(
+				'error',
+				'Password can only contain letters, numbers, and special characters (!@#$%*)',
+			);
+			return false;
 		}
 
 		return true;
@@ -205,7 +199,7 @@ const CreatePage = () => {
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
 			}
-			
+
 			router.replace('/(tabs)/home');
 			showToast('success', 'Wallet created successfully!');
 		} catch (error) {
@@ -257,12 +251,9 @@ const CreatePage = () => {
 								{!initialHasAccount && (
 									<Text style={styles.description}>
 										Please set a password to protect your wallet.
-										{'\n\n'}The password must:
-										{'\n\n'}- Be at least 10 characters long
-										{'\n\n'}- Include uppercase letters, lowercase letters, and numbers
-										{'\n\n'}- Not contain three consecutive identical characters
-										{'\n\n'}Special characters are optional.
-										{'\n\n'}Once you forget it, you can set a new one by re-importing your wallet.
+										{'\n\n'}The password must be at least 8 characters long.
+										{'\n\n'}You can only use letters (a-z, A-Z), numbers (0-9), and special
+										characters (!@#$%*).
 									</Text>
 								)}
 

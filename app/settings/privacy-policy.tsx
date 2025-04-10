@@ -16,7 +16,6 @@ export default function PrivacyPolicyPage() {
 	const [loading, setLoading] = useState(true);
 	const [showFullPolicy, setShowFullPolicy] = useState(false);
 
-	// Simulate loading the policy content
 	useEffect(() => {
 		const timer = setTimeout(() => {
 			setLoading(false);

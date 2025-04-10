@@ -12,13 +12,14 @@ import {
 	Modal,
 	Pressable,
 	Switch,
+	KeyboardAvoidingView,
+	Platform,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { Input } from '@/components/ui/input';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
-import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { generateKeysEncrypted_byMnemonic, verifyPassword, verifyMnemonic } from '@/lib/key';
@@ -69,24 +70,18 @@ const RestorePage = () => {
 	];
 
 	const validatePassword = (password: string) => {
-		if (password.length < 10) {
-			showToast('error', 'Password must be at least 10 characters long');
-			return false;
-		}
-		const hasUpperCase = /[A-Z]/.test(password);
-		const hasLowerCase = /[a-z]/.test(password);
-		const hasNumbers = /[0-9]/.test(password);
-
-		if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
-			showToast('error', 'Password must contain uppercase letters, lowercase letters, and numbers');
+		if (password.length < 8) {
+			showToast('error', 'Password must be at least 8 characters long');
 			return false;
 		}
 
-		for (let i = 0; i < password.length - 2; i++) {
-			if (password[i] === password[i + 1] && password[i] === password[i + 2]) {
-				showToast('error', 'Password cannot contain three consecutive identical characters');
-				return false;
-			}
+		const validChars = /^[a-zA-Z0-9!@#$%*]+$/;
+		if (!validChars.test(password)) {
+			showToast(
+				'error',
+				'Password can only contain letters, numbers, and special characters (!@#$%*)',
+			);
+			return false;
 		}
 
 		return true;
@@ -332,10 +327,18 @@ const RestorePage = () => {
 					</Text>
 				</View>
 			) : (
-				<KeyboardAvoidingWrapper>
+				<KeyboardAvoidingView
+					style={{ flex: 1, backgroundColor: '#fff' }}
+					behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+					keyboardVerticalOffset={50}
+				>
 					<ScrollView
-						style={styles.container}
-						contentContainerStyle={styles.contentContainer}
+						style={{ flex: 1 }}
+						contentContainerStyle={{
+							paddingHorizontal: wp(5),
+							paddingVertical: hp(4),
+						}}
+						keyboardShouldPersistTaps="handled"
 						showsVerticalScrollIndicator={false}
 					>
 						<View style={styles.content}>
@@ -345,11 +348,9 @@ const RestorePage = () => {
 							<View style={styles.form}>
 								<Text style={styles.description}>
 									Please set a password to protect your wallet.
-									{'\n\n'}The password must:
-									{'\n\n'}- Be at least 10 characters long
-									{'\n\n'}- Include uppercase letters, lowercase letters, and numbers
-									{'\n\n'}- Not contain three consecutive identical characters
-									{'\n\n'}Special characters are optional.
+									{'\n\n'}The password must be at least 8 characters long.
+									{'\n\n'}You can only use letters (a-z, A-Z), numbers (0-9), and special characters
+									(!@#$%*).
 								</Text>
 
 								<View style={styles.inputGroup}>
@@ -434,7 +435,7 @@ const RestorePage = () => {
 							</TouchableOpacity>
 						</View>
 					</ScrollView>
-				</KeyboardAvoidingWrapper>
+				</KeyboardAvoidingView>
 			)}
 
 			<Modal
@@ -471,14 +472,9 @@ const RestorePage = () => {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		paddingHorizontal: wp(5),
-		paddingBottom: hp(4),
 	},
-	content: {
-		flex: 1,
-	},
+	content: {},
 	contentContainer: {
-		flexGrow: 1,
 		paddingVertical: hp(4),
 	},
 	welcomeText: {
