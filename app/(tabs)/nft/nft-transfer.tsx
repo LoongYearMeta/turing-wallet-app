@@ -21,6 +21,7 @@ import { verifyPassword } from '@/lib/key';
 import { formatFee } from '@/lib/util';
 import { updateNFTTransferTimes, updateNFTUserAddress, removeNFT } from '@/utils/sqlite';
 import { fetchUTXOs } from '@/actions/get-utxos';
+import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
 
 interface FormData {
 	addressTo: string;
@@ -345,7 +346,10 @@ const NFTTransferPage = () => {
 	};
 
 	return (
-		<View style={styles.container}>
+		<KeyboardAvoidingWrapper 
+			contentContainerStyle={styles.container}
+			backgroundColor="#fff"
+		>
 			<View style={styles.inputGroup}>
 				<View style={styles.labelRow}>
 					<Text style={styles.label}>Recipient Address</Text>
@@ -432,7 +436,7 @@ const NFTTransferPage = () => {
 				onSelect={handleSelectAddress}
 				userAddress={getCurrentAccountAddress()}
 			/>
-		</View>
+		</KeyboardAvoidingWrapper>
 	);
 };
 

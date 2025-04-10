@@ -25,6 +25,7 @@ import { getActiveFTs, getFT, removeFT, transferFT, upsertFT, type FT } from '@/
 import { fetchUTXOs } from '@/actions/get-utxos';
 import { AccountType } from '@/types';
 import { theme } from '@/lib/theme';
+import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
 
 interface FormData {
 	asset: string;
@@ -256,14 +257,14 @@ export default function SendPage() {
 
 	const handleAssetChange = (item: Asset) => {
 		setSelectedAsset(item);
-		setFormData((prev) => ({ 
-			...prev, 
+		setFormData((prev) => ({
+			...prev,
 			asset: item.value,
-			amount: ''
+			amount: '',
 		}));
 		setFormErrors((prev) => ({
 			...prev,
-			amount: ''
+			amount: '',
 		}));
 		setEstimatedFee(null);
 	};
@@ -495,13 +496,20 @@ export default function SendPage() {
 	};
 
 	return (
-		<View style={styles.container}>
+		<KeyboardAvoidingWrapper 
+			contentContainerStyle={styles.container}
+			backgroundColor="#fff"
+		>
 			<View style={styles.inputGroup}>
 				<View style={styles.labelRow}>
 					<Text style={styles.label}>Asset</Text>
 					{(accountType === AccountType.TBC || accountType === AccountType.TAPROOT_LEGACY) && (
 						<TouchableOpacity onPress={() => setShowAssetSelector(true)}>
-							<MaterialIcons name="account-balance-wallet" size={24} color={theme.colors.primary} />
+							<MaterialIcons
+								name="account-balance-wallet"
+								size={24}
+								color={theme.colors.primary}
+							/>
 						</TouchableOpacity>
 					)}
 				</View>
@@ -510,7 +518,9 @@ export default function SendPage() {
 						<TouchableOpacity
 							onPress={() => setShowAssetSelector(true)}
 							style={{ flex: 1 }}
-							disabled={accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY}
+							disabled={
+								accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY
+							}
 						>
 							<Text style={styles.selectedAssetText}>
 								{selectedAsset.label}:{' '}
@@ -545,7 +555,10 @@ export default function SendPage() {
 					/>
 					{formData.addressTo.length > 0 && (
 						<View
-							style={[styles.addressPreviewContainer, formErrors.addressTo && styles.inputError]}
+							style={[
+								styles.addressPreviewContainer,
+								formErrors.addressTo && styles.inputError,
+							]}
 						>
 							<Text style={styles.addressPreview} numberOfLines={1}>
 								{formatDisplayAddress(formData.addressTo)}
@@ -577,7 +590,10 @@ export default function SendPage() {
 						autoCorrect={false}
 					/>
 					{formData.amount.length > 0 && (
-						<TouchableOpacity style={styles.clearButton} onPress={() => handleClearField('amount')}>
+						<TouchableOpacity
+							style={styles.clearButton}
+							onPress={() => handleClearField('amount')}
+						>
 							<MaterialIcons name="close" size={20} color="#666" />
 						</TouchableOpacity>
 					)}
@@ -655,7 +671,7 @@ export default function SendPage() {
 				assets={assets}
 				selectedAsset={selectedAsset}
 			/>
-		</View>
+		</KeyboardAvoidingWrapper>
 	);
 }
 

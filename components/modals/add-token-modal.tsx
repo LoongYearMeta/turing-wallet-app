@@ -15,7 +15,6 @@ import { Modal } from '@/components/ui/modal';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { formatLongString } from '@/lib/util';
-
 import { getFT, getFTPublic, restoreFT } from '@/utils/sqlite';
 
 interface AddContractModalProps {
@@ -111,7 +110,7 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 	return (
 		<Modal visible={visible} onClose={handleClose}>
 			<View style={styles.container}>
-				<Text style={styles.title}>Add Token</Text>
+				<Text style={styles.title}>Add or Restore Token</Text>
 				<View style={styles.inputWrapper}>
 					<TextInput
 						style={styles.input}

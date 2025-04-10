@@ -24,6 +24,7 @@ import { formatFee } from '@/lib/util';
 import { addCollection } from '@/utils/sqlite';
 import { theme } from '@/lib/theme';
 import { fetchUTXOs } from '@/actions/get-utxos';
+import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
 
 interface FormData {
 	name: string;
@@ -370,7 +371,10 @@ const CreateCollectionPage = () => {
 
 	return (
 		<View style={styles.container}>
-			<ScrollView showsVerticalScrollIndicator={false}>
+			<KeyboardAvoidingWrapper 
+				contentContainerStyle={{ padding: wp(4) }}
+				backgroundColor="#fff"
+			>
 				<View style={styles.formGroup}>
 					<Text style={styles.label}>Collection Name</Text>
 					<View style={styles.inputWrapper}>
@@ -382,7 +386,10 @@ const CreateCollectionPage = () => {
 							maxLength={20}
 						/>
 						{formData.name ? (
-							<TouchableOpacity style={styles.clearButton} onPress={() => handleClearInput('name')}>
+							<TouchableOpacity
+								style={styles.clearButton}
+								onPress={() => handleClearInput('name')}
+							>
 								<MaterialIcons name="clear" size={20} color="#999" />
 							</TouchableOpacity>
 						) : null}
@@ -489,7 +496,9 @@ const CreateCollectionPage = () => {
 							</TouchableOpacity>
 						) : null}
 					</View>
-					{formErrors.password ? <Text style={styles.errorText}>{formErrors.password}</Text> : null}
+					{formErrors.password ? (
+						<Text style={styles.errorText}>{formErrors.password}</Text>
+					) : null}
 				</View>
 
 				<View style={styles.feeContainer}>
@@ -530,7 +539,7 @@ const CreateCollectionPage = () => {
 								: 'Create Collection'}
 					</Text>
 				</TouchableOpacity>
-			</ScrollView>
+			</KeyboardAvoidingWrapper>
 		</View>
 	);
 };
@@ -539,7 +548,6 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: '#fff',
-		padding: wp(4),
 	},
 	formGroup: {
 		marginBottom: hp(1.5),

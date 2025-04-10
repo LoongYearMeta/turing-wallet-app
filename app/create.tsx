@@ -45,19 +45,18 @@ const CreatePage = () => {
 	const router = useRouter();
 
 	const validatePassword = (password: string) => {
-		if (password.length < 12) {
-			showToast('error', 'Password must be at least 12 characters long');
+		if (password.length < 10) {
+			showToast('error', 'Password must be at least 10 characters long');
 			return false;
 		}
 		const hasUpperCase = /[A-Z]/.test(password);
 		const hasLowerCase = /[a-z]/.test(password);
 		const hasNumbers = /[0-9]/.test(password);
-		const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(password);
 
-		if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+		if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
 			showToast(
 				'error',
-				'Password must contain uppercase letters, lowercase letters, numbers, and special characters',
+				'Password must contain uppercase letters, lowercase letters, and numbers',
 			);
 			return false;
 		}
@@ -261,10 +260,10 @@ const CreatePage = () => {
 								<Text style={styles.description}>
 									Please set a password to protect your wallet.
 									{'\n\n'}The password must:
-									{'\n\n'}- Be at least 12 characters long
-									{'\n\n'}- Include uppercase letters, lowercase letters, numbers, and special
-									characters
+									{'\n\n'}- Be at least 10 characters long
+									{'\n\n'}- Include uppercase letters, lowercase letters, and numbers
 									{'\n\n'}- Not contain three consecutive identical characters
+									{'\n\n'}Special characters are optional.
 									{'\n\n'}Once you forget it, you can set a new one by re-importing your wallet.
 								</Text>
 							)}

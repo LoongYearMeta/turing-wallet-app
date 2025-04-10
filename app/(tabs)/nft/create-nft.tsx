@@ -25,6 +25,7 @@ import { addNFT, getCollection } from '@/utils/sqlite';
 import { theme } from '@/lib/theme';
 import { fetchNFTCounts_byCollection } from '@/actions/get-nfts';
 import { fetchUTXOs } from '@/actions/get-utxos';
+import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
 
 interface FormData {
 	name: string;
@@ -384,7 +385,10 @@ const CreateNFTPage = () => {
 
 	return (
 		<View style={styles.container}>
-			<ScrollView showsVerticalScrollIndicator={false}>
+			<KeyboardAvoidingWrapper 
+				contentContainerStyle={{ padding: wp(4) }}
+				backgroundColor="#fff"
+			>
 				<View style={styles.formGroup}>
 					<Text style={styles.label}>NFT Name</Text>
 					<View style={styles.inputWrapper}>
@@ -520,7 +524,7 @@ const CreateNFTPage = () => {
 						{isCreating ? 'Creating...' : isCalculatingFee ? 'Calculating Fee...' : 'Create NFT'}
 					</Text>
 				</TouchableOpacity>
-			</ScrollView>
+			</KeyboardAvoidingWrapper>
 		</View>
 	);
 };

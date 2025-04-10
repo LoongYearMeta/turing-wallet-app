@@ -24,6 +24,7 @@ import { theme } from '@/lib/theme';
 import { formatBalance } from '@/lib/util';
 import { getActiveMultiSigs } from '@/utils/sqlite';
 import { fetchFTs_multiSig } from '@/actions/get-fts';
+import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
 
 interface FormData {
 	senderAddress: string;
@@ -137,17 +138,17 @@ export default function InitiateMultiSigTransactionPage() {
 	};
 
 	const handleSelectMultiSigAddress = async (address: string) => {
-		setFormData((prev) => ({ 
-			...prev, 
+		setFormData((prev) => ({
+			...prev,
 			senderAddress: address,
-			asset: '',  // 重置资产
-			amount: ''  // 重置金额
+			asset: '',
+			amount: '',
 		}));
 		setSelectedAsset(null);
-		setFormErrors((prev) => ({ 
-			...prev, 
+		setFormErrors((prev) => ({
+			...prev,
 			asset: '',
-			amount: '' 
+			amount: '',
 		}));
 		await loadAssets(address);
 	};
@@ -159,14 +160,14 @@ export default function InitiateMultiSigTransactionPage() {
 
 	const handleAssetSelect = (asset: Asset) => {
 		setSelectedAsset(asset);
-		setFormData((prev) => ({ 
-			...prev, 
+		setFormData((prev) => ({
+			...prev,
 			asset: asset.value,
-			amount: ''  // 重置金额
+			amount: '',
 		}));
 		setFormErrors((prev) => ({
 			...prev,
-			amount: ''
+			amount: '',
 		}));
 	};
 
@@ -190,7 +191,6 @@ export default function InitiateMultiSigTransactionPage() {
 
 	const debouncedReceiverAddressValidation = useCallback(
 		debounce(async (address: string) => {
-			// 这里可以添加地址验证逻辑
 			const error = address ? '' : 'Receiver address is required';
 			setFormErrors((prev) => ({ ...prev, receiverAddress: error }));
 		}, 1500),
@@ -199,19 +199,19 @@ export default function InitiateMultiSigTransactionPage() {
 
 	const handleInputChange = (field: keyof FormData, value: string) => {
 		if (field === 'password') {
-			value = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
-		}
+			const cleanValue = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
+			setFormData((prev) => ({ ...prev, password: cleanValue }));
+			setFormErrors((prev) => ({ ...prev, password: undefined }));
+		} else {
+			setFormData((prev) => ({ ...prev, [field]: value }));
 
-		const updatedFormData = { ...formData, [field]: value };
-		setFormData(updatedFormData);
+			setFormErrors((prev) => ({ ...prev, [field]: '' }));
 
-		// 清除当前字段的错误
-		setFormErrors((prev) => ({ ...prev, [field]: '' }));
-
-		if (field === 'amount') {
-			debouncedAmountValidation(value);
-		} else if (field === 'receiverAddress') {
-			debouncedReceiverAddressValidation(value);
+			if (field === 'amount') {
+				debouncedAmountValidation(value);
+			} else if (field === 'receiverAddress') {
+				debouncedReceiverAddressValidation(value);
+			}
 		}
 	};
 
@@ -254,17 +254,15 @@ export default function InitiateMultiSigTransactionPage() {
 			return;
 		}
 
+		const isPasswordValid = verifyPassword(formData.password, passKey, salt);
+		if (!isPasswordValid) {
+			setFormErrors((prev) => ({ ...prev, password: 'Invalid password' }));
+			return;
+		}
+
 		setIsLoading(true);
 
 		try {
-			const isPasswordValid = verifyPassword(formData.password, passKey, salt);
-
-			if (!isPasswordValid) {
-				setFormErrors((prev) => ({ ...prev, password: 'Invalid password' }));
-				setIsLoading(false);
-				return;
-			}
-
 			const contractId = selectedAsset?.value !== 'TBC' ? selectedAsset?.contractId : undefined;
 
 			await createMultiSigTransaction(
@@ -297,8 +295,7 @@ export default function InitiateMultiSigTransactionPage() {
 	};
 
 	return (
-		<View style={styles.container}>
-
+		<KeyboardAvoidingWrapper contentContainerStyle={styles.container} backgroundColor="#fff">
 			<View style={styles.inputGroup}>
 				<View style={styles.labelRow}>
 					<Text style={styles.label}>From</Text>
@@ -336,9 +333,7 @@ export default function InitiateMultiSigTransactionPage() {
 			<View style={styles.inputGroup}>
 				<View style={styles.labelRow}>
 					<Text style={styles.label}>To</Text>
-					<TouchableOpacity
-						onPress={() => setShowAddressSelector(true)}
-					>
+					<TouchableOpacity onPress={() => setShowAddressSelector(true)}>
 						<MaterialIcons name="contacts" size={24} color="#666" />
 					</TouchableOpacity>
 				</View>
@@ -401,10 +396,7 @@ export default function InitiateMultiSigTransactionPage() {
 					<TextInput
 						style={[styles.input, formErrors.password && styles.inputError]}
 						value={formData.password}
-						onChangeText={(text) => {
-							setFormData((prev) => ({ ...prev, password: text }));
-							setFormErrors((prev) => ({ ...prev, password: undefined }));
-						}}
+						onChangeText={(text) => handleInputChange('password', text)}
 						placeholder="Enter your password"
 						secureTextEntry
 					/>
@@ -454,7 +446,7 @@ export default function InitiateMultiSigTransactionPage() {
 				onSelect={handleSelectReceiverAddress}
 				userAddress={currentAddress}
 			/>
-		</View>
+		</KeyboardAvoidingWrapper>
 	);
 }
 
@@ -498,7 +490,7 @@ const styles = StyleSheet.create({
 		paddingVertical: hp(1.5),
 		fontSize: hp(1.6),
 		backgroundColor: '#f8f8f8',
-		paddingRight: wp(10), 
+		paddingRight: wp(10),
 	},
 	inputText: {
 		fontSize: hp(1.6),

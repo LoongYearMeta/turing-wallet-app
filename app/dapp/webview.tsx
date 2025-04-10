@@ -8,10 +8,11 @@ import {
 	TouchableOpacity,
 	View,
 	ActivityIndicator,
+	KeyboardAvoidingView,
+	Platform,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { WebView } from 'react-native-webview';
-import { debounce } from 'lodash';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { useAccount } from '@/hooks/useAccount';
@@ -156,50 +157,10 @@ export default function DAppWebView() {
     true;
   `;
 
-	const debouncedPasswordValidation = useCallback(
-		debounce(async (password: string) => {
-			if (!password) {
-				setFormErrors({ password: 'Password is required', isValid: false });
-				return;
-			}
-
-			const encryptedPass = getPassKey();
-			const salt = getSalt();
-
-			if (!encryptedPass || !salt) {
-				setFormErrors({
-					password: 'Account error, please try again',
-					isValid: false,
-				});
-				return;
-			}
-
-			try {
-				const isValid = verifyPassword(password, encryptedPass, salt);
-				if (isValid) {
-					setFormErrors({ isValid: true });
-				} else {
-					setFormErrors({
-						password: 'Incorrect password',
-						isValid: false,
-					});
-				}
-			} catch (error) {
-				console.error('Password validation error:', error);
-				setFormErrors({
-					password: 'Incorrect password',
-					isValid: false,
-				});
-			}
-		}, 1500),
-		[getPassKey, getSalt],
-	);
-
 	const handlePasswordChange = (value: string) => {
 		value = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
-		setFormErrors({ isValid: false });
 		setPassword(value);
-		debouncedPasswordValidation(value);
+		setFormErrors({});
 	};
 
 	const processTransaction = async () => {
@@ -417,10 +378,36 @@ export default function DAppWebView() {
 	};
 
 	const handleSubmitTransaction = async () => {
-		setIsProcessing(true);
-		try {
-			const response = await processTransaction();
+		if (!password) {
+			setFormErrors({ password: 'Password is required', isValid: false });
+			return;
+		}
 
+		const encryptedPass = getPassKey();
+		const salt = getSalt();
+
+		if (!encryptedPass || !salt) {
+			setFormErrors({
+				password: 'Account error, please try again',
+				isValid: false,
+			});
+			return;
+		}
+
+		try {
+			const isValid = verifyPassword(password, encryptedPass, salt);
+			if (!isValid) {
+				setFormErrors({
+					password: 'Incorrect password',
+					isValid: false,
+				});
+				return;
+			}
+			
+			setIsProcessing(true);
+			const response = await processTransaction();
+			
+			// 返回结果给 DApp
 			webViewRef.current?.injectJavaScript(`
 				window.dispatchEvent(new CustomEvent('TuringResponse', {
 					detail: { 
@@ -432,19 +419,34 @@ export default function DAppWebView() {
 
 			if (!response?.error) {
 				setShowTransactionForm(false);
-				setPassword('');
 				setCurrentRequest([]);
+				setPassword('');
+				setFormErrors({});
+			} else {
+				Toast.show({
+					type: 'error',
+					text1: 'Transaction Failed',
+					text2: response.error,
+				});
 			}
-		} catch (error: any) {
+		} catch (error) {
 			console.error('Transaction error:', error);
+			
+			// 返回错误给 DApp
 			webViewRef.current?.injectJavaScript(`
 				window.dispatchEvent(new CustomEvent('TuringResponse', {
 					detail: { 
 						method: 'sendTransaction', 
-						result: { error: '${error.message}' }
+						result: { error: '${error instanceof Error ? error.message : 'Unknown error'}' }
 					}
 				}));
 			`);
+			
+			Toast.show({
+				type: 'error',
+				text1: 'Transaction Failed',
+				text2: error instanceof Error ? error.message : 'Unknown error',
+			});
 		} finally {
 			setIsProcessing(false);
 		}
@@ -569,81 +571,91 @@ export default function DAppWebView() {
 			/>
 			{showTransactionForm && (
 				<View style={styles.modalOverlay}>
-					<View style={styles.formContainer}>
-						{isProcessing ? (
-							<View style={styles.loadingContainer}>
-								<ActivityIndicator size="large" color="#fff" />
-								<Text style={styles.loadingText}>Processing transaction...</Text>
-							</View>
-						) : (
-							<>
-								<View style={styles.formHeader}>
-									<Text style={styles.formTitle}>Transaction Request</Text>
-									<Text style={styles.formSubtitle}>Type: {currentRequest[0]?.flag}</Text>
-								</View>
-
-								<ScrollView style={styles.paramsContainer}>
-									{Object.entries(currentRequest[0] || {}).map(([key, value]) =>
-										key !== 'flag' ? renderParameter(key, value) : null,
-									)}
-								</ScrollView>
-
-								<View style={styles.passwordContainer}>
-									<Text style={styles.passwordLabel}>Enter your password to confirm:</Text>
-									<View style={styles.inputWrapper}>
-										<TextInput
-											style={[styles.passwordInput, formErrors.password && styles.inputError]}
-											value={password}
-											onChangeText={handlePasswordChange}
-											secureTextEntry
-											placeholder="Password"
-											placeholderTextColor="#999"
-										/>
-										{password.length > 0 && (
-											<TouchableOpacity
-												style={styles.clearButton}
-												onPress={() => {
-													setPassword('');
-													setFormErrors({});
-												}}
-											>
-												<MaterialIcons name="close" size={20} color="#999" />
-											</TouchableOpacity>
-										)}
+					<KeyboardAvoidingView 
+						behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+						style={{ flex: 1 }}
+					>
+						<ScrollView 
+							contentContainerStyle={{ flexGrow: 1 }}
+							keyboardShouldPersistTaps="handled"
+						>
+							<View style={styles.formContainer}>
+								{isProcessing ? (
+									<View style={styles.loadingContainer}>
+										<ActivityIndicator size="large" color="#fff" />
+										<Text style={styles.loadingText}>Processing transaction...</Text>
 									</View>
-									{formErrors.password && (
-										<Text style={styles.errorText}>{formErrors.password}</Text>
-									)}
-								</View>
+								) : (
+									<>
+										<View style={styles.formHeader}>
+											<Text style={styles.formTitle}>Transaction Request</Text>
+											<Text style={styles.formSubtitle}>Type: {currentRequest[0]?.flag}</Text>
+										</View>
 
-								<View style={styles.buttonContainer}>
-									<TouchableOpacity
-										style={[styles.button, styles.cancelButton]}
-										onPress={handleCancelTransaction}
-									>
-										<Text style={styles.buttonText}>Cancel</Text>
-									</TouchableOpacity>
-									<TouchableOpacity
-										style={[
-											styles.button,
-											formErrors.isValid ? styles.confirmButton : styles.disabledButton,
-										]}
-										onPress={handleSubmitTransaction}
-										disabled={!formErrors.isValid}
-									>
-										<Text
-											style={[
-												styles.buttonText,
-												formErrors.isValid ? styles.confirmButtonText : styles.disabledButtonText,
-											]}
-										>
-											Confirm
-										</Text>
-									</TouchableOpacity>
-								</View>
-							</>
-						)}
-					</View>
+										<ScrollView style={styles.paramsContainer}>
+											{Object.entries(currentRequest[0] || {}).map(([key, value]) =>
+												key !== 'flag' ? renderParameter(key, value) : null,
+											)}
+										</ScrollView>
+
+										<View style={styles.passwordContainer}>
+											<Text style={styles.passwordLabel}>Enter your password to confirm:</Text>
+											<View style={styles.inputWrapper}>
+												<TextInput
+													style={[styles.passwordInput, formErrors.password && styles.inputError]}
+													value={password}
+													onChangeText={handlePasswordChange}
+													secureTextEntry
+													placeholder="Password"
+													placeholderTextColor="#999"
+												/>
+												{password.length > 0 && (
+													<TouchableOpacity
+														style={styles.clearButton}
+														onPress={() => {
+															setPassword('');
+															setFormErrors({});
+														}}
+													>
+														<MaterialIcons name="close" size={20} color="#999" />
+													</TouchableOpacity>
+												)}
+											</View>
+											{formErrors.password && (
+												<Text style={styles.errorText}>{formErrors.password}</Text>
+											)}
+										</View>
+
+										<View style={styles.buttonContainer}>
+											<TouchableOpacity
+												style={[styles.button, styles.cancelButton]}
+												onPress={handleCancelTransaction}
+											>
+												<Text style={styles.buttonText}>Cancel</Text>
+											</TouchableOpacity>
+											<TouchableOpacity
+												style={[
+													styles.button,
+													password.length > 0 ? styles.confirmButton : styles.disabledButton,
+												]}
+												onPress={handleSubmitTransaction}
+												disabled={password.length === 0}
+											>
+												<Text
+													style={[
+														styles.buttonText,
+														password.length > 0 ? styles.confirmButtonText : styles.disabledButtonText,
+													]}
+												>
+													Confirm
+												</Text>
+											</TouchableOpacity>
+										</View>
+									</>
+								)}
+							</View>
+						</ScrollView>
+					</KeyboardAvoidingView>
 				</View>
 			)}
 		</View>

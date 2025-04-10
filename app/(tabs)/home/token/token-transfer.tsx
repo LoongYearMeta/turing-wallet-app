@@ -21,6 +21,7 @@ import { verifyPassword } from '@/lib/key';
 import { formatFee } from '@/lib/util';
 import { getFT, removeFT, transferFT, upsertFT } from '@/utils/sqlite';
 import { fetchUTXOs } from '@/actions/get-utxos';
+import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
 
 interface FormData {
 	addressTo: string;
@@ -348,119 +349,124 @@ const TokenTransferPage = () => {
 	};
 
 	return (
-		<View style={styles.container}>
+		<KeyboardAvoidingWrapper 
+			contentContainerStyle={styles.container}
+			backgroundColor="#fff"
+		>
 			<View style={styles.inputGroup}>
-				<View style={styles.labelRow}>
-					<Text style={styles.label}>Recipient Address</Text>
-					<TouchableOpacity onPress={() => setShowAddressSelector(true)}>
-						<Ionicons name="book-outline" size={20} color="#333" />
-					</TouchableOpacity>
-				</View>
-				<View style={styles.inputWrapper}>
-					<TextInput
-						style={[styles.input, formErrors.addressTo && styles.inputError]}
-						value={formData.addressTo}
-						onChangeText={(text) => handleInputChange('addressTo', text)}
-						placeholder="Enter recipient address"
-						autoCapitalize="none"
-						autoCorrect={false}
-					/>
-					{formData.addressTo.length > 0 && (
-						<TouchableOpacity
-							style={styles.clearButton}
-							onPress={() => handleClearField('addressTo')}
-						>
-							<MaterialIcons name="close" size={20} color="#666" />
+				<View style={styles.inputGroup}>
+					<View style={styles.labelRow}>
+						<Text style={styles.label}>Recipient Address</Text>
+						<TouchableOpacity onPress={() => setShowAddressSelector(true)}>
+							<Ionicons name="book-outline" size={20} color="#333" />
 						</TouchableOpacity>
-					)}
+					</View>
+					<View style={styles.inputWrapper}>
+						<TextInput
+							style={[styles.input, formErrors.addressTo && styles.inputError]}
+							value={formData.addressTo}
+							onChangeText={(text) => handleInputChange('addressTo', text)}
+							placeholder="Enter recipient address"
+							autoCapitalize="none"
+							autoCorrect={false}
+						/>
+						{formData.addressTo.length > 0 && (
+							<TouchableOpacity
+								style={styles.clearButton}
+								onPress={() => handleClearField('addressTo')}
+							>
+								<MaterialIcons name="close" size={20} color="#666" />
+							</TouchableOpacity>
+						)}
+					</View>
+					{formErrors.addressTo && <Text style={styles.errorText}>{formErrors.addressTo}</Text>}
 				</View>
-				{formErrors.addressTo && <Text style={styles.errorText}>{formErrors.addressTo}</Text>}
-			</View>
 
-			<View style={styles.inputGroup}>
-				<Text style={styles.label}>Amount</Text>
-				<View style={styles.inputWrapper}>
-					<TextInput
-						style={[styles.input, formErrors.amount && styles.inputError]}
-						value={formData.amount}
-						onChangeText={(text) => handleInputChange('amount', text)}
-						placeholder="Enter amount"
-						keyboardType="decimal-pad"
-						autoCapitalize="none"
-						autoCorrect={false}
-					/>
-					{formData.amount.length > 0 && (
-						<TouchableOpacity style={styles.clearButton} onPress={() => handleClearField('amount')}>
-							<MaterialIcons name="close" size={20} color="#666" />
-						</TouchableOpacity>
-					)}
-				</View>
-				{formErrors.amount ? (
-					<Text style={styles.errorText}>{formErrors.amount}</Text>
-				) : (
-					<Text style={styles.balanceText}>Available: {availableAmount}</Text>
-				)}
-			</View>
-
-			<View style={styles.inputGroup}>
-				<Text style={styles.label}>Password</Text>
-				<View style={styles.inputWrapper}>
-					<TextInput
-						style={[styles.input, formErrors.password && styles.inputError]}
-						value={formData.password}
-						onChangeText={(text) => handleInputChange('password', text)}
-						placeholder="Enter your password"
-						secureTextEntry={true}
-						autoCapitalize="none"
-						autoCorrect={false}
-					/>
-					{formData.password.length > 0 && (
-						<TouchableOpacity
-							style={styles.clearButton}
-							onPress={() => handleClearField('password')}
-						>
-							<MaterialIcons name="close" size={20} color="#666" />
-						</TouchableOpacity>
-					)}
-				</View>
-				{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
-			</View>
-
-			<View style={styles.divider} />
-			<View style={styles.feeContainer}>
-				<Text style={styles.feeLabel}>Estimated Fee: </Text>
-				<View style={styles.feeValueContainer}>
-					{isCalculatingFee ? (
-						<ActivityIndicator size="small" color="#666" />
+				<View style={styles.inputGroup}>
+					<Text style={styles.label}>Amount</Text>
+					<View style={styles.inputWrapper}>
+						<TextInput
+							style={[styles.input, formErrors.amount && styles.inputError]}
+							value={formData.amount}
+							onChangeText={(text) => handleInputChange('amount', text)}
+							placeholder="Enter amount"
+							keyboardType="decimal-pad"
+							autoCapitalize="none"
+							autoCorrect={false}
+						/>
+						{formData.amount.length > 0 && (
+							<TouchableOpacity style={styles.clearButton} onPress={() => handleClearField('amount')}>
+								<MaterialIcons name="close" size={20} color="#666" />
+							</TouchableOpacity>
+						)}
+					</View>
+					{formErrors.amount ? (
+						<Text style={styles.errorText}>{formErrors.amount}</Text>
 					) : (
-						estimatedFee !== null && (
-							<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
-						)
+						<Text style={styles.balanceText}>Available: {availableAmount}</Text>
 					)}
 				</View>
+
+				<View style={styles.inputGroup}>
+					<Text style={styles.label}>Password</Text>
+					<View style={styles.inputWrapper}>
+						<TextInput
+							style={[styles.input, formErrors.password && styles.inputError]}
+							value={formData.password}
+							onChangeText={(text) => handleInputChange('password', text)}
+							placeholder="Enter your password"
+							secureTextEntry={true}
+							autoCapitalize="none"
+							autoCorrect={false}
+						/>
+						{formData.password.length > 0 && (
+							<TouchableOpacity
+								style={styles.clearButton}
+								onPress={() => handleClearField('password')}
+							>
+								<MaterialIcons name="close" size={20} color="#666" />
+							</TouchableOpacity>
+						)}
+					</View>
+					{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
+				</View>
+
+				<View style={styles.divider} />
+				<View style={styles.feeContainer}>
+					<Text style={styles.feeLabel}>Estimated Fee: </Text>
+					<View style={styles.feeValueContainer}>
+						{isCalculatingFee ? (
+							<ActivityIndicator size="small" color="#666" />
+						) : (
+							estimatedFee !== null && (
+								<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
+							)
+						)}
+					</View>
+				</View>
+
+				<TouchableOpacity
+					style={[
+						styles.transferButton,
+						(!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee) &&
+							styles.transferButtonDisabled,
+					]}
+					onPress={handleSubmit}
+					disabled={!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee}
+				>
+					<Text style={styles.transferButtonText}>
+						{isCalculatingFee ? 'Calculating Fee...' : 'Transfer'}
+					</Text>
+				</TouchableOpacity>
+
+				<AddressSelector
+					visible={showAddressSelector}
+					onClose={() => setShowAddressSelector(false)}
+					onSelect={handleSelectAddress}
+					userAddress={currentAddress}
+				/>
 			</View>
-
-			<TouchableOpacity
-				style={[
-					styles.transferButton,
-					(!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee) &&
-						styles.transferButtonDisabled,
-				]}
-				onPress={handleSubmit}
-				disabled={!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee}
-			>
-				<Text style={styles.transferButtonText}>
-					{isCalculatingFee ? 'Calculating Fee...' : 'Transfer'}
-				</Text>
-			</TouchableOpacity>
-
-			<AddressSelector
-				visible={showAddressSelector}
-				onClose={() => setShowAddressSelector(false)}
-				onSelect={handleSelectAddress}
-				userAddress={currentAddress}
-			/>
-		</View>
+		</KeyboardAvoidingWrapper>
 	);
 };
 

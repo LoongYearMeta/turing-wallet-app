@@ -16,7 +16,7 @@ import { Navbar } from '@/components/ui/navbar';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { useAccount } from '@/hooks/useAccount';
 import { hp } from '@/lib/common';
-import { 
+import {
 	getActiveFTs,
 	getAllFTPublics,
 	removeFTPublic,
@@ -60,7 +60,7 @@ export default function HomePage() {
 			} else {
 				loadAddedTokens();
 			}
-		}, [activeTab])
+		}, [activeTab]),
 	);
 
 	const loadOwnedTokens = async () => {

@@ -49,19 +49,18 @@ const RestoreByPriKeyPage = () => {
 	const hasExistingAccount = passKey && salt;
 
 	const validatePassword = (password: string) => {
-		if (password.length < 12) {
-			showToast('error', 'Password must be at least 12 characters long');
+		if (password.length < 10) {
+			showToast('error', 'Password must be at least 10 characters long');
 			return false;
 		}
 		const hasUpperCase = /[A-Z]/.test(password);
 		const hasLowerCase = /[a-z]/.test(password);
 		const hasNumbers = /[0-9]/.test(password);
-		const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(password);
 
-		if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+		if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
 			showToast(
 				'error',
-				'Password must contain uppercase letters, lowercase letters, numbers, and special characters',
+				'Password must contain uppercase letters, lowercase letters, and numbers',
 			);
 			return false;
 		}
@@ -305,15 +304,12 @@ const RestoreByPriKeyPage = () => {
 						</View>
 						<View style={styles.form}>
 							<Text style={styles.description}>
-								Please enter your private key{hasExistingAccount ? '' : ' and set a password'} to
-								restore your wallet.
-								{!hasExistingAccount &&
-									`
-									\nThe password must:
-									\n- Be at least 12 characters long
-									\n- Include uppercase letters, lowercase letters, numbers, and special characters
-									\n- Not contain three consecutive identical characters
-								`}
+								Please set a password to protect your wallet.
+								{'\n\n'}The password must:
+								{'\n\n'}- Be at least 10 characters long
+								{'\n\n'}- Include uppercase letters, lowercase letters, and numbers
+								{'\n\n'}- Not contain three consecutive identical characters
+								{'\n\n'}Special characters are optional.
 							</Text>
 
 							<View style={styles.inputGroup}>
