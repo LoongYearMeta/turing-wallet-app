@@ -6,7 +6,6 @@ import React, { useCallback, useState, useEffect } from 'react';
 import {
 	ActivityIndicator,
 	Image,
-	ScrollView,
 	StyleSheet,
 	Text,
 	TextInput,

@@ -9,6 +9,9 @@ import {
 	TextInput,
 	TouchableOpacity,
 	View,
+	ScrollView,
+	KeyboardAvoidingView,
+	Platform,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 
@@ -25,7 +28,6 @@ import { getActiveFTs, getFT, removeFT, transferFT, upsertFT, type FT } from '@/
 import { fetchUTXOs } from '@/actions/get-utxos';
 import { AccountType } from '@/types';
 import { theme } from '@/lib/theme';
-import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
 
 interface FormData {
 	asset: string;
@@ -179,38 +181,6 @@ export default function SendPage() {
 		return '';
 	};
 
-	const debouncedPasswordValidation = useCallback(
-		debounce(async (password: string) => {
-			if (!password) {
-				setFormErrors((prev) => ({ ...prev, password: 'Password is required' }));
-				return;
-			}
-
-			if (!passKey || !salt) {
-				setFormErrors((prev) => ({
-					...prev,
-					password: 'Account error, please try again',
-				}));
-				return;
-			}
-
-			try {
-				const isValid = verifyPassword(password, passKey, salt);
-				setFormErrors((prev) => ({
-					...prev,
-					password: isValid ? '' : 'Incorrect password',
-				}));
-			} catch (error) {
-				console.error('Password validation error:', error);
-				setFormErrors((prev) => ({
-					...prev,
-					password: 'Incorrect password',
-				}));
-			}
-		}, 1500),
-		[getPassKey, getSalt],
-	);
-
 	const debouncedAddressValidation = useCallback(
 		debounce(async (address: string) => {
 			const error = validateAddress(address);
@@ -241,8 +211,6 @@ export default function SendPage() {
 			debouncedAddressValidation(value);
 		} else if (field === 'amount') {
 			debouncedAmountValidation(value);
-		} else if (field === 'password') {
-			debouncedPasswordValidation(value);
 		}
 	};
 
@@ -395,6 +363,17 @@ export default function SendPage() {
 		}
 
 		try {
+			if (!formData.password) {
+				setFormErrors(prev => ({ ...prev, password: 'Password is required' }));
+				return;
+			}
+			
+			const isPasswordValid = verifyPassword(formData.password, passKey, salt);
+			if (!isPasswordValid) {
+				setFormErrors(prev => ({ ...prev, password: 'Incorrect password' }));
+				return;
+			}
+
 			if (accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY) {
 				await broadcastTransaction(pendingTransaction.txHex);
 			} else {
@@ -496,174 +475,181 @@ export default function SendPage() {
 	};
 
 	return (
-		<KeyboardAvoidingWrapper 
-			contentContainerStyle={styles.container}
-			backgroundColor="#fff"
+		<KeyboardAvoidingView
+			style={{ flex: 1, backgroundColor: '#fff' }}
+			behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+			keyboardVerticalOffset={100}
 		>
-			<View style={styles.inputGroup}>
-				<View style={styles.labelRow}>
-					<Text style={styles.label}>Asset</Text>
-					{(accountType === AccountType.TBC || accountType === AccountType.TAPROOT_LEGACY) && (
-						<TouchableOpacity onPress={() => setShowAssetSelector(true)}>
-							<MaterialIcons
-								name="account-balance-wallet"
-								size={24}
-								color={theme.colors.primary}
-							/>
-						</TouchableOpacity>
-					)}
-				</View>
-				{selectedAsset && (
-					<View style={styles.selectedAssetWrapper}>
-						<TouchableOpacity
-							onPress={() => setShowAssetSelector(true)}
-							style={{ flex: 1 }}
-							disabled={
-								accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY
-							}
-						>
-							<Text style={styles.selectedAssetText}>
-								{selectedAsset.label}:{' '}
-								{selectedAsset.value === 'BTC'
-									? formatBalance_btc(selectedAsset.balance)
-									: formatBalance(selectedAsset.balance)}
-							</Text>
-						</TouchableOpacity>
+			<ScrollView 
+				style={{ flex: 1 }}
+				contentContainerStyle={{ padding: wp(4), paddingTop: hp(3) }}
+				keyboardShouldPersistTaps="handled"
+			>
+				<View style={styles.inputGroup}>
+					<View style={styles.labelRow}>
+						<Text style={styles.label}>Asset</Text>
+						{(accountType === AccountType.TBC || accountType === AccountType.TAPROOT_LEGACY) && (
+							<TouchableOpacity onPress={() => setShowAssetSelector(true)}>
+								<MaterialIcons
+									name="account-balance-wallet"
+									size={24}
+									color={theme.colors.primary}
+								/>
+							</TouchableOpacity>
+						)}
 					</View>
-				)}
-			</View>
-
-			<View style={styles.inputGroup}>
-				<View style={styles.labelRow}>
-					<Text style={styles.label}>Recipient Address</Text>
-					<TouchableOpacity onPress={() => setShowAddressSelector(true)}>
-						<Ionicons name="book-outline" size={20} color="#333" />
-					</TouchableOpacity>
-				</View>
-				<View style={styles.inputWrapper}>
-					<TextInput
-						style={[
-							styles.input,
-							formErrors.addressTo && styles.inputError,
-							formData.addressTo.length > 0 && { color: 'transparent' },
-						]}
-						value={formData.addressTo}
-						onChangeText={(text) => handleInputChange('addressTo', text)}
-						placeholder="Enter recipient address"
-						autoCapitalize="none"
-						autoCorrect={false}
-					/>
-					{formData.addressTo.length > 0 && (
-						<View
-							style={[
-								styles.addressPreviewContainer,
-								formErrors.addressTo && styles.inputError,
-							]}
-						>
-							<Text style={styles.addressPreview} numberOfLines={1}>
-								{formatDisplayAddress(formData.addressTo)}
-							</Text>
+					{selectedAsset && (
+						<View style={styles.selectedAssetWrapper}>
+							<TouchableOpacity
+								onPress={() => setShowAssetSelector(true)}
+								style={{ flex: 1 }}
+								disabled={
+									accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY
+								}
+							>
+								<Text style={styles.selectedAssetText}>
+									{selectedAsset.label}:{' '}
+									{selectedAsset.value === 'BTC'
+										? formatBalance_btc(selectedAsset.balance)
+										: formatBalance(selectedAsset.balance)}
+								</Text>
+							</TouchableOpacity>
 						</View>
 					)}
-					{formData.addressTo.length > 0 && (
-						<TouchableOpacity
-							style={styles.clearButton}
-							onPress={() => handleClearField('addressTo')}
-						>
-							<MaterialIcons name="close" size={20} color="#666" />
+				</View>
+
+				<View style={styles.inputGroup}>
+					<View style={styles.labelRow}>
+						<Text style={styles.label}>Recipient Address</Text>
+						<TouchableOpacity onPress={() => setShowAddressSelector(true)}>
+							<Ionicons name="book-outline" size={20} color="#333" />
 						</TouchableOpacity>
-					)}
+					</View>
+					<View style={styles.inputWrapper}>
+						<TextInput
+							style={[
+								styles.input,
+								formErrors.addressTo && styles.inputError,
+								formData.addressTo.length > 0 && { color: 'transparent' },
+							]}
+							value={formData.addressTo}
+							onChangeText={(text) => handleInputChange('addressTo', text)}
+							placeholder="Enter recipient address"
+							autoCapitalize="none"
+							autoCorrect={false}
+						/>
+						{formData.addressTo.length > 0 && (
+							<View
+								style={[
+									styles.addressPreviewContainer,
+									formErrors.addressTo && styles.inputError,
+								]}
+							>
+								<Text style={styles.addressPreview} numberOfLines={1}>
+									{formatDisplayAddress(formData.addressTo)}
+								</Text>
+							</View>
+						)}
+						{formData.addressTo.length > 0 && (
+							<TouchableOpacity
+								style={styles.clearButton}
+								onPress={() => handleClearField('addressTo')}
+							>
+								<MaterialIcons name="close" size={20} color="#666" />
+							</TouchableOpacity>
+						)}
+					</View>
+					{formErrors.addressTo && <Text style={styles.errorText}>{formErrors.addressTo}</Text>}
 				</View>
-				{formErrors.addressTo && <Text style={styles.errorText}>{formErrors.addressTo}</Text>}
-			</View>
 
-			<View style={styles.inputGroup}>
-				<Text style={styles.label}>Amount</Text>
-				<View style={styles.inputWrapper}>
-					<TextInput
-						style={[styles.input, formErrors.amount && styles.inputError]}
-						value={formData.amount}
-						onChangeText={(text) => handleInputChange('amount', text)}
-						placeholder="Enter amount"
-						keyboardType="decimal-pad"
-						autoCapitalize="none"
-						autoCorrect={false}
-					/>
-					{formData.amount.length > 0 && (
-						<TouchableOpacity
-							style={styles.clearButton}
-							onPress={() => handleClearField('amount')}
-						>
-							<MaterialIcons name="close" size={20} color="#666" />
-						</TouchableOpacity>
-					)}
+				<View style={styles.inputGroup}>
+					<Text style={styles.label}>Amount</Text>
+					<View style={styles.inputWrapper}>
+						<TextInput
+							style={[styles.input, formErrors.amount && styles.inputError]}
+							value={formData.amount}
+							onChangeText={(text) => handleInputChange('amount', text)}
+							placeholder="Enter amount"
+							keyboardType="decimal-pad"
+							autoCapitalize="none"
+							autoCorrect={false}
+						/>
+						{formData.amount.length > 0 && (
+							<TouchableOpacity
+								style={styles.clearButton}
+								onPress={() => handleClearField('amount')}
+							>
+								<MaterialIcons name="close" size={20} color="#666" />
+							</TouchableOpacity>
+						)}
+					</View>
+					{formErrors.amount && <Text style={styles.errorText}>{formErrors.amount}</Text>}
 				</View>
-				{formErrors.amount && <Text style={styles.errorText}>{formErrors.amount}</Text>}
-			</View>
 
-			<View style={styles.inputGroup}>
-				<Text style={styles.label}>Password</Text>
-				<View style={styles.inputWrapper}>
-					<TextInput
-						style={[styles.input, formErrors.password && styles.inputError]}
-						value={formData.password}
-						onChangeText={(text) => handleInputChange('password', text)}
-						placeholder="Enter your password"
-						secureTextEntry={true}
-						autoCapitalize="none"
-						autoCorrect={false}
-					/>
-					{formData.password.length > 0 && (
-						<TouchableOpacity
-							style={styles.clearButton}
-							onPress={() => handleClearField('password')}
-						>
-							<MaterialIcons name="close" size={20} color="#666" />
-						</TouchableOpacity>
-					)}
+				<View style={styles.inputGroup}>
+					<Text style={styles.label}>Password</Text>
+					<View style={styles.inputWrapper}>
+						<TextInput
+							style={[styles.input, formErrors.password && styles.inputError]}
+							value={formData.password}
+							onChangeText={(text) => handleInputChange('password', text)}
+							placeholder="Enter your password"
+							secureTextEntry={true}
+							autoCapitalize="none"
+							autoCorrect={false}
+						/>
+						{formData.password.length > 0 && (
+							<TouchableOpacity
+								style={styles.clearButton}
+								onPress={() => handleClearField('password')}
+							>
+								<MaterialIcons name="close" size={20} color="#666" />
+							</TouchableOpacity>
+						)}
+					</View>
+					{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
 				</View>
-				{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
-			</View>
 
-			<View style={styles.divider} />
-			<View style={styles.feeContainer}>
-				<Text style={styles.feeLabel}>Estimated Fee: </Text>
-				<View style={styles.feeValueContainer}>
-					{isCalculatingFee ? (
-						<ActivityIndicator size="small" color="#666" />
-					) : (
-						estimatedFee !== null && (
-							<Text style={styles.feeAmount}>
-								{accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY
-									? `${formatFee_btc(estimatedFee)} BTC`
-									: `${formatFee(estimatedFee)} TBC`}
-							</Text>
-						)
-					)}
+				<View style={styles.divider} />
+				<View style={styles.feeContainer}>
+					<Text style={styles.feeLabel}>Estimated Fee: </Text>
+					<View style={styles.feeValueContainer}>
+						{isCalculatingFee ? (
+							<ActivityIndicator size="small" color="#666" />
+						) : (
+							estimatedFee !== null && (
+								<Text style={styles.feeAmount}>
+									{accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY
+										? `${formatFee_btc(estimatedFee)} BTC`
+										: `${formatFee(estimatedFee)} TBC`}
+								</Text>
+							)
+						)}
+					</View>
 				</View>
-			</View>
 
-			<TouchableOpacity
-				style={[
-					styles.sendButton,
-					(!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee) &&
-						styles.sendButtonDisabled,
-				]}
-				onPress={handleSubmit}
-				disabled={!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee}
-			>
-				<Text style={styles.sendButtonText}>
-					{isCalculatingFee ? 'Calculating Fee...' : 'Send'}
-				</Text>
-			</TouchableOpacity>
-
+				<TouchableOpacity
+					style={[
+						styles.sendButton,
+						(!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee) &&
+							styles.sendButtonDisabled,
+					]}
+					onPress={handleSubmit}
+					disabled={!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee}
+				>
+					<Text style={styles.sendButtonText}>
+						{isCalculatingFee ? 'Calculating Fee...' : 'Send'}
+					</Text>
+				</TouchableOpacity>
+			</ScrollView>
+			
 			<AddressSelector
 				visible={showAddressSelector}
 				onClose={() => setShowAddressSelector(false)}
 				onSelect={(address) => handleInputChange('addressTo', address)}
 				userAddress={currentAddress}
 			/>
-
+			
 			<AssetSelector
 				visible={showAssetSelector}
 				onClose={() => setShowAssetSelector(false)}
@@ -671,7 +657,7 @@ export default function SendPage() {
 				assets={assets}
 				selectedAsset={selectedAsset}
 			/>
-		</KeyboardAvoidingWrapper>
+		</KeyboardAvoidingView>
 	);
 }
 

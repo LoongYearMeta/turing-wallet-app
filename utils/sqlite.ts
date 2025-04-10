@@ -947,22 +947,18 @@ export async function updateNFTUserAddress(nftId: string, userAddress: string): 
 
 export async function clearAllData(): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	try {
-		await db.execAsync(`
-			DROP TABLE IF EXISTS TransactionHistory;
-			DROP TABLE IF EXISTS NFT_History;
-			DROP TABLE IF EXISTS FT_History;
-			DROP TABLE IF EXISTS NFT;
-			DROP TABLE IF EXISTS FT;
-			DROP TABLE IF EXISTS Collection;
-			DROP TABLE IF EXISTS MultiSig;
-			DROP TABLE IF EXISTS FT_Public;
-			DROP TABLE IF EXISTS AddressBook;
-			DROP TABLE IF EXISTS DApp;
-		`);
-	} catch (error) {
-		console.error('Error resetting database structure:', error);
-	}
+	await db.execAsync(`
+		DELETE FROM TransactionHistory;
+		DELETE FROM NFT_History;
+		DELETE FROM FT_History;
+		DELETE FROM NFT;
+		DELETE FROM FT;
+		DELETE FROM Collection;
+		DELETE FROM MultiSig;
+		DELETE FROM FT_Public;
+		DELETE FROM AddressBook;
+		DELETE FROM DApp;
+	`);
 }
 
 export async function getAllDApps(): Promise<DApp[]> {

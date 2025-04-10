@@ -22,21 +22,21 @@ const LoginPage = () => {
 					<LoginCard
 						title="Create a new wallet"
 						description="Start fresh with a new wallet for your digital assets"
-						onPress={() => router.push('/create')}
+						onPress={() => router.replace('/create')}
 						style={styles.card}
 					/>
 
 					<LoginCard
 						title="Restore with Mnemonic"
 						description="Recover your existing wallet using your recovery phrase"
-						onPress={() => router.push('/restore')}
+						onPress={() => router.replace('/restore')}
 						style={styles.card}
 					/>
 
 					<LoginCard
 						title="Restore with Private Key"
 						description="Recover your existing wallet using your private key"
-						onPress={() => router.push('/restore-by-priKey')}
+						onPress={() => router.replace('/restore-by-priKey')}
 						style={styles.card}
 					/>
 				</View>

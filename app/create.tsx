@@ -55,10 +55,7 @@ const CreatePage = () => {
 		const hasNumbers = /[0-9]/.test(password);
 
 		if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
-			showToast(
-				'error',
-				'Password must contain uppercase letters, lowercase letters, and numbers',
-			);
+			showToast('error', 'Password must contain uppercase letters, lowercase letters, and numbers');
 			return false;
 		}
 
@@ -208,7 +205,7 @@ const CreatePage = () => {
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
 			}
-
+			
 			router.replace('/(tabs)/home');
 			showToast('success', 'Wallet created successfully!');
 		} catch (error) {
@@ -255,7 +252,7 @@ const CreatePage = () => {
 							<Text style={styles.welcomeText}>
 								{initialHasAccount ? 'Create a new account' : 'Create your wallet'}
 							</Text>
-							
+
 							<View style={styles.form}>
 								{!initialHasAccount && (
 									<Text style={styles.description}>
@@ -288,7 +285,9 @@ const CreatePage = () => {
 									<Input
 										icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
 										secureTextEntry
-										placeholder={initialHasAccount ? 'Enter your password' : 'Confirm your password'}
+										placeholder={
+											initialHasAccount ? 'Enter your password' : 'Confirm your password'
+										}
 										value={confirmPassword}
 										onChangeText={setConfirmPassword}
 										editable={!isButtonDisabled}

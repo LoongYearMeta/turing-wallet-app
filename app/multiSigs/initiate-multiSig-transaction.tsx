@@ -8,6 +8,9 @@ import {
 	TextInput,
 	TouchableOpacity,
 	View,
+	ScrollView,
+	KeyboardAvoidingView,
+	Platform,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { debounce } from 'lodash';
@@ -24,7 +27,6 @@ import { theme } from '@/lib/theme';
 import { formatBalance } from '@/lib/util';
 import { getActiveMultiSigs } from '@/utils/sqlite';
 import { fetchFTs_multiSig } from '@/actions/get-fts';
-import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
 
 interface FormData {
 	senderAddress: string;
@@ -295,138 +297,148 @@ export default function InitiateMultiSigTransactionPage() {
 	};
 
 	return (
-		<KeyboardAvoidingWrapper contentContainerStyle={styles.container} backgroundColor="#fff">
-			<View style={styles.inputGroup}>
-				<View style={styles.labelRow}>
-					<Text style={styles.label}>From</Text>
-					<TouchableOpacity onPress={() => setShowMultiSigAddressSelector(true)}>
-						<MaterialIcons name="menu-book" size={24} color={theme.colors.primary} />
-					</TouchableOpacity>
-				</View>
-				{formData.senderAddress && (
-					<View style={styles.selectedAssetWrapper}>
-						<Text style={styles.selectedAssetText}>{formData.senderAddress}</Text>
-					</View>
-				)}
-				{formErrors.senderAddress && (
-					<Text style={styles.errorText}>{formErrors.senderAddress}</Text>
-				)}
-			</View>
-
-			<View style={styles.inputGroup}>
-				<View style={styles.labelRow}>
-					<Text style={styles.label}>Asset</Text>
-					<TouchableOpacity onPress={() => setShowAssetSelector(true)}>
-						<MaterialIcons name="account-balance-wallet" size={24} color={theme.colors.primary} />
-					</TouchableOpacity>
-				</View>
-				{selectedAsset && (
-					<View style={styles.selectedAssetWrapper}>
-						<Text style={styles.selectedAssetText}>
-							{selectedAsset.label}: {formatBalance(selectedAsset.balance)}
-						</Text>
-					</View>
-				)}
-				{formErrors.asset && <Text style={styles.errorText}>{formErrors.asset}</Text>}
-			</View>
-
-			<View style={styles.inputGroup}>
-				<View style={styles.labelRow}>
-					<Text style={styles.label}>To</Text>
-					<TouchableOpacity onPress={() => setShowAddressSelector(true)}>
-						<MaterialIcons name="contacts" size={24} color="#666" />
-					</TouchableOpacity>
-				</View>
-				<View style={styles.inputWrapper}>
-					<TextInput
-						style={[styles.input, formErrors.receiverAddress && styles.inputError]}
-						value={formData.receiverAddress}
-						onChangeText={(text) => handleInputChange('receiverAddress', text)}
-						placeholder="Enter receiver address"
-					/>
-					{formData.receiverAddress.length > 0 && (
-						<TouchableOpacity
-							style={styles.clearButton}
-							onPress={() => {
-								setFormData((prev) => ({ ...prev, receiverAddress: '' }));
-								setFormErrors((prev) => ({ ...prev, receiverAddress: '' }));
-							}}
-						>
-							<MaterialIcons name="close" size={20} color="#666" />
-						</TouchableOpacity>
-					)}
-				</View>
-				{formErrors.receiverAddress && (
-					<Text style={styles.errorText}>{formErrors.receiverAddress}</Text>
-				)}
-			</View>
-
-			<View style={styles.inputGroup}>
-				<Text style={styles.label}>Amount</Text>
-				<View style={styles.inputWrapper}>
-					<TextInput
-						style={[styles.input, formErrors.amount && styles.inputError]}
-						value={formData.amount}
-						onChangeText={(text) => handleInputChange('amount', text)}
-						placeholder="Enter amount"
-						keyboardType="decimal-pad"
-						autoCapitalize="none"
-						autoCorrect={false}
-					/>
-					{formData.amount.length > 0 && (
-						<TouchableOpacity
-							style={styles.clearButton}
-							onPress={() => {
-								setFormData((prev) => ({ ...prev, amount: '' }));
-								setFormErrors((prev) => ({ ...prev, amount: '' }));
-							}}
-						>
-							<MaterialIcons name="close" size={20} color="#666" />
-						</TouchableOpacity>
-					)}
-				</View>
-				{formErrors.amount && <Text style={styles.errorText}>{formErrors.amount}</Text>}
-			</View>
-
-			<View style={styles.inputGroup}>
-				<View style={styles.labelRow}>
-					<Text style={styles.label}>Password</Text>
-				</View>
-				<View style={styles.inputWrapper}>
-					<TextInput
-						style={[styles.input, formErrors.password && styles.inputError]}
-						value={formData.password}
-						onChangeText={(text) => handleInputChange('password', text)}
-						placeholder="Enter your password"
-						secureTextEntry
-					/>
-					{formData.password.length > 0 && (
-						<TouchableOpacity
-							style={styles.clearButton}
-							onPress={() => {
-								setFormData((prev) => ({ ...prev, password: '' }));
-								setFormErrors((prev) => ({ ...prev, password: undefined }));
-							}}
-						>
-							<MaterialIcons name="close" size={20} color="#666" />
-						</TouchableOpacity>
-					)}
-				</View>
-				{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
-			</View>
-
-			<TouchableOpacity
-				style={[styles.sendButton, isLoading && styles.sendButtonDisabled]}
-				onPress={handleSubmit}
-				disabled={isLoading}
+		<KeyboardAvoidingView
+			style={{ flex: 1, backgroundColor: '#fff' }}
+			behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+			keyboardVerticalOffset={100}
+		>
+			<ScrollView 
+				style={{ flex: 1 }}
+				contentContainerStyle={{ padding: wp(4), paddingTop: hp(3) }}
+				keyboardShouldPersistTaps="handled"
 			>
-				{isLoading ? (
-					<ActivityIndicator color="#fff" size="small" />
-				) : (
-					<Text style={styles.sendButtonText}>Initiate Transaction</Text>
-				)}
-			</TouchableOpacity>
+				<View style={styles.inputGroup}>
+					<View style={styles.labelRow}>
+						<Text style={styles.label}>From</Text>
+						<TouchableOpacity onPress={() => setShowMultiSigAddressSelector(true)}>
+							<MaterialIcons name="menu-book" size={24} color={theme.colors.primary} />
+						</TouchableOpacity>
+					</View>
+					{formData.senderAddress && (
+						<View style={styles.selectedAssetWrapper}>
+							<Text style={styles.selectedAssetText}>{formData.senderAddress}</Text>
+						</View>
+					)}
+					{formErrors.senderAddress && (
+						<Text style={styles.errorText}>{formErrors.senderAddress}</Text>
+					)}
+				</View>
 
+				<View style={styles.inputGroup}>
+					<View style={styles.labelRow}>
+						<Text style={styles.label}>Asset</Text>
+						<TouchableOpacity onPress={() => setShowAssetSelector(true)}>
+							<MaterialIcons name="account-balance-wallet" size={24} color={theme.colors.primary} />
+						</TouchableOpacity>
+					</View>
+					{selectedAsset && (
+						<View style={styles.selectedAssetWrapper}>
+							<Text style={styles.selectedAssetText}>
+								{selectedAsset.label}: {formatBalance(selectedAsset.balance)}
+							</Text>
+						</View>
+					)}
+					{formErrors.asset && <Text style={styles.errorText}>{formErrors.asset}</Text>}
+				</View>
+
+				<View style={styles.inputGroup}>
+					<View style={styles.labelRow}>
+						<Text style={styles.label}>To</Text>
+						<TouchableOpacity onPress={() => setShowAddressSelector(true)}>
+							<MaterialIcons name="contacts" size={24} color="#666" />
+						</TouchableOpacity>
+					</View>
+					<View style={styles.inputWrapper}>
+						<TextInput
+							style={[styles.input, formErrors.receiverAddress && styles.inputError]}
+							value={formData.receiverAddress}
+							onChangeText={(text) => handleInputChange('receiverAddress', text)}
+							placeholder="Enter receiver address"
+						/>
+						{formData.receiverAddress.length > 0 && (
+							<TouchableOpacity
+								style={styles.clearButton}
+								onPress={() => {
+									setFormData((prev) => ({ ...prev, receiverAddress: '' }));
+									setFormErrors((prev) => ({ ...prev, receiverAddress: '' }));
+								}}
+							>
+								<MaterialIcons name="close" size={20} color="#666" />
+							</TouchableOpacity>
+						)}
+					</View>
+					{formErrors.receiverAddress && (
+						<Text style={styles.errorText}>{formErrors.receiverAddress}</Text>
+					)}
+				</View>
+
+				<View style={styles.inputGroup}>
+					<Text style={styles.label}>Amount</Text>
+					<View style={styles.inputWrapper}>
+						<TextInput
+							style={[styles.input, formErrors.amount && styles.inputError]}
+							value={formData.amount}
+							onChangeText={(text) => handleInputChange('amount', text)}
+							placeholder="Enter amount"
+							keyboardType="decimal-pad"
+							autoCapitalize="none"
+							autoCorrect={false}
+						/>
+						{formData.amount.length > 0 && (
+							<TouchableOpacity
+								style={styles.clearButton}
+								onPress={() => {
+									setFormData((prev) => ({ ...prev, amount: '' }));
+									setFormErrors((prev) => ({ ...prev, amount: '' }));
+								}}
+							>
+								<MaterialIcons name="close" size={20} color="#666" />
+							</TouchableOpacity>
+						)}
+					</View>
+					{formErrors.amount && <Text style={styles.errorText}>{formErrors.amount}</Text>}
+				</View>
+
+				<View style={styles.inputGroup}>
+					<View style={styles.labelRow}>
+						<Text style={styles.label}>Password</Text>
+					</View>
+					<View style={styles.inputWrapper}>
+						<TextInput
+							style={[styles.input, formErrors.password && styles.inputError]}
+							value={formData.password}
+							onChangeText={(text) => handleInputChange('password', text)}
+							placeholder="Enter your password"
+							secureTextEntry
+						/>
+						{formData.password.length > 0 && (
+							<TouchableOpacity
+								style={styles.clearButton}
+								onPress={() => {
+									setFormData((prev) => ({ ...prev, password: '' }));
+									setFormErrors((prev) => ({ ...prev, password: undefined }));
+								}}
+							>
+								<MaterialIcons name="close" size={20} color="#666" />
+							</TouchableOpacity>
+						)}
+					</View>
+					{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
+				</View>
+
+				<TouchableOpacity
+					style={[styles.sendButton, isLoading && styles.sendButtonDisabled]}
+					onPress={handleSubmit}
+					disabled={isLoading}
+				>
+					{isLoading ? (
+						<ActivityIndicator color="#fff" size="small" />
+					) : (
+						<Text style={styles.sendButtonText}>Initiate Transaction</Text>
+					)}
+				</TouchableOpacity>
+			</ScrollView>
+			
 			<MultiSigAddressSelector
 				visible={showMultiSigAddressSelector}
 				onClose={() => setShowMultiSigAddressSelector(false)}
@@ -446,7 +458,7 @@ export default function InitiateMultiSigTransactionPage() {
 				onSelect={handleSelectReceiverAddress}
 				userAddress={currentAddress}
 			/>
-		</KeyboardAvoidingWrapper>
+		</KeyboardAvoidingView>
 	);
 }
 

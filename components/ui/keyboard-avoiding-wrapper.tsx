@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useRef } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
 import { hp } from '@/lib/common';
@@ -14,13 +14,16 @@ export const KeyboardAvoidingWrapper = ({
 	contentContainerStyle,
 	backgroundColor = 'transparent',
 }: KeyboardAvoidingWrapperProps) => {
+	const scrollViewRef = useRef<ScrollView>(null);
+
 	return (
 		<KeyboardAvoidingView
 			behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 			style={[styles.container, { backgroundColor }]}
-			keyboardVerticalOffset={hp(2)}
+			keyboardVerticalOffset={hp(10)}
 		>
 			<ScrollView
+				ref={scrollViewRef}
 				contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
 				keyboardShouldPersistTaps="handled"
 				showsVerticalScrollIndicator={false}
@@ -37,5 +40,6 @@ const styles = StyleSheet.create({
 	},
 	scrollContent: {
 		flexGrow: 1,
+		paddingBottom: hp(4),
 	},
 });

@@ -29,6 +29,7 @@ import {
 import { AccountType } from '@/types';
 
 type TabType = 'owned' | 'added';
+type SortOption = 'default' | 'amountHighToLow' | 'amountLowToHigh';
 
 export default function HomePage() {
 	const [activeTab, setActiveTab] = useState<TabType>('owned');
@@ -48,30 +49,35 @@ export default function HomePage() {
 		if (disableTokens) {
 			setOwnedTokens([]);
 			setAddedTokens([]);
-		} else {
-			if (activeTab === 'owned') {
-				loadOwnedTokens();
-			} else {
-				loadAddedTokens();
-			}
 		}
-	}, [disableTokens, activeTab]);
+	}, [disableTokens]);
 
 	useFocusEffect(
 		useCallback(() => {
+			if (disableTokens) {
+				setOwnedTokens([]);
+				setAddedTokens([]);
+				return;
+			}
+
 			if (activeTab === 'owned') {
 				loadOwnedTokens();
 			} else {
 				loadAddedTokens();
 			}
-		}, [activeTab]),
+		}, [activeTab, disableTokens]),
 	);
 
 	const loadOwnedTokens = async () => {
 		try {
 			if (!disableTokens) {
 				const tokens = await getActiveFTs(getCurrentAccountAddress());
-				setOwnedTokens(tokens);
+				const sorted = tokens.sort((a, b) => {
+					if (a.is_pin && !b.is_pin) return -1;
+					if (!a.is_pin && b.is_pin) return 1;
+					return a.name.localeCompare(b.name);
+				});
+				setOwnedTokens(sorted);
 			}
 		} catch (error) {
 			console.error('Failed to load owned tokens:', error);
@@ -82,23 +88,60 @@ export default function HomePage() {
 		try {
 			if (!disableTokens) {
 				const tokens = await getAllFTPublics();
-				setAddedTokens(tokens);
+				const sorted = tokens.sort((a, b) => {
+					if (a.is_pin && !b.is_pin) return -1;
+					if (!a.is_pin && b.is_pin) return 1;
+					return a.name.localeCompare(b.name);
+				});
+				setAddedTokens(sorted);
 			}
 		} catch (error) {
 			console.error('Failed to load added tokens:', error);
 		}
 	};
 
-	const handleSort = (option: 'amountHighToLow' | 'amountLowToHigh') => {
+	const handleSort = (option: SortOption) => {
 		if (activeTab === 'owned') {
-			const sorted = [...ownedTokens].sort((a, b) => {
-				return option === 'amountHighToLow' ? b.amount - a.amount : a.amount - b.amount;
-			});
+			let sorted = [...ownedTokens];
+
+			if (option === 'default') {
+				sorted = sorted.sort((a, b) => {
+					if (a.is_pin && !b.is_pin) return -1;
+					if (!a.is_pin && b.is_pin) return 1;
+					return a.name.localeCompare(b.name);
+				});
+			} else {
+				const pinnedTokens = sorted.filter((token) => token.is_pin);
+				const unpinnedTokens = sorted.filter((token) => !token.is_pin);
+
+				unpinnedTokens.sort((a, b) => {
+					return option === 'amountHighToLow' ? b.amount - a.amount : a.amount - b.amount;
+				});
+
+				sorted = [...pinnedTokens, ...unpinnedTokens];
+			}
+
 			setOwnedTokens(sorted);
 		} else {
-			const sorted = [...addedTokens].sort((a, b) => {
-				return option === 'amountHighToLow' ? b.supply - a.supply : a.supply - b.supply;
-			});
+			let sorted = [...addedTokens];
+
+			if (option === 'default') {
+				sorted = sorted.sort((a, b) => {
+					if (a.is_pin && !b.is_pin) return -1;
+					if (!a.is_pin && b.is_pin) return 1;
+					return a.name.localeCompare(b.name);
+				});
+			} else {
+				const pinnedTokens = sorted.filter((token) => token.is_pin);
+				const unpinnedTokens = sorted.filter((token) => !token.is_pin);
+
+				unpinnedTokens.sort((a, b) => {
+					return option === 'amountHighToLow' ? b.supply - a.supply : a.supply - b.supply;
+				});
+
+				sorted = [...pinnedTokens, ...unpinnedTokens];
+			}
+
 			setAddedTokens(sorted);
 		}
 	};
@@ -250,7 +293,7 @@ export default function HomePage() {
 
 		try {
 			const isPinned = tokenToPin.is_pin;
-			
+
 			if ('amount' in tokenToPin) {
 				await toggleFTPin(tokenToPin.id, getCurrentAccountAddress(), !isPinned);
 				await loadOwnedTokens();
@@ -258,7 +301,7 @@ export default function HomePage() {
 				await toggleFTPublicPin(tokenToPin.id, !isPinned);
 				await loadAddedTokens();
 			}
-			
+
 			Toast.show({
 				type: 'success',
 				text1: 'Success',
@@ -343,8 +386,8 @@ export default function HomePage() {
 				message={`Are you sure you want to ${tokenToPin?.is_pin ? 'unpin' : 'pin'} ${
 					tokenToPin?.name || 'this token'
 				}? ${
-					tokenToPin?.is_pin 
-						? 'This will remove it from the top of the list.' 
+					tokenToPin?.is_pin
+						? 'This will remove it from the top of the list.'
 						: 'This will keep it at the top of the list.'
 				}`}
 				onConfirm={handleConfirmPin}

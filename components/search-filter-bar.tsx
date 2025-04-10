@@ -6,7 +6,7 @@ import { Menu, MenuItem } from 'react-native-material-menu';
 import { AddContractModal } from '@/components/modals/add-token-modal';
 import { hp, wp } from '@/lib/common';
 
-type SortOption = 'amountHighToLow' | 'amountLowToHigh';
+type SortOption = 'default' | 'amountHighToLow' | 'amountLowToHigh';
 type TabType = 'owned' | 'added';
 
 interface SearchFilterBarProps {
@@ -124,6 +124,12 @@ export const SearchFilterBar = ({
 						onRequestClose={() => setMenuVisible(false)}
 						style={styles.menu}
 					>
+						<MenuItem onPress={() => handleSort('default')} textStyle={styles.menuItemText}>
+							<View style={styles.menuItem}>
+								<Text style={styles.menuItemText}>Default</Text>
+								<MaterialIcons name="sort-by-alpha" size={16} color="#333" />
+							</View>
+						</MenuItem>
 						<MenuItem onPress={() => handleSort('amountLowToHigh')} textStyle={styles.menuItemText}>
 							<View style={styles.menuItem}>
 								<Text style={styles.menuItemText}>Amount</Text>
