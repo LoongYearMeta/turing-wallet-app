@@ -14,6 +14,7 @@ import {
 	Switch,
 	KeyboardAvoidingView,
 	Platform,
+	TextInput,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -37,6 +38,11 @@ enum Tag {
 	Nabox = 'nabox',
 }
 
+enum DerivationPathTab {
+	Common = 'common',
+	Custom = 'custom',
+}
+
 const RestorePage = () => {
 	const [mnemonic, setMnemonic] = useState('');
 	const [selectedTag, setSelectedTag] = useState<Tag>(Tag.Turing);
@@ -46,6 +52,10 @@ const RestorePage = () => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isPickerVisible, setPickerVisible] = useState(false);
 	const [shouldRestore, setShouldRestore] = useState(true);
+	const [derivationPathTab, setDerivationPathTab] = useState<DerivationPathTab>(
+		DerivationPathTab.Common,
+	);
+	const [customDerivationPath, setCustomDerivationPath] = useState("236'/0'/1/0");
 	const {
 		addAccount,
 		setCurrentAccount,
@@ -68,6 +78,23 @@ const RestorePage = () => {
 		{ label: 'OKX', value: Tag.Okx },
 		{ label: 'Nabox', value: Tag.Nabox },
 	];
+
+	const getDerivationPath = () => {
+		if (derivationPathTab === DerivationPathTab.Custom) {
+			return `m/44'/${customDerivationPath}`;
+		} else {
+			switch (selectedTag) {
+				case Tag.Tp:
+					return "m/44'/0'/0'/0/0";
+				case Tag.Okx:
+					return "m/44'/0'/0'/0/0";
+				case Tag.Nabox:
+					return "m/44'/60'/0'/0/0";
+				default:
+					return "m/44'/236'/0'/1/0";
+			}
+		}
+	};
 
 	const validatePassword = (password: string) => {
 		if (password.length < 8) {
@@ -161,14 +188,41 @@ const RestorePage = () => {
 			}
 		}
 
+		if (derivationPathTab === DerivationPathTab.Custom) {
+			if (!customDerivationPath) {
+				showToast('error', 'Please enter a derivation path');
+				setIsSubmitting(false);
+				return;
+			}
+
+			const pathRegex = /^\d+'\/\d+'\/\d+\/\d+$/;
+			if (!pathRegex.test(customDerivationPath)) {
+				showToast('error', "Invalid derivation path format. It should be x'/x'/x/x");
+				setIsSubmitting(false);
+				return;
+			}
+			
+			const parts = customDerivationPath.split('/');
+			for (let i = 0; i < parts.length; i++) {
+				const numStr = parts[i].replace(/'/g, '');
+				const num = parseInt(numStr, 10);
+				
+				if (isNaN(num) || num < 0 || num > 255) {
+					showToast('error', 'Each number in the path must be between 0 and 255');
+					setIsSubmitting(false);
+					return;
+				}
+			}
+		}
+
 		try {
 			setLoading(true);
-
+			const walletDerivation = getDerivationPath();
 			if (hasExistingAccount) {
 				const result = generateKeysEncrypted_byMnemonic(
 					confirmPassword,
 					mnemonic,
-					selectedTag,
+					walletDerivation,
 					salt,
 				);
 				if (!result) {
@@ -234,7 +288,7 @@ const RestorePage = () => {
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
 			} else {
-				const result = generateKeysEncrypted_byMnemonic(password, mnemonic, selectedTag);
+				const result = generateKeysEncrypted_byMnemonic(password, mnemonic, walletDerivation);
 				if (!result) {
 					throw new Error('Failed to generate keys');
 				}
@@ -316,6 +370,77 @@ const RestorePage = () => {
 		setMnemonic('');
 	};
 
+	const renderDerivationPathSection = () => {
+		return (
+			<View style={styles.inputGroup}>
+				<Text style={styles.label}>Derivation Path</Text>
+
+				<View style={styles.tabContainer}>
+					<TouchableOpacity
+						style={[styles.tab, derivationPathTab === DerivationPathTab.Common && styles.activeTab]}
+						onPress={() => setDerivationPathTab(DerivationPathTab.Common)}
+						disabled={isButtonDisabled}
+					>
+						<Text
+							style={[
+								styles.tabText,
+								derivationPathTab === DerivationPathTab.Common && styles.activeTabText,
+							]}
+						>
+							Common
+						</Text>
+					</TouchableOpacity>
+
+					<TouchableOpacity
+						style={[styles.tab, derivationPathTab === DerivationPathTab.Custom && styles.activeTab]}
+						onPress={() => setDerivationPathTab(DerivationPathTab.Custom)}
+						disabled={isButtonDisabled}
+					>
+						<Text
+							style={[
+								styles.tabText,
+								derivationPathTab === DerivationPathTab.Custom && styles.activeTabText,
+							]}
+						>
+							Custom
+						</Text>
+					</TouchableOpacity>
+				</View>
+
+				{derivationPathTab === DerivationPathTab.Common ? (
+					<Pressable
+						style={styles.pickerButton}
+						onPress={() => setPickerVisible(true)}
+						disabled={isButtonDisabled}
+					>
+						<Text style={styles.pickerButtonText}>
+							{walletTypes.find((type) => type.value === selectedTag)?.label}
+						</Text>
+						<MaterialIcons name="arrow-drop-down" size={24} color={theme.colors.text} />
+					</Pressable>
+				) : (
+					<View style={styles.customPathContainer}>
+						<Text style={styles.pathPrefix}>m/44'/</Text>
+						<TextInput
+							style={styles.customPathInput}
+							value={customDerivationPath}
+							onChangeText={setCustomDerivationPath}
+							placeholder="x'/x'/x/x"
+							placeholderTextColor="#999"
+							editable={!isButtonDisabled}
+						/>
+					</View>
+				)}
+
+				{derivationPathTab === DerivationPathTab.Custom && (
+					<Text style={styles.pathHelpText}>
+						Each number must be between 0-255
+					</Text>
+				)}
+			</View>
+		);
+	};
+
 	return (
 		<ScreenWrapper bg="white">
 			<StatusBar style="dark" />
@@ -329,14 +454,15 @@ const RestorePage = () => {
 			) : (
 				<KeyboardAvoidingView
 					style={{ flex: 1, backgroundColor: '#fff' }}
-					behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-					keyboardVerticalOffset={50}
+					behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+					keyboardVerticalOffset={Platform.OS === 'ios' ? 50 : 0}
 				>
 					<ScrollView
 						style={{ flex: 1 }}
 						contentContainerStyle={{
 							paddingHorizontal: wp(5),
-							paddingVertical: hp(4),
+							paddingTop: hp(4),
+							paddingBottom: hp(20),
 						}}
 						keyboardShouldPersistTaps="handled"
 						showsVerticalScrollIndicator={false}
@@ -346,12 +472,14 @@ const RestorePage = () => {
 								{hasExistingAccount ? 'Import a new wallet' : 'Restore your wallet'}
 							</Text>
 							<View style={styles.form}>
-								<Text style={styles.description}>
-									Please set a password to protect your wallet.
-									{'\n\n'}The password must be at least 8 characters long.
-									{'\n\n'}You can only use letters (a-z, A-Z), numbers (0-9), and special characters
-									(!@#$%*).
-								</Text>
+								{!hasExistingAccount && (
+									<Text style={styles.description}>
+										Please set a password to protect your wallet.
+										{'\n\n'}The password must be at least 8 characters long.
+										{'\n\n'}You can only use letters (a-z, A-Z), numbers (0-9), and special
+										characters (!@#$%*).
+									</Text>
+								)}
 
 								<View style={styles.inputGroup}>
 									<View style={styles.labelContainer}>
@@ -370,47 +498,47 @@ const RestorePage = () => {
 									/>
 								</View>
 
-								<View style={styles.inputGroup}>
-									<Text style={styles.label}>Derivation Path</Text>
-									<Pressable
-										style={styles.pickerButton}
-										onPress={() => setPickerVisible(true)}
-										disabled={isButtonDisabled}
-									>
-										<Text style={styles.pickerButtonText}>
-											{walletTypes.find((type) => type.value === selectedTag)?.label}
-										</Text>
-										<MaterialIcons name="arrow-drop-down" size={24} color={theme.colors.text} />
-									</Pressable>
-								</View>
+								{renderDerivationPathSection()}
 
-								{!hasExistingAccount && (
+								{!hasExistingAccount ? (
+									<>
+										<View style={styles.inputGroup}>
+											<Text style={styles.label}>Password</Text>
+											<Input
+												icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
+												secureTextEntry
+												placeholder="Set your password"
+												value={password}
+												onChangeText={setPassword}
+												editable={!isButtonDisabled}
+											/>
+										</View>
+										
+										<View style={styles.inputGroup}>
+											<Text style={styles.label}>Confirm Password</Text>
+											<Input
+												icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
+												secureTextEntry
+												placeholder="Confirm your password"
+												value={confirmPassword}
+												onChangeText={setConfirmPassword}
+												editable={!isButtonDisabled}
+											/>
+										</View>
+									</>
+								) : (
 									<View style={styles.inputGroup}>
-										<Text style={styles.label}>Password</Text>
+										<Text style={styles.label}>Confirm Password</Text>
 										<Input
 											icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
 											secureTextEntry
-											placeholder="Set your password"
-											value={password}
-											onChangeText={setPassword}
+											placeholder="Enter your password"
+											value={confirmPassword}
+											onChangeText={setConfirmPassword}
 											editable={!isButtonDisabled}
 										/>
 									</View>
 								)}
-
-								<View style={styles.inputGroup}>
-									<Text style={styles.label}>Confirm Password</Text>
-									<Input
-										icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
-										secureTextEntry
-										placeholder={
-											hasExistingAccount ? 'Enter your password' : 'Confirm your password'
-										}
-										value={confirmPassword}
-										onChangeText={setConfirmPassword}
-										editable={!isButtonDisabled}
-									/>
-								</View>
 
 								<View style={styles.switchContainer}>
 									<Text style={styles.switchLabel}>Restore wallet data from blockchain</Text>
@@ -617,6 +745,60 @@ const styles = StyleSheet.create({
 		color: theme.colors.text,
 		flex: 1,
 		marginRight: wp(2),
+	},
+	tabContainer: {
+		flexDirection: 'row',
+		marginBottom: hp(1.5),
+		borderRadius: theme.radius.lg,
+		borderWidth: 1,
+		overflow: 'hidden',
+		alignSelf: 'flex-start',
+		width: '60%',
+	},
+	tab: {
+		flex: 1,
+		paddingVertical: hp(1),
+		alignItems: 'center',
+		backgroundColor: '#f5f5f5',
+	},
+	activeTab: {
+		backgroundColor: theme.colors.primary,
+	},
+	tabText: {
+		fontSize: hp(1.5),
+		color: theme.colors.text,
+	},
+	activeTabText: {
+		color: 'white',
+		fontWeight: '600',
+	},
+	customPathContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		borderWidth: 0.4,
+		borderColor: theme.colors.text,
+		borderRadius: theme.radius.xxl,
+		borderCurve: 'continuous',
+		paddingHorizontal: 20,
+		height: hp(6),
+	},
+	pathPrefix: {
+		fontSize: hp(1.6),
+		color: theme.colors.text,
+		fontWeight: '500',
+	},
+	customPathInput: {
+		flex: 1,
+		fontSize: hp(1.6),
+		color: theme.colors.text,
+		paddingVertical: 0,
+		height: '100%',
+	},
+	pathHelpText: {
+		fontSize: hp(1.2),
+		color: '#666',
+		marginTop: hp(0.5),
+		marginLeft: wp(2),
 	},
 });
 

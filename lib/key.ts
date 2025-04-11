@@ -7,37 +7,14 @@ import { Keys } from '@/types';
 import { createFromWIF, getTaprootAndLegacyAddress } from '@/lib/taproot';
 import { getTaprootLegacyAddress } from './taproot-legacy';
 
-enum Tag {
-	Turing = 'turing',
-	Tp = 'tp',
-	Okx = 'okx',
-	Nabox = 'nabox',
-}
-
 export const generateKeysEncrypted_byMnemonic = (
 	password: string,
 	mnemonic: string,
-	tag: Tag,
+	walletDerivation: string,
 	salt?: string,
 ) => {
 	if (!tbc.Mnemonic.isValid(mnemonic)) {
 		throw new Error('Invalid mnemonic');
-	}
-
-	let walletDerivation: string;
-	switch (tag) {
-		case 'tp':
-			walletDerivation = "m/44'/0'/0'/0/0";
-			break;
-		case 'okx':
-			walletDerivation = "m/44'/0'/0'/0/0";
-			break;
-		case 'nabox':
-			walletDerivation = "m/44'/60'/0'/0/0";
-			break;
-		default:
-			walletDerivation = "m/44'/236'/0'/1/0";
-			break;
 	}
 
 	const keys = getKeys_mnemonic(mnemonic, walletDerivation);

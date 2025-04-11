@@ -24,7 +24,7 @@ export default function ExportPage() {
 	const [password, setPassword] = useState('');
 	const [formErrors, setFormErrors] = useState<FormErrors>({});
 	const [isPasswordValid, setIsPasswordValid] = useState(false);
-	const [keys, setKeys] = useState<{ mnemonic?: string; walletWif: string }>({ walletWif: '' });
+	const [keys, setKeys] = useState<{ mnemonic?: string; walletWif: string; walletDerivationPath?: string }>({ walletWif: '' });
 	const [isLoading, setIsLoading] = useState(false);
 
 	const handlePasswordChange = (value: string) => {
@@ -148,6 +148,21 @@ export default function ExportPage() {
 								<TouchableOpacity
 									style={styles.copyButton}
 									onPress={() => handleCopy(keys.mnemonic!, 'Mnemonic')}
+								>
+									<MaterialIcons name="content-copy" size={20} color="#666" />
+								</TouchableOpacity>
+							</View>
+						</View>
+					)}
+
+					{keys.walletDerivationPath && (
+						<View style={styles.keyGroup}>
+							<Text style={styles.keyLabel}>Derivation Path</Text>
+							<View style={styles.keyWrapper}>
+								<Text style={styles.keyValue}>{keys.walletDerivationPath}</Text>
+								<TouchableOpacity
+									style={styles.copyButton}
+									onPress={() => handleCopy(keys.walletDerivationPath!, 'Derivation Path')}
 								>
 									<MaterialIcons name="content-copy" size={20} color="#666" />
 								</TouchableOpacity>

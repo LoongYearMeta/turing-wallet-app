@@ -295,12 +295,14 @@ const RestoreByPriKeyPage = () => {
 							</Text>
 
 							<View style={styles.form}>
-								<Text style={styles.description}>
-									Please set a password to protect your wallet.
-									{'\n\n'}The password must be at least 8 characters long.
-									{'\n\n'}You can only use letters (a-z, A-Z), numbers (0-9), and special characters
-									(!@#$%*).
-								</Text>
+								{!hasExistingAccount && (
+									<Text style={styles.description}>
+										Please set a password to protect your wallet.
+										{'\n\n'}The password must be at least 8 characters long.
+										{'\n\n'}You can only use letters (a-z, A-Z), numbers (0-9), and special
+										characters (!@#$%*).
+									</Text>
+								)}
 
 								<View style={styles.inputGroup}>
 									<View style={styles.labelContainer}>

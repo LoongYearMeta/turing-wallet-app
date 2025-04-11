@@ -110,6 +110,18 @@ export default function DAppPage() {
 							</TouchableOpacity>
 						)}
 					</View>
+					
+					<TouchableOpacity 
+						style={styles.refreshButton} 
+						onPress={onRefresh}
+						disabled={refreshing}
+					>
+						<MaterialIcons 
+							name="refresh" 
+							size={24} 
+							color={refreshing ? "#999" : "#333"} 
+						/>
+					</TouchableOpacity>
 				</View>
 
 				<ScrollView
@@ -173,6 +185,8 @@ const styles = StyleSheet.create({
 		backgroundColor: '#f5f5f5',
 	},
 	searchContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
 		paddingHorizontal: wp(4),
 		paddingVertical: hp(1.5),
 		borderBottomWidth: 1,
@@ -185,6 +199,7 @@ const styles = StyleSheet.create({
 		backgroundColor: '#eeeeee',
 		borderRadius: 8,
 		paddingHorizontal: wp(2),
+		flex: 1,
 	},
 	searchIcon: {
 		marginRight: wp(1),
@@ -243,5 +258,13 @@ const styles = StyleSheet.create({
 		fontSize: hp(1.4),
 		color: '#999',
 		marginTop: hp(0.5),
+	},
+	refreshButton: {
+		marginLeft: wp(2),
+		padding: wp(1),
+		width: wp(10),
+		height: wp(10),
+		justifyContent: 'center',
+		alignItems: 'center',
 	},
 });
