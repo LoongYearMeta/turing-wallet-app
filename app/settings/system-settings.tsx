@@ -4,6 +4,7 @@ import { Linking, Platform } from 'react-native';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { hp, wp } from '@/lib/common';
 
@@ -15,6 +16,8 @@ const STORE_URLS = {
 };
 
 export default function SystemSettingsPage() {
+	const { t, i18n } = useTranslation();
+	
 	const handleCheckUpdate = () => {
 		const storeUrl = Platform.select({
 			ios: STORE_URLS.ios,
@@ -25,16 +28,28 @@ export default function SystemSettingsPage() {
 		Linking.openURL(storeUrl);
 	};
 
+	const getLanguageDisplay = () => {
+		switch (i18n.language) {
+			case 'zh':
+				return t('chinese');
+			case 'en':
+			default:
+				return t('english');
+		}
+	};
+
 	return (
 		<View style={styles.container}>
 			<ScrollView style={styles.scrollView}>
 				<View style={styles.listContainer}>
-			
-					<TouchableOpacity style={styles.settingItem}>
+					<TouchableOpacity 
+						style={styles.settingItem}
+						onPress={() => router.push('/settings/language')}
+					>
 						<View style={styles.settingInfo}>
-							<Text style={styles.settingName}>Language</Text>
+							<Text style={styles.settingName}>{t('language')}</Text>
 							<View style={styles.settingValueContainer}>
-								<Text style={styles.settingValue}>English</Text>
+								<Text style={styles.settingValue}>{getLanguageDisplay()}</Text>
 								<MaterialIcons name="chevron-right" size={24} color="#999" />
 							</View>
 						</View>
@@ -42,14 +57,14 @@ export default function SystemSettingsPage() {
 
 					<TouchableOpacity style={styles.settingItem}>
 						<View style={styles.settingInfo}>
-							<Text style={styles.settingName}>App Version</Text>
+							<Text style={styles.settingName}>{t('appVersion')}</Text>
 							<Text style={styles.settingValue}>{appVersion}</Text>
 						</View>
 					</TouchableOpacity>
 
 					<TouchableOpacity style={styles.settingItem} onPress={handleCheckUpdate}>
 						<View style={styles.settingInfo}>
-							<Text style={styles.settingName}>Check for Updates</Text>
+							<Text style={styles.settingName}>{t('checkForUpdates')}</Text>
 							<View style={styles.settingValueContainer}>
 								<MaterialIcons name="chevron-right" size={24} color="#999" />
 							</View>
@@ -61,7 +76,7 @@ export default function SystemSettingsPage() {
 						onPress={() => router.push('/settings/privacy-policy')}
 					>
 						<View style={styles.settingInfo}>
-							<Text style={styles.settingName}>Privacy Policy</Text>
+							<Text style={styles.settingName}>{t('privacyPolicy')}</Text>
 							<View style={styles.settingValueContainer}>
 								<MaterialIcons name="chevron-right" size={24} color="#999" />
 							</View>

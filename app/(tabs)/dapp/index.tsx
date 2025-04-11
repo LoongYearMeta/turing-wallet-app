@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { Navbar } from '@/components/ui/navbar';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
@@ -21,6 +22,7 @@ import { syncDApps } from '@/actions/get-dapps';
 import type { DApp } from '@/utils/sqlite';
 
 export default function DAppPage() {
+	const { t } = useTranslation();
 	const [searchText, setSearchText] = useState('');
 	const [dapps, setDapps] = useState<DApp[]>([]);
 	const [filteredDapps, setFilteredDapps] = useState<DApp[]>([]);
@@ -91,18 +93,22 @@ export default function DAppPage() {
 		});
 	};
 
+	const handleSearch = (text: string) => {
+		setSearchText(text);
+	};
+
 	return (
 		<ScreenWrapper bg="#f5f5f5">
 			<Navbar />
 			<View style={styles.container}>
 				<View style={styles.searchContainer}>
 					<View style={styles.searchInputContainer}>
-						<MaterialIcons name="search" size={20} color="#999" style={styles.searchIcon} />
+						<MaterialIcons name="search" size={24} color="#999" style={styles.searchIcon} />
 						<TextInput
 							style={styles.searchInput}
-							placeholder="Search by name or URL..."
+							placeholder={t('searchDapps')}
 							value={searchText}
-							onChangeText={setSearchText}
+							onChangeText={handleSearch}
 						/>
 						{searchText.length > 0 && (
 							<TouchableOpacity onPress={() => setSearchText('')} style={styles.clearButton}>

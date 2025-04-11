@@ -14,9 +14,12 @@ import React, { useEffect } from 'react';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { theme } from '@/lib/theme';
 import { initDatabase } from '@/utils/sqlite';
+import '@/lib/i18n';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -173,6 +176,14 @@ export default function RootLayout() {
 						<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 						<Stack.Screen name="settings" options={{ headerShown: false }} />
 						<Stack.Screen name="multiSigs" options={{ headerShown: false }} />
+						<Stack.Screen name="settings/language" options={{ 
+							headerTitle: () => {
+								const { t } = useTranslation();
+								return <Text style={{ fontSize: 18, fontWeight: '600' }}>{t('language')}</Text>;
+							},
+							headerShown: true,
+							headerBackTitle: '',
+						}} />
 					</Stack>
 					<Toast config={toastConfig} position="top" topOffset={60} visibilityTime={3000} />
 				</SQLiteProvider>

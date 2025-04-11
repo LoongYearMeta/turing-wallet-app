@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { Input } from '@/components/ui/input';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
@@ -44,6 +45,7 @@ enum DerivationPathTab {
 }
 
 const RestorePage = () => {
+	const { t } = useTranslation();
 	const [mnemonic, setMnemonic] = useState('');
 	const [selectedTag, setSelectedTag] = useState<Tag>(Tag.Turing);
 	const [password, setPassword] = useState('');
@@ -98,16 +100,13 @@ const RestorePage = () => {
 
 	const validatePassword = (password: string) => {
 		if (password.length < 8) {
-			showToast('error', 'Password must be at least 8 characters long');
+			showToast('error', t('passwordTooShort'));
 			return false;
 		}
 
 		const validChars = /^[a-zA-Z0-9!@#$%*]+$/;
 		if (!validChars.test(password)) {
-			showToast(
-				'error',
-				'Password can only contain letters, numbers, and special characters (!@#$%*)',
-			);
+			showToast('error', t('passwordInvalidChars'));
 			return false;
 		}
 
@@ -140,38 +139,38 @@ const RestorePage = () => {
 	const validateAndSubmitForm = async () => {
 		if (hasExistingAccount) {
 			if (!confirmPassword) {
-				showToast('error', 'Please enter your password');
+				showToast('error', t('passwordRequired'));
 				setIsSubmitting(false);
 				return;
 			}
 			if (!verifyPassword(confirmPassword, passKey, salt)) {
-				showToast('error', 'Incorrect password');
+				showToast('error', t('incorrectPassword'));
 				setIsSubmitting(false);
 				return;
 			}
 			setPassword(confirmPassword);
 		} else {
 			if (!mnemonic.trim()) {
-				showToast('error', 'Please enter your mnemonic phrase');
+				showToast('error', t('mnemonicRequired'));
 				setIsSubmitting(false);
 				return;
 			}
 
 			const mnemonicWords = mnemonic.trim().split(/\s+/);
 			if (mnemonicWords.length !== 12) {
-				showToast('error', 'Mnemonic phrase must be exactly 12 words');
+				showToast('error', t('mnemonicLength'));
 				setIsSubmitting(false);
 				return;
 			}
 
 			if (!verifyMnemonic(mnemonic.trim())) {
-				showToast('error', 'Invalid mnemonic phrase');
+				showToast('error', t('mnemonicInvalid'));
 				setIsSubmitting(false);
 				return;
 			}
 
 			if (!password || !confirmPassword) {
-				showToast('error', 'Please fill in all password fields');
+				showToast('error', t('fillAllFields'));
 				setIsSubmitting(false);
 				return;
 			}
@@ -182,7 +181,7 @@ const RestorePage = () => {
 			}
 
 			if (password !== confirmPassword) {
-				showToast('error', 'Passwords do not match');
+				showToast('error', t('passwordsDoNotMatch'));
 				setIsSubmitting(false);
 				return;
 			}
@@ -190,14 +189,14 @@ const RestorePage = () => {
 
 		if (derivationPathTab === DerivationPathTab.Custom) {
 			if (!customDerivationPath) {
-				showToast('error', 'Please enter a derivation path');
+				showToast('error', t('derivationPathRequired'));
 				setIsSubmitting(false);
 				return;
 			}
 
 			const pathRegex = /^\d+'\/\d+'\/\d+\/\d+$/;
 			if (!pathRegex.test(customDerivationPath)) {
-				showToast('error', "Invalid derivation path format. It should be x'/x'/x/x");
+				showToast('error', t('derivationPathInvalid'));
 				setIsSubmitting(false);
 				return;
 			}
@@ -208,7 +207,7 @@ const RestorePage = () => {
 				const num = parseInt(numStr, 10);
 				
 				if (isNaN(num) || num < 0 || num > 255) {
-					showToast('error', 'Each number in the path must be between 0 and 255');
+					showToast('error', t('derivationPathNumberRange'));
 					setIsSubmitting(false);
 					return;
 				}
@@ -344,7 +343,7 @@ const RestorePage = () => {
 			}
 
 			router.replace('/(tabs)/home');
-			showToast('success', 'Wallet restored successfully!');
+			showToast('success', t('walletRestored'));
 		} catch (error: any) {
 			if (hasExistingAccount) {
 			} else {
@@ -387,7 +386,7 @@ const RestorePage = () => {
 								derivationPathTab === DerivationPathTab.Common && styles.activeTabText,
 							]}
 						>
-							Common
+							{t('common')}
 						</Text>
 					</TouchableOpacity>
 
@@ -402,7 +401,7 @@ const RestorePage = () => {
 								derivationPathTab === DerivationPathTab.Custom && styles.activeTabText,
 							]}
 						>
-							Custom
+							{t('custom')}
 						</Text>
 					</TouchableOpacity>
 				</View>
@@ -434,7 +433,7 @@ const RestorePage = () => {
 
 				{derivationPathTab === DerivationPathTab.Custom && (
 					<Text style={styles.pathHelpText}>
-						Each number must be between 0-255
+						{t('derivationPathHelpText')}
 					</Text>
 				)}
 			</View>
@@ -448,7 +447,7 @@ const RestorePage = () => {
 				<View style={styles.loadingContent}>
 					<ActivityIndicator size="large" color={theme.colors.primary} />
 					<Text style={styles.loadingText}>
-						Restoring your data from blockchain, please wait...
+						{t('restoringData')}
 					</Text>
 				</View>
 			) : (
@@ -469,15 +468,12 @@ const RestorePage = () => {
 					>
 						<View style={styles.content}>
 							<Text style={styles.welcomeText}>
-								{hasExistingAccount ? 'Import a new wallet' : 'Restore your wallet'}
+								{hasExistingAccount ? t('importWallet') : t('restoreWallet')}
 							</Text>
 							<View style={styles.form}>
 								{!hasExistingAccount && (
 									<Text style={styles.description}>
-										Please set a password to protect your wallet.
-										{'\n\n'}The password must be at least 8 characters long.
-										{'\n\n'}You can only use letters (a-z, A-Z), numbers (0-9), and special
-										characters (!@#$%*).
+										{t('passwordRequirements')}
 									</Text>
 								)}
 
@@ -507,7 +503,7 @@ const RestorePage = () => {
 											<Input
 												icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
 												secureTextEntry
-												placeholder="Set your password"
+												placeholder={t('setPassword')}
 												value={password}
 												onChangeText={setPassword}
 												editable={!isButtonDisabled}
@@ -519,7 +515,7 @@ const RestorePage = () => {
 											<Input
 												icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
 												secureTextEntry
-												placeholder="Confirm your password"
+												placeholder={t('confirmYourPassword')}
 												value={confirmPassword}
 												onChangeText={setConfirmPassword}
 												editable={!isButtonDisabled}
@@ -532,7 +528,7 @@ const RestorePage = () => {
 										<Input
 											icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
 											secureTextEntry
-											placeholder="Enter your password"
+											placeholder={t('enterPassword')}
 											value={confirmPassword}
 											onChangeText={setConfirmPassword}
 											editable={!isButtonDisabled}
@@ -541,7 +537,7 @@ const RestorePage = () => {
 								)}
 
 								<View style={styles.switchContainer}>
-									<Text style={styles.switchLabel}>Restore wallet data from blockchain</Text>
+									<Text style={styles.switchLabel}>{t('restoreFromBlockchain')}</Text>
 									<Switch
 										value={shouldRestore}
 										onValueChange={setShouldRestore}
@@ -559,7 +555,7 @@ const RestorePage = () => {
 								activeOpacity={0.5}
 								pressRetentionOffset={{ top: 10, left: 10, bottom: 10, right: 10 }}
 							>
-								<Text style={styles.buttonText}>Restore wallet</Text>
+								<Text style={styles.buttonText}>{t('restore')}</Text>
 							</TouchableOpacity>
 						</View>
 					</ScrollView>

@@ -58,6 +58,14 @@ export default function SettingsLayout() {
 					headerBackVisible: true,
 				}}
 			/>
+			<Stack.Screen
+				name="language"
+				options={{
+					headerTitle: 'Language',
+					headerTitleStyle: styles.headerTitle,
+					headerBackVisible: true,
+				}}
+			/>
 		</Stack>
 	);
 }
