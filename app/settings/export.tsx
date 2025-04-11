@@ -1,8 +1,14 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { debounce } from 'lodash';
-import React, { useCallback, useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
+	ActivityIndicator,
+} from 'react-native';
 import Toast from 'react-native-toast-message';
 
 import { useAccount } from '@/hooks/useAccount';
@@ -19,62 +25,12 @@ export default function ExportPage() {
 	const [formErrors, setFormErrors] = useState<FormErrors>({});
 	const [isPasswordValid, setIsPasswordValid] = useState(false);
 	const [keys, setKeys] = useState<{ mnemonic?: string; walletWif: string }>({ walletWif: '' });
-
-	const debouncedPasswordValidation = useCallback(
-		debounce(async (password: string) => {
-			if (!password) {
-				setFormErrors((prev) => ({ ...prev, password: 'Password is required' }));
-				setIsPasswordValid(false);
-				return;
-			}
-
-			const passKey = getPassKey();
-			const salt = getSalt();
-
-			if (!passKey || !salt) {
-				setFormErrors((prev) => ({
-					...prev,
-					password: 'Account error, please try again',
-				}));
-				setIsPasswordValid(false);
-				return;
-			}
-
-			try {
-				const isValid = verifyPassword(password, passKey, salt);
-				setFormErrors((prev) => ({
-					...prev,
-					password: isValid ? '' : 'Incorrect password',
-				}));
-				setIsPasswordValid(isValid);
-
-				if (isValid) {
-					const encryptedKeys = getEncryptedKeys();
-					if (encryptedKeys) {
-						const decryptedKeys = retrieveKeys(password, encryptedKeys);
-						if (decryptedKeys.walletWif) {
-							setKeys(decryptedKeys);
-						} else {
-							throw new Error('Failed to decrypt keys');
-						}
-					}
-				}
-			} catch (error) {
-				setFormErrors((prev) => ({
-					...prev,
-					password: 'Incorrect password',
-				}));
-				setIsPasswordValid(false);
-				setKeys({ walletWif: '' });
-			}
-		}, 1500),
-		[getPassKey, getSalt, getEncryptedKeys],
-	);
+	const [isLoading, setIsLoading] = useState(false);
 
 	const handlePasswordChange = (value: string) => {
 		const cleanValue = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
 		setPassword(cleanValue);
-		debouncedPasswordValidation(cleanValue);
+		setFormErrors({});
 	};
 
 	const handleClearPassword = () => {
@@ -82,6 +38,58 @@ export default function ExportPage() {
 		setFormErrors({});
 		setIsPasswordValid(false);
 		setKeys({ walletWif: '' });
+	};
+
+	const handleExport = async () => {
+		if (!password) {
+			setFormErrors({ password: 'Password is required' });
+			return;
+		}
+
+		setIsLoading(true);
+
+		await new Promise((resolve) => setTimeout(resolve, 50));
+
+		try {
+			const passKey = getPassKey();
+			const salt = getSalt();
+
+			if (!passKey || !salt) {
+				setFormErrors({
+					password: 'Account error, please try again',
+				});
+				setIsPasswordValid(false);
+				return;
+			}
+
+			const isValid = verifyPassword(password, passKey, salt);
+			if (!isValid) {
+				setFormErrors({
+					password: 'Incorrect password',
+				});
+				setIsPasswordValid(false);
+				return;
+			}
+
+			setIsPasswordValid(true);
+			const encryptedKeys = getEncryptedKeys();
+			if (encryptedKeys) {
+				const decryptedKeys = retrieveKeys(password, encryptedKeys);
+				if (decryptedKeys.walletWif) {
+					setKeys(decryptedKeys);
+				} else {
+					throw new Error('Failed to decrypt keys');
+				}
+			}
+		} catch (error) {
+			setFormErrors({
+				password: 'Incorrect password',
+			});
+			setIsPasswordValid(false);
+			setKeys({ walletWif: '' });
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	const handleCopy = async (text: string, label: string) => {
@@ -113,6 +121,21 @@ export default function ExportPage() {
 					)}
 				</View>
 				{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
+
+				<TouchableOpacity
+					style={[styles.exportButton, (isLoading || !password) && styles.disabledButton]}
+					onPress={handleExport}
+					disabled={isLoading || !password}
+				>
+					{isLoading ? (
+						<View style={styles.loadingContainer}>
+							<ActivityIndicator size="small" color="#fff" />
+							<Text style={[styles.exportButtonText, { marginLeft: 8 }]}>Verifying...</Text>
+						</View>
+					) : (
+						<Text style={styles.exportButtonText}>Export Keys</Text>
+					)}
+				</TouchableOpacity>
 			</View>
 
 			{isPasswordValid && (
@@ -196,6 +219,22 @@ const styles = StyleSheet.create({
 		marginTop: hp(0.5),
 		marginLeft: wp(1),
 	},
+	exportButton: {
+		backgroundColor: '#1a1a1a',
+		borderRadius: 8,
+		paddingVertical: hp(1.5),
+		alignItems: 'center',
+		marginTop: hp(2),
+	},
+	exportButtonText: {
+		color: '#fff',
+		fontSize: hp(1.6),
+		fontWeight: '600',
+	},
+	disabledButton: {
+		backgroundColor: '#888',
+		opacity: 0.7,
+	},
 	keysContainer: {
 		marginTop: hp(2),
 	},
@@ -224,5 +263,10 @@ const styles = StyleSheet.create({
 	},
 	copyButton: {
 		padding: wp(2),
+	},
+	loadingContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
 	},
 });

@@ -7,8 +7,6 @@ import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
 import { AccountType } from '@/types';
-import { fetchUTXOs } from '@/actions/get-utxos';
-import { initializeWalletData } from '@/lib/init';
 
 interface SwitchTypeModalProps {
 	visible: boolean;
@@ -64,7 +62,7 @@ export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
 						onPress={() => handleSwitch(AccountType.TBC)}
 					>
 						<View style={styles.itemLeft}>
-							<Text style={styles.itemType}>TBC</Text>
+							<Text style={styles.itemType}>TBC Legacy</Text>
 							<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
 								{addresses.tbcAddress}
 							</Text>
@@ -74,13 +72,14 @@ export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
 						)}
 					</TouchableOpacity>
 				)}
+
 				{canSwitchToTaproot() && (
 					<TouchableOpacity
 						style={[styles.item, currentType === AccountType.TAPROOT && styles.currentItem]}
 						onPress={() => handleSwitch(AccountType.TAPROOT)}
 					>
 						<View style={styles.itemLeft}>
-							<Text style={styles.itemType}>Taproot</Text>
+							<Text style={styles.itemType}>BTC Taproot</Text>
 							<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
 								{addresses.taprootAddress}
 							</Text>
@@ -90,34 +89,36 @@ export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
 						)}
 					</TouchableOpacity>
 				)}
-				{canSwitchToTaprootLegacy() && (
-					<TouchableOpacity
-						style={[styles.item, currentType === AccountType.TAPROOT_LEGACY && styles.currentItem]}
-						onPress={() => handleSwitch(AccountType.TAPROOT_LEGACY)}
-					>
-						<View style={styles.itemLeft}>
-							<Text style={styles.itemType}>Taproot Legacy</Text>
-							<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
-								{addresses.taprootLegacyAddress}
-							</Text>
-						</View>
-						{currentType === AccountType.TAPROOT_LEGACY && (
-							<MaterialIcons name="check" size={20} color={theme.colors.primary} />
-						)}
-					</TouchableOpacity>
-				)}
+
 				{canSwitchToLegacy() && (
 					<TouchableOpacity
 						style={[styles.item, currentType === AccountType.LEGACY && styles.currentItem]}
 						onPress={() => handleSwitch(AccountType.LEGACY)}
 					>
 						<View style={styles.itemLeft}>
-							<Text style={styles.itemType}>Legacy</Text>
+							<Text style={styles.itemType}>BTC Legacy</Text>
 							<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
 								{addresses.legacyAddress}
 							</Text>
 						</View>
 						{currentType === AccountType.LEGACY && (
+							<MaterialIcons name="check" size={20} color={theme.colors.primary} />
+						)}
+					</TouchableOpacity>
+				)}
+
+				{canSwitchToTaprootLegacy() && (
+					<TouchableOpacity
+						style={[styles.item, currentType === AccountType.TAPROOT_LEGACY && styles.currentItem]}
+						onPress={() => handleSwitch(AccountType.TAPROOT_LEGACY)}
+					>
+						<View style={styles.itemLeft}>
+							<Text style={styles.itemType}>BTC Taproot Legacy</Text>
+							<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
+								{addresses.taprootLegacyAddress}
+							</Text>
+						</View>
+						{currentType === AccountType.TAPROOT_LEGACY && (
 							<MaterialIcons name="check" size={20} color={theme.colors.primary} />
 						)}
 					</TouchableOpacity>

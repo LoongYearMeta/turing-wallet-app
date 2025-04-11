@@ -21,6 +21,7 @@ import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
 import { getActiveMultiSigs, softDeleteMultiSig } from '@/utils/sqlite';
 import { AccountType } from '@/types';
+import { getMultiSigType } from '@/lib/util';
 
 interface MultiSigAddress {
 	multiSig_address: string;
@@ -150,7 +151,7 @@ export default function InformationPage() {
 
 		try {
 			await softDeleteMultiSig(multiSigToDelete);
-			await loadMultiSigAddresses(); 
+			await loadMultiSigAddresses();
 			Toast.show({
 				type: 'success',
 				text1: 'MultiSig wallet deleted successfully',
@@ -176,7 +177,6 @@ export default function InformationPage() {
 
 	return (
 		<ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-
 			<View style={styles.listContainer}>
 				<View style={styles.listItem}>
 					<View style={styles.itemLeft}>
@@ -210,7 +210,7 @@ export default function InformationPage() {
 					<>
 						<View style={styles.addressItem}>
 							<View style={styles.itemLeft}>
-								<Text style={styles.addressLabel}>TBC address</Text>
+								<Text style={styles.addressLabel}>TBC legacy address</Text>
 								<View style={styles.valueWithCopy}>
 									<Text style={styles.addressValue} numberOfLines={1} ellipsizeMode="middle">
 										{addresses.tbcAddress}
@@ -236,7 +236,7 @@ export default function InformationPage() {
 					<>
 						<View style={styles.addressItem}>
 							<View style={styles.itemLeft}>
-								<Text style={styles.addressLabel}>Taproot address</Text>
+								<Text style={styles.addressLabel}>BTC Taproot address</Text>
 								<View style={styles.valueWithCopy}>
 									<Text style={styles.addressValue} numberOfLines={1} ellipsizeMode="middle">
 										{addresses.taprootAddress}
@@ -258,7 +258,7 @@ export default function InformationPage() {
 					<>
 						<View style={styles.addressItem}>
 							<View style={styles.itemLeft}>
-								<Text style={styles.addressLabel}>Legacy address</Text>
+								<Text style={styles.addressLabel}>BTC Legacy address</Text>
 								<View style={styles.valueWithCopy}>
 									<Text style={styles.addressValue} numberOfLines={1} ellipsizeMode="middle">
 										{addresses.legacyAddress}
@@ -280,7 +280,7 @@ export default function InformationPage() {
 					<>
 						<View style={styles.addressItem}>
 							<View style={styles.itemLeft}>
-								<Text style={styles.addressLabel}>Taproot legacy address</Text>
+								<Text style={styles.addressLabel}> BTC Taproot legacy address</Text>
 								<View style={styles.valueWithCopy}>
 									<Text style={styles.addressValue} numberOfLines={1} ellipsizeMode="middle">
 										{addresses.taprootLegacyAddress}
@@ -399,6 +399,12 @@ export default function InformationPage() {
 
 						{expandedMultiSig === item.multiSig_address && (
 							<View style={styles.pubKeysContainer}>
+								<View style={styles.multiSigTypeContainer}>
+									<Text style={styles.multiSigTypeLabel}>Type:</Text>
+									<Text style={styles.multiSigTypeValue}>
+										{getMultiSigType(item.multiSig_address)}
+									</Text>
+								</View>
 								<Text style={styles.pubKeysTitle}>Public Keys:</Text>
 								{item.pubKeys.map((pubKey, index) => (
 									<View key={index} style={styles.pubKeyItem}>
@@ -478,8 +484,8 @@ const styles = StyleSheet.create({
 	},
 	scrollContent: {
 		padding: wp(4),
-		paddingBottom: hp(4), 
-		flexGrow: 1, 
+		paddingBottom: hp(4),
+		flexGrow: 1,
 	},
 	listContainer: {
 		marginBottom: hp(1),
@@ -714,5 +720,21 @@ const styles = StyleSheet.create({
 		color: '#666',
 		marginTop: hp(0.5),
 		lineHeight: hp(1.8),
+	},
+	multiSigTypeContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		marginBottom: hp(1),
+	},
+	multiSigTypeLabel: {
+		fontSize: hp(1.6),
+		fontWeight: '500',
+		color: '#666',
+		marginRight: wp(1),
+	},
+	multiSigTypeValue: {
+		fontSize: hp(1.6),
+		fontWeight: '600',
+		color: '#333',
 	},
 });

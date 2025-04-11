@@ -10,10 +10,13 @@ import {
 	ActivityIndicator,
 	KeyboardAvoidingView,
 	Platform,
+	SafeAreaView,
+	StatusBar as RNStatusBar,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { WebView } from 'react-native-webview';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAccount } from '@/hooks/useAccount';
 import type { SendTransactionRequest, SendTransactionResponse } from '@/hooks/useResponse';
@@ -22,10 +25,7 @@ import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
 import { getNFT } from '@/utils/sqlite';
 
-const sslExceptionDomains = [
-	'dev.shellswap.org',
-	'utxopump.fun'
-];
+const sslExceptionDomains = ['dev.shellswap.org', 'utxopump.fun'];
 
 export default function DAppWebView() {
 	const { url, name } = useLocalSearchParams();
@@ -36,6 +36,8 @@ export default function DAppWebView() {
 	const [password, setPassword] = useState('');
 	const [formErrors, setFormErrors] = useState<{ password?: string; isValid?: boolean }>({});
 	const [isProcessing, setIsProcessing] = useState(false);
+	const [isWebViewLoading, setIsWebViewLoading] = useState(true);
+	const insets = useSafeAreaInsets();
 
 	const {
 		getCurrentAccountAddress,
@@ -551,139 +553,150 @@ export default function DAppWebView() {
 	};
 
 	return (
-		<View style={styles.container}>
-			<View style={styles.header}>
-				<TouchableOpacity style={styles.urlBar} activeOpacity={0.7}>
-					<Text style={styles.urlText} numberOfLines={1}>
-						{name}
-					</Text>
-				</TouchableOpacity>
-			</View>
-			<WebView
-				ref={webViewRef}
-				source={{ uri: url as string }}
-				style={styles.webview}
-				injectedJavaScript={injectedJavaScript}
-				onMessage={handleMessage}
-				onLoadStart={() => {}}
-				onLoadEnd={() => {}}
-				onError={(syntheticEvent) => {
-					const { nativeEvent } = syntheticEvent;
-					console.error('WebView error:', nativeEvent);
-					Toast.show({
-						type: 'error',
-						text1: 'Error loading page',
-						text2: nativeEvent.description,
-					});
-				}}
-				onShouldStartLoadWithRequest={(request) => {
-					const { url } = request;
-					const isExceptionDomain = sslExceptionDomains.some(domain => url.includes(domain));
-					
-					return isExceptionDomain || true;
-				}}
-				originWhitelist={['*']}
-				domStorageEnabled={true}
-				javaScriptEnabled={true}
-				thirdPartyCookiesEnabled={true}
-				mixedContentMode="always"
-			/>
-			{showTransactionForm && (
-				<View style={styles.modalOverlay}>
-					<KeyboardAvoidingView
-						behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-						style={{ flex: 1 }}
-					>
-						<ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-							<View style={styles.formContainer}>
-								{isProcessing ? (
-									<View style={styles.loadingContainer}>
-										<ActivityIndicator size="large" color="#fff" />
-										<Text style={styles.loadingText}>Processing transaction...</Text>
-									</View>
-								) : (
-									<>
-										<View style={styles.formHeader}>
-											<Text style={styles.formTitle}>Transaction Request</Text>
-											<Text style={styles.formSubtitle}>Type: {currentRequest[0]?.flag}</Text>
+		<SafeAreaView style={styles.safeArea}>
+			<View style={styles.container}>
+				<View style={styles.header}>
+					<TouchableOpacity style={styles.urlBar} activeOpacity={0.7}>
+						<Text style={styles.urlText} numberOfLines={1}>
+							{name}
+						</Text>
+					</TouchableOpacity>
+				</View>
+				<WebView
+					ref={webViewRef}
+					source={{ uri: url as string }}
+					style={styles.webview}
+					injectedJavaScript={injectedJavaScript}
+					onMessage={handleMessage}
+					onLoadStart={() => setIsWebViewLoading(true)}
+					onLoadEnd={() => setIsWebViewLoading(false)}
+					onError={(syntheticEvent) => {
+						const { nativeEvent } = syntheticEvent;
+						console.error('WebView error:', nativeEvent);
+						Toast.show({
+							type: 'error',
+							text1: 'Error loading page',
+							text2: nativeEvent.description,
+						});
+					}}
+					onShouldStartLoadWithRequest={(request) => {
+						const { url } = request;
+						const isExceptionDomain = sslExceptionDomains.some((domain) => url.includes(domain));
+
+						return isExceptionDomain || true;
+					}}
+					originWhitelist={['*']}
+					domStorageEnabled={true}
+					javaScriptEnabled={true}
+					thirdPartyCookiesEnabled={true}
+					sharedCookiesEnabled={true}
+					mixedContentMode="always"
+				/>
+				{isWebViewLoading && (
+					<View style={styles.loadingOverlay}>
+						<ActivityIndicator size="large" color="#1a1a1a" />
+						<Text style={styles.webviewLoadingText}>Loading...</Text>
+					</View>
+				)}
+				{showTransactionForm && (
+					<View style={styles.modalOverlay}>
+						<KeyboardAvoidingView
+							behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+							style={{ flex: 1 }}
+						>
+							<ScrollView
+								contentContainerStyle={{ flexGrow: 1 }}
+								keyboardShouldPersistTaps="handled"
+							>
+								<View style={styles.formContainer}>
+									{isProcessing ? (
+										<View style={styles.loadingContainer}>
+											<ActivityIndicator size="large" color="#fff" />
+											<Text style={styles.loadingText}>Processing transaction...</Text>
 										</View>
+									) : (
+										<>
+											<View style={styles.formHeader}>
+												<Text style={styles.formTitle}>Transaction Request</Text>
+												<Text style={styles.formSubtitle}>Type: {currentRequest[0]?.flag}</Text>
+											</View>
 
-										<ScrollView style={styles.paramsContainer}>
-											{Object.entries(currentRequest[0] || {}).map(([key, value]) =>
-												key !== 'flag' ? renderParameter(key, value) : null,
-											)}
-										</ScrollView>
+											<ScrollView style={styles.paramsContainer}>
+												{Object.entries(currentRequest[0] || {}).map(([key, value]) =>
+													key !== 'flag' ? renderParameter(key, value) : null,
+												)}
+											</ScrollView>
 
-										<View style={styles.passwordContainer}>
-											<Text style={styles.passwordLabel}>Enter your password to confirm:</Text>
-											<View style={styles.inputWrapper}>
-												<TextInput
-													style={[styles.passwordInput, formErrors.password && styles.inputError]}
-													value={password}
-													onChangeText={handlePasswordChange}
-													secureTextEntry
-													placeholder="Password"
-													placeholderTextColor="#999"
-												/>
-												{password.length > 0 && (
-													<TouchableOpacity
-														style={styles.clearButton}
-														onPress={() => {
-															setPassword('');
-															setFormErrors({});
-														}}
-													>
-														<MaterialIcons name="close" size={20} color="#999" />
-													</TouchableOpacity>
+											<View style={styles.passwordContainer}>
+												<Text style={styles.passwordLabel}>Enter your password to confirm:</Text>
+												<View style={styles.inputWrapper}>
+													<TextInput
+														style={[styles.passwordInput, formErrors.password && styles.inputError]}
+														value={password}
+														onChangeText={handlePasswordChange}
+														secureTextEntry
+														placeholder="Password"
+														placeholderTextColor="#999"
+													/>
+													{password.length > 0 && (
+														<TouchableOpacity
+															style={styles.clearButton}
+															onPress={() => {
+																setPassword('');
+																setFormErrors({});
+															}}
+														>
+															<MaterialIcons name="close" size={20} color="#999" />
+														</TouchableOpacity>
+													)}
+												</View>
+												{formErrors.password && (
+													<Text style={styles.errorText}>{formErrors.password}</Text>
 												)}
 											</View>
-											{formErrors.password && (
-												<Text style={styles.errorText}>{formErrors.password}</Text>
-											)}
-										</View>
 
-										<View style={styles.buttonContainer}>
-											<TouchableOpacity
-												style={[styles.button, styles.cancelButton]}
-												onPress={handleCancelTransaction}
-											>
-												<Text style={styles.buttonText}>Cancel</Text>
-											</TouchableOpacity>
-											<TouchableOpacity
-												style={[
-													styles.button,
-													password.length > 0 ? styles.confirmButton : styles.disabledButton,
-												]}
-												onPress={handleSubmitTransaction}
-												disabled={password.length === 0}
-											>
-												<Text
-													style={[
-														styles.buttonText,
-														password.length > 0
-															? styles.confirmButtonText
-															: styles.disabledButtonText,
-													]}
+											<View style={styles.buttonContainer}>
+												<TouchableOpacity
+													style={[styles.button, styles.cancelButton]}
+													onPress={handleCancelTransaction}
 												>
-													Confirm
-												</Text>
-											</TouchableOpacity>
-										</View>
-									</>
-								)}
-							</View>
-						</ScrollView>
-					</KeyboardAvoidingView>
-				</View>
-			)}
-		</View>
+													<Text style={styles.buttonText}>Cancel</Text>
+												</TouchableOpacity>
+												<TouchableOpacity
+													style={[
+														styles.button,
+														password.length > 0 ? styles.confirmButton : styles.disabledButton,
+													]}
+													onPress={handleSubmitTransaction}
+													disabled={password.length === 0}
+												>
+													<Text
+														style={[
+															styles.buttonText,
+															password.length > 0
+																? styles.confirmButtonText
+																: styles.disabledButtonText,
+														]}
+													>
+														Confirm
+													</Text>
+												</TouchableOpacity>
+											</View>
+										</>
+									)}
+								</View>
+							</ScrollView>
+						</KeyboardAvoidingView>
+					</View>
+				)}
+			</View>
+		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#fff',
 	},
 	header: {
 		height: hp(6),
@@ -693,21 +706,10 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderBottomColor: '#f0f0f0',
 	},
-	urlBar: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		backgroundColor: '#eeeeee',
-		paddingHorizontal: wp(4),
-		paddingVertical: hp(0.8),
-		borderRadius: wp(2),
-		minWidth: wp(35),
-		maxWidth: wp(50),
-	},
-	urlText: {
-		fontSize: hp(1.8),
+	headerTitle: {
+		fontSize: hp(2),
+		fontWeight: '600',
 		color: '#333',
-		textAlign: 'center',
-		flex: 1,
 	},
 	webview: {
 		flex: 1,
@@ -844,5 +846,41 @@ const styles = StyleSheet.create({
 		color: '#fff',
 		fontSize: hp(1.8),
 		marginTop: hp(2),
+	},
+	safeArea: {
+		flex: 1,
+		backgroundColor: '#fff',
+		paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
+	},
+	urlBar: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		backgroundColor: '#eeeeee',
+		paddingHorizontal: wp(4),
+		paddingVertical: hp(0.8),
+		borderRadius: wp(2),
+		minWidth: wp(35),
+		maxWidth: wp(50),
+	},
+	urlText: {
+		fontSize: hp(1.8),
+		color: '#333',
+		textAlign: 'center',
+		flex: 1,
+	},
+	loadingOverlay: {
+		position: 'absolute',
+		top: 0,
+		left: 0,
+		right: 0,
+		bottom: 0,
+		backgroundColor: '#fff',
+		justifyContent: 'center',
+		alignItems: 'center',
+	},
+	webviewLoadingText: {
+		marginTop: hp(2),
+		fontSize: hp(1.8),
+		color: '#333',
 	},
 });

@@ -1,3 +1,6 @@
+import '@/shim';
+import * as contract from 'tbc-contract';
+
 export function getTxHexByteLength(txHex: string) {
 	return txHex.length / 2;
 }
@@ -51,3 +54,12 @@ export function selectAddress(addresses: string[]): string {
 	const multiSigAddress = addresses.find((addr) => addr.length === 34 && !addr.startsWith('1'));
 	return multiSigAddress || addresses[0] || '';
 }
+
+export function getMultiSigType(multiSigAddress: string): string {
+	const { signatureCount, publicKeyCount } = contract.MultiSig.getSignatureAndPublicKeyCount(
+		multiSigAddress,
+	);
+	
+	return `${signatureCount}/${publicKeyCount}`;
+}
+
