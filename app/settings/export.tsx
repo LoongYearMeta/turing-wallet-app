@@ -1,6 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import {
 	StyleSheet,
 	Text,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
@@ -22,12 +23,19 @@ interface FormErrors {
 
 export default function ExportPage() {
 	const { t } = useTranslation();
+	const navigation = useNavigation();
 	const { getSalt, getPassKey, getEncryptedKeys } = useAccount();
 	const [password, setPassword] = useState('');
 	const [formErrors, setFormErrors] = useState<FormErrors>({});
 	const [isPasswordValid, setIsPasswordValid] = useState(false);
 	const [keys, setKeys] = useState<{ mnemonic?: string; walletWif: string; walletDerivationPath?: string }>({ walletWif: '' });
 	const [isLoading, setIsLoading] = useState(false);
+
+	useLayoutEffect(() => {
+		navigation.setOptions({
+			headerTitle: t('export')
+		});
+	}, [navigation, t]);
 
 	const handlePasswordChange = (value: string) => {
 		const cleanValue = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');

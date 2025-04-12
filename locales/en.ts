@@ -136,7 +136,7 @@ export default {
 	tbcLegacy: 'TBC Legacy',
 	btcTaproot: 'BTC Taproot',
 	btcLegacy: 'BTC Legacy',
-	btcTaprootLegacy: 'BTC Taproot Legacy',
+	tbcTaprootLegacy: 'TBC Taproot Legacy',
 
 	amount: 'Amount',
 	hideToken: 'Hide Token',
@@ -340,7 +340,7 @@ export default {
 	createMultiSigWalletDesc:
 		'Creating a MultiSig wallet will deposit 0.005 TBC to the MultiSig address. The MultiSig address and the list of public keys will be stored on the blockchain.',
 
-	// 登录页面
+
 	createOrRestoreWallet: 'Create or Restore Wallet',
 	chooseOption: 'Choose an option to get started',
 	createNewWallet: 'Create a new wallet',
@@ -350,7 +350,7 @@ export default {
 	restoreWithPrivateKey: 'Restore with Private Key',
 	restoreWithPrivateKeyDesc: 'Recover your existing wallet using your private key',
 
-	// 创建钱包页面
+	
 	createYourWallet: 'Create your wallet',
 	createNewAccount: 'Create a new account',
 	creatingAdditionalWallet: 'Creating additional wallet, please wait...',
@@ -358,15 +358,15 @@ export default {
 	walletCreationWaitMessage: 'This may take a few moments while we generate your secure wallet.',
 	failedToCreateWallet: 'Failed to create wallet. Please try again.',
 
-	// 确保有这两个键
+
 	createAccount: 'Create Account',
 	exportMnemonic: 'Export Mnemonic',
 	signOut: 'Sign Out',
 
-	// 恢复钱包相关
+
 	failedToRestoreWalletData: 'Failed to restore wallet data from blockchain.',
 
-	// 信息管理页面
+	
 
 	accountNameMustBeBetween3And15: 'Account name must be between 3 and 15 characters',
 
@@ -389,21 +389,21 @@ export default {
 	multiSigAddressDeletedSuccessfully: 'MultiSig address deleted successfully',
 	failedToDeleteMultiSig: 'Failed to delete MultiSig address',
 
-	// 地址描述
+
 	tbcAddressDescription:
 		'Use this address to trade TBC, TBC721, TBC20 assets and connect to DApps. You can also create MultiSig wallets with this address for more secure storage of your TBC and TBC20 assets',
 	taprootLegacyAddressDescription:
-		'Use this address to trade TBC. If you use inscription cross-chain @https://bitbus.net/, you will receive corresponding TBC and TBC20 assets at this address',
+		'Use this address to trade TBC, TBC721, TBC20 assets and connect to DApps. If you use inscription cross-chain @https://bitbus.net/, you will receive corresponding TBC and TBC20 assets at this address',
 	taprootAddressDescription: 'Use this address to trade BTC',
 	legacyAddressDescription: 'Use this address to trade BTC',
 
 	currentAddress: 'Current address',
 
-	// 信息管理页面补充
+
 
 	copied: 'copied to clipboard',
 
-	// 多签交易相关
+	
 	multiSigTransactions: 'MultiSig Transactions',
 	completed: 'Completed',
 	waitBroadcast: 'Wait Broadcast',
@@ -419,12 +419,12 @@ export default {
 	confirmWithdrawTransaction: 'Are you sure you want to withdraw this transaction?',
 	confirmBroadcastTransaction: 'Are you sure you want to broadcast this transaction?',
 
-	// 多签钱包创建相关
+
 	yourPubKey: 'Your Public Key',
 	pubKeyCount: 'Public Key Count',
 	requiredSignatures: 'Required Signatures',
 
-	// 多签交易相关补充
+	
 	initiateMultiSigTransaction: 'Initiate MultiSig Transaction',
 	senderAddress: 'Sender Address',
 	receiverAddress: 'Receiver Address',
@@ -436,7 +436,7 @@ export default {
 	transactionInitiatedSuccessfully: 'Transaction initiated successfully',
 	failedToInitiateTransaction: 'Failed to initiate transaction',
 
-	// 多签钱包创建相关补充
+
 	pubKey2: 'Public Key 2',
 	pubKey3: 'Public Key 3',
 	pubKey4: 'Public Key 4',
@@ -449,13 +449,13 @@ export default {
 	enterPubKey: 'Enter public key',
 	yourPublicKey: 'Your Public Key',
 
-	// 多签交易相关补充
+
 	searchTransactions: 'Search transactions by multiSig address',
 	enterReceiverAddress: 'Enter receiver address',
 
 	balance: 'Balance',
 
-	derivationPathHelpText: 'Enter a custom derivation path in the format x\'/x\'/x/x',
+	derivationPathHelpText: "Enter a custom derivation path in the format x'/x'/x/x",
 
 	noMatchingCollectionsFound: 'No matching collections found',
 
@@ -465,18 +465,77 @@ export default {
 	failedToHideCollection: 'Failed to hide collection',
 	nftsRefreshed: 'NFTs refreshed',
 	failedToRefreshNFTs: 'Failed to refresh NFTs',
-	
+
 	signOutAllAccounts: 'Sign Out All Accounts',
-	confirmSignOutMessage: 'Are you sure you want to sign out from all accounts? This will clear all data and cannot be undone.',
+	confirmSignOutMessage:
+		'Are you sure you want to sign out from all accounts? This will clear all data and cannot be undone.',
 
 	hideCollection: 'Hide Collection',
 	confirmHideCollection: 'Are you sure you want to hide this collection?',
 
 	accountNameOnlyLettersAndNumbers: 'Account name can only contain letters and numbers',
 
-	// 添加标准翻译键
+	
 	transactionRequest: 'Transaction Request',
 	pleaseReviewTransactionDetails: 'Please review the transaction details',
 	processing: 'Processing...',
 	processingTransactionPleaseWait: 'Processing transaction, please wait...',
+
+	welcome: 'Welcome',
+	welcomePunchline: 'Experience secure, simple digital asset management',
+
+	searchByTxId: 'Search by TxID...',
+
+	transactionHistoryUpdated: 'Transaction history updated',
+
+	failedToUpdateTransactionHistory: 'Failed to update transaction history',
+	all: 'All',
+	positive: 'Received transactions',
+	negative: 'Sent transactions',
+	time: 'Time',
+	change: 'Amount',
+	refreshFailed: 'Refresh failed',
+	available: 'Available',
+	transfer: 'Transfer',
+	pleaseEnterPassword: 'Please enter password',
+	pleaseFillAllPasswordFields: 'Please fill all password fields',
+	pleaseEnterPrivateKey: 'Please enter private key',
+	collectionSupplyLimitReached: 'Collection supply limit reached',
+	thisAccountAlreadyExists: 'This account already exists in your wallet',
+	accountCreatedSuccessfully: 'Account created successfully',
+	accountRestoredSuccessfully: 'Account restored successfully',
+	enterPubKeyCount: 'Enter public key count (3-10)',
+	enterRequiredSignatures: 'Enter required signatures',
+	pubKeyCountMustBeNumber: 'Public key count must be a number between 3 and 10',
+	requiredSignaturesMustBeNumber: 'Required signatures must be a number between 1 and the public key count',
+	pubKeyRequired: 'Public key cannot be empty',
+	invalidPubKey: 'Invalid public key',
+	pubKeyAlreadyExists: 'This public key already exists',
+	multiSigWalletCreatedSuccessfully: 'MultiSig wallet created successfully',
+	failedToCreateMultiSigWallet: 'Failed to create MultiSig wallet',
+	scanQRCode: 'Scan QR code',
+	verifyingPassword: 'Verifying password...',
+	creatingWallet: 'Creating wallet...',
+	restoringWallet: 'Restoring wallet...',
+	passwordVerificationFailed: 'Password verification failed',
+	restoreBlockchainData: 'Restore blockchain data',
+	restoreBlockchainDataDesc: 'This will restore your wallet data from the blockchain, including tokens, NFTs, and MultiSig wallets',
+	
+	fee: 'Fee',
+	asset: 'Asset',
+	tokensRefreshed: 'Tokens refreshed successfully',
+	failedToRefreshTokens: 'Failed to refresh tokens',
+	tokenPinned: 'Token pinned',
+	tokenUnpinned: 'Token unpinned',
+	failedToUpdatePinStatus: 'Failed to update pin status',
+	amountRequired: 'Please enter an amount',
+	enterValidPositiveNumber: 'Please enter a valid positive number',
+	amountExceedsBalance: 'Amount exceeds your balance',
+	accountError: 'Account error, please try again',
+	passwordValidationError: 'Password validation error',
+	recipientAddress: 'Recipient address',
+	max: 'Max',
+
+	pleaseFillAllFields: 'Please fill all fields',
+
 };

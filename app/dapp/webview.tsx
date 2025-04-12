@@ -595,7 +595,7 @@ export default function DAppWebView() {
 				{isWebViewLoading && (
 					<View style={styles.loadingOverlay}>
 						<ActivityIndicator size="large" color="#1a1a1a" />
-						<Text style={styles.webviewLoadingText}>Loading...</Text>
+						<Text style={styles.webviewLoadingText}>{t('loading')}</Text>
 					</View>
 				)}
 				{showTransactionForm && (

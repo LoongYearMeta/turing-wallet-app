@@ -22,6 +22,7 @@ import {
 	upsertFT,
 } from '@/utils/sqlite';
 import { fetchNFTCounts_byCollection } from '@/actions/get-nfts';
+import { getTaprootTweakPrivateKey } from '@/lib/taproot-legacy';
 
 export interface SendTransactionResponse {
 	txid?: string;
@@ -74,6 +75,7 @@ export const useResponse = () => {
 		updateCurrentAccountUtxos,
 		getAllAccountAddresses,
 		getAddresses,
+		isTaprootLegacyAccount,
 	} = useAccount();
 	const { sendTbc, finish_transaction } = useTbcTransaction();
 	const { getUTXO, mergeFT, sendFT, getFTUtxoByContractId } = useFtTransaction();
@@ -289,7 +291,13 @@ export const useResponse = () => {
 				}
 
 				const { walletWif } = retrieveKeys(password, encryptedKeys);
-				const privateKey = tbc.PrivateKey.fromString(walletWif);
+				let privateKey: tbc.PrivateKey;
+				if (isTaprootLegacyAccount()) {
+					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+				} else {
+					privateKey = tbc.PrivateKey.fromString(walletWif);
+				}
+
 				const address_from = getCurrentAccountAddress();
 				const utxo = await getUTXO(address_from, 0.01, password);
 				const newToken = new contract.FT({
@@ -450,7 +458,13 @@ export const useResponse = () => {
 				}
 
 				const { walletWif } = retrieveKeys(password, encryptedKeys);
-				const privateKey = tbc.PrivateKey.fromString(walletWif);
+				let privateKey: tbc.PrivateKey;
+				if (isTaprootLegacyAccount()) {
+					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+				} else {
+					privateKey = tbc.PrivateKey.fromString(walletWif);
+				}
+
 				const utxo = await getUTXO(address_from, 0.01, password);
 				let txSourceRaw: string = '';
 				let txMintRaw: string = '';
@@ -577,7 +591,13 @@ export const useResponse = () => {
 				}
 
 				const { walletWif } = retrieveKeys(password, encryptedKeys);
-				const privateKey = tbc.PrivateKey.fromString(walletWif);
+				let privateKey: tbc.PrivateKey;
+				if (isTaprootLegacyAccount()) {
+					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+				} else {
+					privateKey = tbc.PrivateKey.fromString(walletWif);
+				}
+
 				const utxo = await getUTXO(address_from, 0.01, password);
 				let poolUse;
 				if (poolNFT_version === 1) {
@@ -661,7 +681,13 @@ export const useResponse = () => {
 				}
 
 				const { walletWif } = retrieveKeys(password, encryptedKeys);
-				const privateKey = tbc.PrivateKey.fromString(walletWif);
+				let privateKey: tbc.PrivateKey;
+				if (isTaprootLegacyAccount()) {
+					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+				} else {
+					privateKey = tbc.PrivateKey.fromString(walletWif);
+				}
+
 				let poolUse;
 				if (poolNFT_version === 1) {
 					poolUse = new contract.poolNFT({
@@ -756,7 +782,13 @@ export const useResponse = () => {
 				}
 
 				const { walletWif } = retrieveKeys(password, encryptedKeys);
-				const privateKey = tbc.PrivateKey.fromString(walletWif);
+				let privateKey: tbc.PrivateKey;
+				if (isTaprootLegacyAccount()) {
+					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+				} else {
+					privateKey = tbc.PrivateKey.fromString(walletWif);
+				}
+
 				let poolUse;
 				if (poolNFT_version === 1) {
 					poolUse = new contract.poolNFT({
@@ -886,7 +918,13 @@ export const useResponse = () => {
 				}
 
 				const { walletWif } = retrieveKeys(password, encryptedKeys);
-				const privateKey = tbc.PrivateKey.fromString(walletWif);
+				let privateKey: tbc.PrivateKey;
+				if (isTaprootLegacyAccount()) {
+					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+				} else {
+					privateKey = tbc.PrivateKey.fromString(walletWif);
+				}
+
 
 				let poolUse;
 				if (poolNFT_version === 1) {
@@ -983,7 +1021,12 @@ export const useResponse = () => {
 				}
 
 				const { walletWif } = retrieveKeys(password, encryptedKeys);
-				const privateKey = tbc.PrivateKey.fromString(walletWif);
+				let privateKey: tbc.PrivateKey;
+				if (isTaprootLegacyAccount()) {
+					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+				} else {
+					privateKey = tbc.PrivateKey.fromString(walletWif);
+				}
 
 				let poolUse;
 				if (poolNFT_version === 1) {
@@ -1068,7 +1111,13 @@ export const useResponse = () => {
 				}
 
 				const { walletWif } = retrieveKeys(password, encryptedKeys);
-				const privateKey = tbc.PrivateKey.fromString(walletWif);
+				let privateKey: tbc.PrivateKey;
+				if (isTaprootLegacyAccount()) {
+					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+				} else {
+					privateKey = tbc.PrivateKey.fromString(walletWif);
+				}
+
 				let poolUse;
 				if (poolNFT_version === 1) {
 					poolUse = new contract.poolNFT({
@@ -1139,7 +1188,13 @@ export const useResponse = () => {
 				}
 
 				const { walletWif } = retrieveKeys(password, encryptedKeys);
-				const privateKey = tbc.PrivateKey.fromString(walletWif);
+				let privateKey: tbc.PrivateKey;
+				if (isTaprootLegacyAccount()) {
+					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+				} else {
+					privateKey = tbc.PrivateKey.fromString(walletWif);
+				}
+
 				let poolUse;
 				if (poolNFT_version === 1) {
 					poolUse = new contract.poolNFT({

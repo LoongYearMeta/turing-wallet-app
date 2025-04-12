@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import {
 	View,
 	Text,
@@ -9,14 +9,22 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
 
 export default function PrivacyPolicyPage() {
 	const { t } = useTranslation();
+	const navigation = useNavigation();
 	const [loading, setLoading] = useState(true);
 	const [showFullPolicy, setShowFullPolicy] = useState(false);
+
+	useLayoutEffect(() => {
+		navigation.setOptions({
+			headerTitle: t('privacyPolicy')
+		});
+	}, [navigation, t]);
 
 	useEffect(() => {
 		const timer = setTimeout(() => {

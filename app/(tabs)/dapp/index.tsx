@@ -27,17 +27,19 @@ export default function DAppPage() {
 	const [dapps, setDapps] = useState<DApp[]>([]);
 	const [filteredDapps, setFilteredDapps] = useState<DApp[]>([]);
 	const [refreshing, setRefreshing] = useState(false);
-	const { isTbcAccount, getCurrentAccountType } = useAccount();
+	const { isTbcAccount, isTaprootLegacyAccount, getCurrentAccountType } = useAccount();
 	const [isSearching, setIsSearching] = useState(false);
 	const [noResults, setNoResults] = useState(false);
+
+	const isConnectAccount = isTbcAccount() || isTaprootLegacyAccount();
 
 	const loadDApps = useCallback(async () => {
 		const allDApps = await getAllDApps();
 		const filteredDApps = allDApps.filter(
-			(dapp) => isTbcAccount() || (!isTbcAccount() && !dapp.if_need_tbc_address),
+			(dapp) => isConnectAccount || (!isConnectAccount && !dapp.if_need_tbc_address),
 		);
 		setDapps(filteredDApps);
-	}, [isTbcAccount]);
+	}, [isConnectAccount]);
 
 	useEffect(() => {
 		const accountType = getCurrentAccountType();
@@ -116,17 +118,9 @@ export default function DAppPage() {
 							</TouchableOpacity>
 						)}
 					</View>
-					
-					<TouchableOpacity 
-						style={styles.refreshButton} 
-						onPress={onRefresh}
-						disabled={refreshing}
-					>
-						<MaterialIcons 
-							name="refresh" 
-							size={24} 
-							color={refreshing ? "#999" : "#333"} 
-						/>
+
+					<TouchableOpacity style={styles.refreshButton} onPress={onRefresh} disabled={refreshing}>
+						<MaterialIcons name="refresh" size={24} color={refreshing ? '#999' : '#333'} />
 					</TouchableOpacity>
 				</View>
 
@@ -148,10 +142,10 @@ export default function DAppPage() {
 							</View>
 						) : noResults ? (
 							<View style={styles.emptyContainer}>
-								<Text style={styles.emptyText}>{t('noDappsFoundMatching')} "{searchText}"</Text>
-								<Text style={styles.emptySubText}>
-									{t('tryDifferentKeywords')}
+								<Text style={styles.emptyText}>
+									{t('noDappsFoundMatching')} "{searchText}"
 								</Text>
+								<Text style={styles.emptySubText}>{t('tryDifferentKeywords')}</Text>
 							</View>
 						) : filteredDapps.length > 0 ? (
 							filteredDapps.map((dapp) => (

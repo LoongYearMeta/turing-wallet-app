@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useLayoutEffect } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 
 import { AddAddressModal } from '@/components/modals/add-address-modal';
 import { ConfirmModal } from '@/components/modals/confirm-modal';
@@ -17,12 +18,19 @@ import {
 
 export default function AddressBookScreen() {
 	const { t } = useTranslation();
+	const navigation = useNavigation();
 	const [addresses, setAddresses] = useState<string[]>([]);
 	const [multiSigAddresses, setMultiSigAddresses] = useState<string[]>([]);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [addressToDelete, setAddressToDelete] = useState('');
 	const { getCurrentAccountAddress } = useAccount();
+
+	useLayoutEffect(() => {
+		navigation.setOptions({
+			headerTitle: t('addressBook')
+		});
+	}, [navigation, t]);
 
 	useEffect(() => {
 		loadAddresses();

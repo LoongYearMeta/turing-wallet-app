@@ -177,7 +177,7 @@ export default {
 	tbcLegacy: 'TBC Legacy',
 	btcTaproot: 'BTC Taproot',
 	btcLegacy: 'BTC Legacy',
-	btcTaprootLegacy: 'BTC Taproot Legacy',
+	tbcTaprootLegacy: 'TBC Taproot Legacy',
 	sending: '发送中...',
 	transactionSentSuccessfully: '交易发送成功',
 	transactionFailed: '交易失败',
@@ -405,7 +405,7 @@ export default {
 	restoreBlockchainData: '恢复区块链数据',
 	restoreBlockchainDataDesc: '这将从区块链恢复您的钱包数据，包括代币、NFT和多签钱包',
 
-	// 创建钱包页面
+	
 	createYourWallet: '创建您的钱包',
 	createNewAccount: '创建新账户',
 	creatingAdditionalWallet: '正在创建额外的钱包，请稍候...',
@@ -413,10 +413,10 @@ export default {
 	walletCreationWaitMessage: '生成安全钱包可能需要一些时间，请耐心等待。',
 	failedToCreateWallet: '创建钱包失败，请重试。',
 
-	// 恢复钱包相关
+
 	failedToRestoreWalletData: '从区块链恢复钱包数据失败。',
 
-	// 信息管理页面
+
 
 	accountNameMustBeBetween3And15: '账户名称必须在3到15个字符之间',
 
@@ -440,11 +440,10 @@ export default {
 	multiSigAddressDeletedSuccessfully: '多签地址删除成功',
 	failedToDeleteMultiSig: '删除多签地址失败',
 
-	// 地址描述
 	tbcAddressDescription:
 		'使用此地址交易 TBC、TBC721、TBC20 资产并连接到 DApps。您还可以使用此地址创建多签钱包，以更安全地存储您的 TBC 和 TBC20 资产',
 	taprootLegacyAddressDescription:
-		'使用此地址交易 TBC。如果您使用铭文跨链 @https://bitbus.net/，您将在此地址收到相应的 TBC 和 TBC20 资产',
+		'使用此地址交易 TBC、TBC721、TBC20 资产并连接到 DApps。如果您使用铭文跨链 @https://bitbus.net/，您将在此地址收到相应的 TBC 和 TBC20 资产',
 	taprootAddressDescription: '使用此地址交易 BTC',
 	legacyAddressDescription: '使用此地址交易 BTC',
 
@@ -452,7 +451,6 @@ export default {
 
 	copied: '已复制到剪贴板',
 
-	// 多签交易相关
 	multiSigTransactions: '多签交易',
 	completed: '已完成',
 	waitBroadcast: '等待广播',
@@ -468,7 +466,6 @@ export default {
 	confirmWithdrawTransaction: '您确定要撤回此交易吗？',
 	confirmBroadcastTransaction: '您确定要广播此交易吗？',
 
-	// 多签交易相关补充
 	initiateMultiSigTransaction: '发起多签交易',
 	senderAddress: '发送地址',
 	receiverAddress: '接收地址',
@@ -480,7 +477,6 @@ export default {
 	transactionInitiatedSuccessfully: '交易发起成功',
 	failedToInitiateTransaction: '发起交易失败',
 
-	// 多签钱包创建相关补充
 	pubKey2: '公钥 2',
 	pubKey3: '公钥 3',
 	pubKey4: '公钥 4',
@@ -493,7 +489,7 @@ export default {
 
 	yourPublicKey: '您的公钥',
 
-	// 多签交易相关补充
+
 	searchTransactions: '按多签地址搜索交易',
 	enterReceiverAddress: '输入接收地址',
 
@@ -519,10 +515,12 @@ export default {
 
 	accountNameOnlyLettersAndNumbers: '账户名称只能包含字母和数字',
 
-	// 以下是webview.tsx中使用的英文原文作为翻译键的对应中文翻译
+	
 	transactionRequest: '交易请求',
 	pleaseReviewTransactionDetails: '请检查交易详情',
 	processing: '处理中...',
 	processingTransactionPleaseWait: '正在处理交易，请稍候...',
+
+	nftHidden: 'NFT已隐藏',
 
 };

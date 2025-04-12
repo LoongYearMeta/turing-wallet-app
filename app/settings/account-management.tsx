@@ -1,8 +1,9 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 
 import { ConfirmModal } from '@/components/modals/confirm-modal';
 import { Modal } from '@/components/ui/modal';
@@ -15,7 +16,14 @@ import { SwitchTypeModal } from '@/components/modals/switch-type-modal';
 
 export default function AccountManagementPage() {
 	const { t } = useTranslation();
+	const navigation = useNavigation();
 	const { accounts, currentAccount, removeAccount, switchAccount, clear } = useAccount();
+
+	useLayoutEffect(() => {
+		navigation.setOptions({
+			headerTitle: t('accountManagement')
+		});
+	}, [navigation, t]);
 
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [deleteAddress, setDeleteAddress] = useState('');
@@ -91,7 +99,7 @@ export default function AccountManagementPage() {
 			case AccountType.TAPROOT:
 				return 'Taproot';
 			case AccountType.TAPROOT_LEGACY:
-				return t('btcTaprootLegacy');
+				return t('tbcTaprootLegacy');
 			case AccountType.LEGACY:
 				return t('btcLegacy');
 			default:

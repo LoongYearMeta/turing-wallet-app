@@ -1,10 +1,11 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { Linking, Platform } from 'react-native';
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 
 import { hp, wp } from '@/lib/common';
 
@@ -17,7 +18,14 @@ const STORE_URLS = {
 
 export default function SystemSettingsPage() {
 	const { t, i18n } = useTranslation();
-	
+	const navigation = useNavigation();
+
+	useLayoutEffect(() => {
+		navigation.setOptions({
+			headerTitle: t('systemSettings'),
+		});
+	}, [navigation, t]);
+
 	const handleCheckUpdate = () => {
 		const storeUrl = Platform.select({
 			ios: STORE_URLS.ios,
@@ -42,7 +50,7 @@ export default function SystemSettingsPage() {
 		<View style={styles.container}>
 			<ScrollView style={styles.scrollView}>
 				<View style={styles.listContainer}>
-					<TouchableOpacity 
+					<TouchableOpacity
 						style={styles.settingItem}
 						onPress={() => router.push('/settings/language')}
 					>
@@ -71,8 +79,8 @@ export default function SystemSettingsPage() {
 						</View>
 					</TouchableOpacity>
 
-					<TouchableOpacity 
-						style={styles.settingItem} 
+					<TouchableOpacity
+						style={styles.settingItem}
 						onPress={() => router.push('/settings/privacy-policy')}
 					>
 						<View style={styles.settingInfo}>

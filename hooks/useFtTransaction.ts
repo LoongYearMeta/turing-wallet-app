@@ -161,7 +161,12 @@ export const useFtTransaction = () => {
 				}
 
 				const { walletWif } = retrieveKeys(password, encryptedKeys);
-				const privateKey = tbc.PrivateKey.fromString(walletWif);
+				let privateKey: tbc.PrivateKey;
+				if (isTaprootLegacyAccount()) {
+					privateKey = tbc.PrivateKey.fromString(getTaprootTweakPrivateKey(walletWif));
+				} else {
+					privateKey = tbc.PrivateKey.fromString(walletWif);
+				}
 				const Token = new contract.FT(contractId);
 				const TokenInfo = await contract.API.fetchFtInfo(Token.contractTxid);
 				Token.initialize(TokenInfo);

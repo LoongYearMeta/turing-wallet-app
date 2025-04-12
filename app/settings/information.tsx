@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useLayoutEffect } from 'react';
 import {
 	Modal,
 	ScrollView,
@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 
 import { syncMultiSigs } from '@/actions/get-multiSigs';
 import { RestoreMultiSigModal } from '@/components/modals/restore-multisig-modal';
@@ -32,6 +33,7 @@ interface MultiSigAddress {
 
 export default function InformationPage() {
 	const { t } = useTranslation();
+	const navigation = useNavigation();
 	const {
 		getCurrentAccountAddress,
 		getCurrentAccountTbcPubKey,
@@ -60,6 +62,12 @@ export default function InformationPage() {
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [multiSigToDelete, setMultiSigToDelete] = useState<string | null>(null);
 	const [refreshingMultiSigs, setRefreshingMultiSigs] = useState(false);
+
+	useLayoutEffect(() => {
+		navigation.setOptions({
+			headerTitle: t('informationManagement')
+		});
+	}, [navigation, t]);
 
 	useEffect(() => {
 		if (disableMultiSig) {
@@ -242,6 +250,32 @@ export default function InformationPage() {
 					</>
 				)}
 
+{addresses?.taprootLegacyAddress && (
+					<>
+						<View style={styles.addressItem}>
+							<View style={styles.itemLeft}>
+								<Text style={styles.addressLabel}> TBC Taproot legacy address</Text>
+								<View style={styles.valueWithCopy}>
+									<Text style={styles.addressValue} numberOfLines={1} ellipsizeMode="middle">
+										{addresses.taprootLegacyAddress}
+									</Text>
+									<TouchableOpacity
+										style={styles.inlineCopyButton}
+										onPress={() =>
+											handleCopy(addresses.taprootLegacyAddress!, 'Taproot Legacy Address')
+										}
+									>
+										<MaterialIcons name="content-copy" size={16} color={theme.colors.primary} />
+									</TouchableOpacity>
+								</View>
+								<Text style={styles.addressDescription}>
+									{t('taprootLegacyAddressDescription')}
+								</Text>
+							</View>
+						</View>
+					</>
+				)}
+
 				{addresses?.taprootAddress && (
 					<>
 						<View style={styles.addressItem}>
@@ -290,31 +324,7 @@ export default function InformationPage() {
 					</>
 				)}
 
-				{addresses?.taprootLegacyAddress && (
-					<>
-						<View style={styles.addressItem}>
-							<View style={styles.itemLeft}>
-								<Text style={styles.addressLabel}> BTC Taproot legacy address</Text>
-								<View style={styles.valueWithCopy}>
-									<Text style={styles.addressValue} numberOfLines={1} ellipsizeMode="middle">
-										{addresses.taprootLegacyAddress}
-									</Text>
-									<TouchableOpacity
-										style={styles.inlineCopyButton}
-										onPress={() =>
-											handleCopy(addresses.taprootLegacyAddress!, 'Taproot Legacy Address')
-										}
-									>
-										<MaterialIcons name="content-copy" size={16} color={theme.colors.primary} />
-									</TouchableOpacity>
-								</View>
-								<Text style={styles.addressDescription}>
-									{t('taprootLegacyAddressDescription')}
-								</Text>
-							</View>
-						</View>
-					</>
-				)}
+				
 
 				<View style={styles.separator} />
 
