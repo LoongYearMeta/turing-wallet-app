@@ -10,6 +10,7 @@ import {
 	TouchableWithoutFeedback,
 	View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { hp, wp } from '@/lib/common';
 import { formatBalance } from '@/lib/util';
@@ -36,6 +37,7 @@ export const AssetSelector = ({
 	assets,
 	selectedAsset,
 }: AssetSelectorProps) => {
+	const { t } = useTranslation();
 	const [searchText, setSearchText] = useState('');
 	const [filteredAssets, setFilteredAssets] = useState<Asset[]>(assets);
 
@@ -77,12 +79,12 @@ export const AssetSelector = ({
 					<TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
 						<View style={styles.modalContent}>
 							<View style={styles.header}>
-								<Text style={styles.title}>Select Asset</Text>
+								<Text style={styles.title}>{t('selectAsset')}</Text>
 								<View style={styles.searchInputWrapper}>
 									<MaterialIcons name="search" size={20} color="#666" style={styles.searchIcon} />
 									<TextInput
 										style={styles.searchInput}
-										placeholder="Search assets"
+										placeholder={t('searchAssets')}
 										value={searchText}
 										onChangeText={setSearchText}
 										autoCapitalize="none"
@@ -113,7 +115,7 @@ export const AssetSelector = ({
 								/>
 							) : (
 								<Text style={styles.emptyText}>
-									{searchText ? 'No matching assets found' : 'No assets available'}
+									{searchText ? t('noMatchingAssetsFound') : t('noAssetsAvailable')}
 								</Text>
 							)}
 						</View>

@@ -1,6 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { Modal } from '@/components/ui/modal';
 import { useAccount } from '@/hooks/useAccount';
@@ -14,6 +15,7 @@ interface SwitchTypeModalProps {
 }
 
 export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
+	const { t } = useTranslation();
 	const {
 		getAddresses,
 		getCurrentAccountType,
@@ -55,14 +57,14 @@ export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
 	return (
 		<Modal visible={visible} onClose={onClose}>
 			<View style={styles.container}>
-				<Text style={styles.title}>Switch Account Type</Text>
+				<Text style={styles.title}>{t('switchAccountType')}</Text>
 				{canSwitchToTbc() && (
 					<TouchableOpacity
 						style={[styles.item, currentType === AccountType.TBC && styles.currentItem]}
 						onPress={() => handleSwitch(AccountType.TBC)}
 					>
 						<View style={styles.itemLeft}>
-							<Text style={styles.itemType}>TBC Legacy</Text>
+							<Text style={styles.itemType}>{t('tbcLegacy')}</Text>
 							<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
 								{addresses.tbcAddress}
 							</Text>
@@ -79,7 +81,7 @@ export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
 						onPress={() => handleSwitch(AccountType.TAPROOT)}
 					>
 						<View style={styles.itemLeft}>
-							<Text style={styles.itemType}>BTC Taproot</Text>
+							<Text style={styles.itemType}>{t('btcTaproot')}</Text>
 							<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
 								{addresses.taprootAddress}
 							</Text>
@@ -96,7 +98,7 @@ export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
 						onPress={() => handleSwitch(AccountType.LEGACY)}
 					>
 						<View style={styles.itemLeft}>
-							<Text style={styles.itemType}>BTC Legacy</Text>
+							<Text style={styles.itemType}>{t('btcLegacy')}</Text>
 							<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
 								{addresses.legacyAddress}
 							</Text>
@@ -113,7 +115,7 @@ export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
 						onPress={() => handleSwitch(AccountType.TAPROOT_LEGACY)}
 					>
 						<View style={styles.itemLeft}>
-							<Text style={styles.itemType}>BTC Taproot Legacy</Text>
+							<Text style={styles.itemType}>{t('btcTaprootLegacy')}</Text>
 							<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
 								{addresses.taprootLegacyAddress}
 							</Text>

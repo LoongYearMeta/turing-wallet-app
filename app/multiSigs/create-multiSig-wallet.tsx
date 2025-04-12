@@ -10,6 +10,7 @@ import {
 	View,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { useAccount } from '@/hooks/useAccount';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
@@ -35,6 +36,7 @@ interface FormErrors {
 }
 
 export default function CreateMultiSigWalletPage() {
+	const { t } = useTranslation();
 	const { getCurrentAccountAddress, getSalt, getPassKey, getCurrentAccountTbcPubKey } =
 		useAccount();
 	const { createMultiSigWallet } = useTbcTransaction();
@@ -300,18 +302,17 @@ export default function CreateMultiSigWalletPage() {
 		<View style={styles.container}>
 			<KeyboardAvoidingWrapper contentContainerStyle={styles.content} backgroundColor="#fff">
 				<Text style={styles.description}>
-					Creating a MultiSig wallet will deposit 0.005 TBC to the MultiSig address. The MultiSig
-					address and the list of public keys will be stored on the blockchain.
+					{t('createMultiSigWalletDesc')}
 				</Text>
 
 				<View style={styles.inputGroup}>
-					<Text style={styles.label}>Number of Public Keys (3-10)</Text>
+					<Text style={styles.label}>{t('pubKeyCount')}</Text>
 					<View style={styles.inputWrapper}>
 						<TextInput
 							style={[styles.input, formErrors.pubKeyCount && styles.inputError]}
 							value={formData.pubKeyCount}
 							onChangeText={(text) => handleInputChange('pubKeyCount', text)}
-							placeholder="Enter number of public keys"
+							placeholder={t('enterPubKeyCount')}
 							keyboardType="numeric"
 							editable={!isLoading}
 						/>
@@ -320,15 +321,13 @@ export default function CreateMultiSigWalletPage() {
 				</View>
 
 				<View style={styles.inputGroup}>
-					<Text style={styles.label}>
-						Required Signatures(1-6 && less than number of public keys)
-					</Text>
+					<Text style={styles.label}>{t('requiredSignatures')}</Text>
 					<View style={styles.inputWrapper}>
 						<TextInput
 							style={[styles.input, formErrors.requiredSignatures && styles.inputError]}
 							value={formData.requiredSignatures}
 							onChangeText={(text) => handleInputChange('requiredSignatures', text)}
-							placeholder="Enter required signatures"
+							placeholder={t('enterRequiredSignatures')}
 							keyboardType="numeric"
 							editable={!isLoading}
 						/>
@@ -341,7 +340,7 @@ export default function CreateMultiSigWalletPage() {
 				{formData.pubKeys.map((pubKey, index) => (
 					<View key={index} style={styles.inputGroup}>
 						<Text style={styles.label}>
-							Public Key {index + 1} {index === 0 ? '(Your Public Key)' : ''}
+							{index === 0 ? t('yourPublicKey') : t(`pubKey${index + 1}`)}
 						</Text>
 						<View style={styles.inputWrapper}>
 							<TextInput
@@ -353,7 +352,7 @@ export default function CreateMultiSigWalletPage() {
 								]}
 								value={displayPubKeys[index]}
 								onChangeText={(text) => handlePubKeyChange(index, text)}
-								placeholder={`Enter public key ${index + 1}`}
+								placeholder={t('enterPubKey')}
 								autoCapitalize="none"
 								autoCorrect={false}
 								editable={!isLoading && index !== 0}
@@ -374,13 +373,13 @@ export default function CreateMultiSigWalletPage() {
 				))}
 
 				<View style={styles.inputGroup}>
-					<Text style={styles.label}>Password</Text>
+					<Text style={styles.label}>{t('password')}</Text>
 					<View style={styles.inputWrapper}>
 						<TextInput
 							style={[styles.input, formErrors.password && styles.inputError]}
 							value={formData.password}
 							onChangeText={(text) => handleInputChange('password', text)}
-							placeholder="Enter your password"
+							placeholder={t('enterPassword')}
 							secureTextEntry={true}
 							autoCapitalize="none"
 							autoCorrect={false}
@@ -406,7 +405,7 @@ export default function CreateMultiSigWalletPage() {
 					{isLoading ? (
 						<ActivityIndicator color="#fff" size="small" />
 					) : (
-						<Text style={styles.createButtonText}>Create MultiSig Wallet</Text>
+						<Text style={styles.createButtonText}>{t('createMultiSigWallet')}</Text>
 					)}
 				</TouchableOpacity>
 			</KeyboardAvoidingWrapper>

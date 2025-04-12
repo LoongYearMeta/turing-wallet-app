@@ -190,7 +190,7 @@ export const useFtTransaction = () => {
 						txId = await contract.API.broadcastTXraw(txHex as string);
 					} catch (error: any) {
 						if (
-							error.message.includes('missing inputs') ||
+							error.message.includes('Missing inputs') ||
 							error.message.includes('txn-mempool-conflict')
 						) {
 							const newUtxos = await fetchUTXOs(address_from);
@@ -572,7 +572,7 @@ export const useFtTransaction = () => {
 						txId = await contract.API.broadcastTXraw(txHex);
 					} catch (error: any) {
 						if (
-							error.message.includes('missing inputs') ||
+							error.message.includes('Missing inputs') ||
 							error.message.includes('txn-mempool-conflict')
 						) {
 							const newUtxos = await fetchUTXOs(address);

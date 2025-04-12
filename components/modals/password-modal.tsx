@@ -8,6 +8,7 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { Modal } from '@/components/ui/modal';
 import { hp, wp } from '@/lib/common';
@@ -30,12 +31,13 @@ export const PasswordModal = ({
 	onCancel,
 	loading = false,
 }: PasswordModalProps) => {
+	const { t } = useTranslation();
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState<string | undefined>();
 
 	const handleSubmit = async () => {
 		if (!password) {
-			setError('Password is required');
+			setError(t('passwordRequired'));
 			return;
 		}
 
@@ -48,7 +50,7 @@ export const PasswordModal = ({
 			if (err instanceof Error) {
 				setError(err.message);
 			} else {
-				setError('An error occurred');
+				setError(t('anErrorOccurred'));
 			}
 		}
 	};
@@ -73,7 +75,7 @@ export const PasswordModal = ({
 							setPassword(text);
 							if (error) setError(undefined);
 						}}
-						placeholder="Enter your password"
+						placeholder={t('enterYourPassword')}
 						secureTextEntry
 						autoFocus={visible}
 					/>
@@ -93,10 +95,9 @@ export const PasswordModal = ({
 				{error && <Text style={styles.errorText}>{error}</Text>}
 
 				<View style={styles.buttonContainer}>
-					<TouchableOpacity style={styles.cancelButton} onPress={handleCancel} disabled={loading}>
-						<Text style={styles.cancelButtonText}>Cancel</Text>
+					<TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+						<Text style={styles.cancelButtonText}>{t('cancel')}</Text>
 					</TouchableOpacity>
-
 					<TouchableOpacity
 						style={[styles.confirmButton, loading && styles.buttonDisabled]}
 						onPress={handleSubmit}
@@ -105,7 +106,7 @@ export const PasswordModal = ({
 						{loading ? (
 							<ActivityIndicator size="small" color="#fff" />
 						) : (
-							<Text style={styles.confirmButtonText}>Confirm</Text>
+							<Text style={styles.confirmButtonText}>{t('confirm')}</Text>
 						)}
 					</TouchableOpacity>
 				</View>

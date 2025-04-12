@@ -1,14 +1,17 @@
 import { Stack } from 'expo-router';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function HomeLayout() {
+	const { t } = useTranslation();
+	
 	return (
 		<Stack>
 			<Stack.Screen name="index" options={{ headerShown: false }} />
 			<Stack.Screen
 				name="token/token-history"
 				options={{
-					headerTitle: 'Token History',
+					headerTitle: t('tokenHistory'),
 					presentation: 'card',
 					headerShown: true,
 				}}
@@ -16,21 +19,21 @@ export default function HomeLayout() {
 			<Stack.Screen
 				name="send"
 				options={{
-					headerTitle: 'Send Assets',
+					headerTitle: t('sendAssets'),
 					headerShown: true,
 				}}
 			/>
 			<Stack.Screen
 				name="history"
 				options={{
-					headerTitle: 'Transaction History',
+					headerTitle: t('transactionHistory'),
 					headerShown: true,
 				}}
 			/>
 			<Stack.Screen
 				name="token/token-transfer"
 				options={{
-					headerTitle: 'Transfer Token',
+					headerTitle: t('transferToken'),
 					presentation: 'card',
 					headerShown: true,
 				}}

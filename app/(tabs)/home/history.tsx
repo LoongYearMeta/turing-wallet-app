@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Menu, MenuItem } from 'react-native-material-menu';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { syncTransactionHistory } from '@/actions/get-transaction-history';
 import {
@@ -31,6 +32,7 @@ type FilterType = 'all' | 'positive' | 'negative';
 type TxType = 'P2PKH' | 'TBC20' | 'TBC721' | 'TBC MS' | 'P2TR';
 
 const HistoryPage = () => {
+	const { t } = useTranslation();
 	const { getCurrentAccountAddress, getCurrentAccountType } = useAccount();
 	const accountType = getCurrentAccountType();
 	const [activeType, setActiveType] = useState<TxType>('P2PKH');
@@ -107,8 +109,8 @@ const HistoryPage = () => {
 
 			Toast.show({
 				type: 'success',
-				text1: 'Success',
-				text2: 'Transaction history updated',
+				text1: t('success'),
+				text2: t('transactionHistoryUpdated'),
 				position: 'top',
 				visibilityTime: 2000,
 			});
@@ -117,8 +119,8 @@ const HistoryPage = () => {
 
 			Toast.show({
 				type: 'error',
-				text1: 'Refresh Failed',
-				text2: error instanceof Error ? error.message : 'Failed to update transaction history',
+				text1: t('refreshFailed'),
+				text2: error instanceof Error ? error.message : t('failedToUpdateTransactionHistory'),
 				position: 'top',
 				visibilityTime: 3000,
 			});
@@ -198,7 +200,7 @@ const HistoryPage = () => {
 					<MaterialIcons name="search" size={24} color="#666" style={styles.searchIcon} />
 					<TextInput
 						style={styles.searchInput}
-						placeholder="Search by ID..."
+						placeholder={t('searchByTxId')}
 						value={searchText}
 						onChangeText={setSearchText}
 						autoCapitalize="none"
@@ -229,13 +231,13 @@ const HistoryPage = () => {
 						style={styles.menu}
 					>
 						<MenuItem onPress={() => handleFilter('all')} textStyle={styles.menuItemText}>
-							<Text>All</Text>
+							<Text>{t('all')}</Text>
 						</MenuItem>
 						<MenuItem onPress={() => handleFilter('positive')} textStyle={styles.menuItemText}>
-							<Text style={styles.positive}>Positive</Text>
+							<Text style={styles.positive}>{t('positive')}</Text>
 						</MenuItem>
 						<MenuItem onPress={() => handleFilter('negative')} textStyle={styles.menuItemText}>
-							<Text style={styles.negative}>Negative</Text>
+							<Text style={styles.negative}>{t('negative')}</Text>
 						</MenuItem>
 					</Menu>
 					<TouchableOpacity onPress={handleRefresh} style={styles.actionButton}>
@@ -252,22 +254,22 @@ const HistoryPage = () => {
 						style={styles.menu}
 					>
 						<MenuItem onPress={() => handleSort('timeDesc')} textStyle={styles.menuItemText}>
-							<Text>Time ↓</Text>
+							<Text>{t('time')} ↓</Text>
 						</MenuItem>
 						<MenuItem onPress={() => handleSort('timeAsc')} textStyle={styles.menuItemText}>
-							<Text>Time ↑</Text>
+							<Text>{t('time')} ↑</Text>
 						</MenuItem>
 						<MenuItem onPress={() => handleSort('changeDesc')} textStyle={styles.menuItemText}>
-							<Text>Change ↓</Text>
+							<Text>{t('change')} ↓</Text>
 						</MenuItem>
 						<MenuItem onPress={() => handleSort('changeAsc')} textStyle={styles.menuItemText}>
-							<Text>Change ↑</Text>
+							<Text>{t('change')} ↑</Text>
 						</MenuItem>
 						<MenuItem onPress={() => handleSort('feeDesc')} textStyle={styles.menuItemText}>
-							<Text>Fee ↓</Text>
+							<Text>{t('fee')} ↓</Text>
 						</MenuItem>
 						<MenuItem onPress={() => handleSort('feeAsc')} textStyle={styles.menuItemText}>
-							<Text>Fee ↑</Text>
+							<Text>{t('fee')} ↑</Text>
 						</MenuItem>
 					</Menu>
 				</View>

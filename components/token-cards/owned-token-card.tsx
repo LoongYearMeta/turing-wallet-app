@@ -3,6 +3,7 @@ import * as Clipboard from 'expo-clipboard';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, TouchableWithoutFeedback } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { hp, wp } from '@/lib/common';
 import { formatBalance, formatContractId } from '@/lib/util';
@@ -23,11 +24,13 @@ export const OwnedTokenCard = ({
 	onDeletePress,
 	onLongPress,
 }: OwnedTokenCardProps) => {
+	const { t } = useTranslation();
+	
 	const handleCopyId = async () => {
 		await Clipboard.setStringAsync(token.id);
 		Toast.show({
 			type: 'success',
-			text1: 'Contract address copied to clipboard',
+			text1: t('contractAddressCopied'),
 		});
 	};
 
@@ -57,7 +60,7 @@ export const OwnedTokenCard = ({
 								<MaterialIcons name="content-copy" size={16} color="#666" />
 							</TouchableOpacity>
 						</View>
-						<Text style={styles.symbol}>symbol: {token.symbol}</Text>
+						<Text style={styles.symbol}>{t('symbol')}: {token.symbol}</Text>
 					</View>
 				</View>
 			</View>

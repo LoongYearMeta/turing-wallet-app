@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Menu, MenuItem } from 'react-native-material-menu';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { syncNFTHistory } from '@/actions/get-nft-history';
 import { NFTHistoryCard } from '@/components/nft-cards/nft-history-card';
@@ -15,6 +16,7 @@ import { getNFTHistoryByContractId } from '@/utils/sqlite';
 type SortOption = 'timeAsc' | 'timeDesc';
 
 const NFTHistoryPage = () => {
+	const { t } = useTranslation();
 	const { id } = useLocalSearchParams<{
 		id: string;
 	}>();
@@ -47,15 +49,15 @@ const NFTHistoryPage = () => {
 			await loadHistories();
 			Toast.show({
 				type: 'success',
-				text1: 'Success',
-				text2: 'History refreshed successfully',
+				text1: t('success'),
+				text2: t('historyRefreshedSuccessfully'),
 			});
 		} catch (error) {
 			console.error('Failed to refresh history:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to refresh history',
+				text1: t('error'),
+				text2: t('failedToRefreshHistory'),
 			});
 		} finally {
 			setRefreshing(false);
@@ -94,7 +96,7 @@ const NFTHistoryPage = () => {
 					<MaterialIcons name="search" size={24} color="#666" style={styles.searchIcon} />
 					<TextInput
 						style={styles.searchInput}
-						placeholder="Search by ID..."
+						placeholder={t('searchById')}
 						value={searchText}
 						onChangeText={setSearchText}
 						autoCapitalize="none"
@@ -124,10 +126,10 @@ const NFTHistoryPage = () => {
 						style={styles.menu}
 					>
 						<MenuItem onPress={() => handleSort('timeDesc')} textStyle={styles.menuItemText}>
-							<Text>Time ↓</Text>
+							<Text>{t('timeDescending')}</Text>
 						</MenuItem>
 						<MenuItem onPress={() => handleSort('timeAsc')} textStyle={styles.menuItemText}>
-							<Text>Time ↑</Text>
+							<Text>{t('timeAscending')}</Text>
 						</MenuItem>
 					</Menu>
 				</View>

@@ -3,6 +3,7 @@ import * as Clipboard from 'expo-clipboard';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, TouchableWithoutFeedback } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { syncFTInfo } from '@/actions/get-ft';
 import { hp, wp } from '@/lib/common';
@@ -17,11 +18,13 @@ interface AddedTokenCardProps {
 }
 
 export const AddedTokenCard = ({ token, onDeletePress, onRefresh, onLongPress }: AddedTokenCardProps) => {
+	const { t } = useTranslation();
+	
 	const handleCopyId = async () => {
 		await Clipboard.setStringAsync(token.id);
 		Toast.show({
 			type: 'success',
-			text1: 'Contract address copied to clipboard',
+			text1: t('contractAddressCopied'),
 		});
 	};
 
@@ -31,12 +34,12 @@ export const AddedTokenCard = ({ token, onDeletePress, onRefresh, onLongPress }:
 			onRefresh();
 			Toast.show({
 				type: 'success',
-				text1: 'Token info refreshed',
+				text1: t('tokenInfoRefreshed'),
 			});
 		} catch (error) {
 			Toast.show({
 				type: 'error',
-				text1: 'Failed to refresh token info',
+				text1: t('failedToRefreshTokenInfo'),
 			});
 		}
 	};
@@ -65,8 +68,8 @@ export const AddedTokenCard = ({ token, onDeletePress, onRefresh, onLongPress }:
 							</TouchableOpacity>
 						</View>
 						<View style={styles.infoRow}>
-							<Text style={styles.info}>symbol: {token.symbol}</Text>
-							<Text style={styles.info}>holders: {token.holds_count}</Text>
+							<Text style={styles.info}>{t('symbol')}: {token.symbol}</Text>
+							<Text style={styles.info}>{t('holders')}: {token.holds_count}</Text>
 						</View>
 					</View>
 				</View>

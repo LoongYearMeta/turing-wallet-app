@@ -1,5 +1,4 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { debounce } from 'lodash';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -14,6 +13,7 @@ import {
 	Platform,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { AddressSelector } from '@/components/selector/address-selector';
 import { AssetSelector } from '@/components/selector/asset-selector';
@@ -58,6 +58,7 @@ const formatDisplayAddress = (address: string) => {
 };
 
 export default function SendPage() {
+	const { t } = useTranslation();
 	const {
 		getCurrentAccountAddress,
 		getSalt,
@@ -96,6 +97,7 @@ export default function SendPage() {
 		txHex: string;
 		utxos: any[];
 	} | null>(null);
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const currentAddress = getCurrentAccountAddress();
 	const accountType = getCurrentAccountType();
@@ -145,8 +147,8 @@ export default function SendPage() {
 	};
 
 	const validateAddress = (address: string) => {
-		if (!address) return 'Address is required';
-		if (!/^[a-zA-Z0-9]+$/.test(address)) return 'Invalid address';
+		if (!address) return t('addressRequired');
+		if (!/^[a-zA-Z0-9]+$/.test(address)) return t('invalidAddress');
 
 		if (accountType === AccountType.TAPROOT_LEGACY) {
 			if (!address.startsWith('1') || (address.length !== 33 && address.length !== 34)) {
@@ -172,12 +174,12 @@ export default function SendPage() {
 	};
 
 	const validateAmount = (amountStr: string) => {
-		if (!amountStr) return 'Amount is required';
+		if (!amountStr) return t('amountRequired');
 		if (!selectedAsset) return 'Please select an asset first';
 
 		const num = Number(amountStr);
-		if (isNaN(num) || num <= 0) return 'Please enter a valid positive number';
-		if (num > selectedAsset.balance) return 'Amount exceeds your balance';
+		if (isNaN(num) || num <= 0) return t('enterValidPositiveNumber');
+		if (num > selectedAsset.balance) return t('amountExceedsBalance');
 		return '';
 	};
 
@@ -185,7 +187,7 @@ export default function SendPage() {
 		debounce(async (address: string) => {
 			const error = validateAddress(address);
 			setFormErrors((prev) => ({ ...prev, addressTo: error }));
-		}, 1500),
+		}, 1000),
 		[accountType],
 	);
 
@@ -356,21 +358,26 @@ export default function SendPage() {
 		if (!selectedAsset || !pendingTransaction) {
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Please wait for transaction preparation',
+				text1: t('error'),
+				text2: t('pleaseWaitForTransaction'),
 			});
 			return;
 		}
 
 		try {
+			setIsSubmitting(true);
+			await new Promise((resolve) => setTimeout(resolve, 50));
+
 			if (!formData.password) {
-				setFormErrors(prev => ({ ...prev, password: 'Password is required' }));
+				setFormErrors((prev) => ({ ...prev, password: t('passwordRequired') }));
+				setIsSubmitting(false);
 				return;
 			}
-			
+
 			const isPasswordValid = verifyPassword(formData.password, passKey, salt);
 			if (!isPasswordValid) {
-				setFormErrors(prev => ({ ...prev, password: 'Incorrect password' }));
+				setFormErrors((prev) => ({ ...prev, password: t('incorrectPassword') }));
+				setIsSubmitting(false);
 				return;
 			}
 
@@ -381,7 +388,7 @@ export default function SendPage() {
 					await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
 				} catch (error: any) {
 					if (
-						error.message.includes('missing inputs') ||
+						error.message.includes('Missing inputs') ||
 						error.message.includes('txn-mempool-conflict')
 					) {
 						const utxos = await fetchUTXOs(currentAddress);
@@ -459,18 +466,40 @@ export default function SendPage() {
 
 			Toast.show({
 				type: 'success',
-				text1: 'Success',
-				text2: 'Transaction sent successfully',
+				text1: t('success'),
+				text2: t('transactionSentSuccessfully'),
 			});
 
-			router.back();
+			setFormData({
+				asset: '',
+				addressTo: '',
+				amount: '',
+				password: '',
+			});
+			setEstimatedFee(null);
+			setPendingTransaction(null);
+
+			loadAssets();
 		} catch (error) {
 			console.error('Transaction failed:', error);
+
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: error instanceof Error ? error.message : 'Transaction failed',
+				text1: t('error'),
+				text2: error instanceof Error ? error.message : t('transactionFailed'),
 			});
+			setFormData({
+				asset: '',
+				addressTo: '',
+				amount: '',
+				password: '',
+			});
+			setEstimatedFee(null);
+			setPendingTransaction(null);
+
+			loadAssets();
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
 
@@ -480,14 +509,14 @@ export default function SendPage() {
 			behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 			keyboardVerticalOffset={100}
 		>
-			<ScrollView 
+			<ScrollView
 				style={{ flex: 1 }}
 				contentContainerStyle={{ padding: wp(4), paddingTop: hp(3) }}
 				keyboardShouldPersistTaps="handled"
 			>
 				<View style={styles.inputGroup}>
 					<View style={styles.labelRow}>
-						<Text style={styles.label}>Asset</Text>
+						<Text style={styles.label}>{t('asset')}</Text>
 						{(accountType === AccountType.TBC || accountType === AccountType.TAPROOT_LEGACY) && (
 							<TouchableOpacity onPress={() => setShowAssetSelector(true)}>
 								<MaterialIcons
@@ -503,9 +532,7 @@ export default function SendPage() {
 							<TouchableOpacity
 								onPress={() => setShowAssetSelector(true)}
 								style={{ flex: 1 }}
-								disabled={
-									accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY
-								}
+								disabled={accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY}
 							>
 								<Text style={styles.selectedAssetText}>
 									{selectedAsset.label}:{' '}
@@ -520,7 +547,7 @@ export default function SendPage() {
 
 				<View style={styles.inputGroup}>
 					<View style={styles.labelRow}>
-						<Text style={styles.label}>Recipient Address</Text>
+						<Text style={styles.label}>{t('recipientAddress')}</Text>
 						<TouchableOpacity onPress={() => setShowAddressSelector(true)}>
 							<Ionicons name="book-outline" size={20} color="#333" />
 						</TouchableOpacity>
@@ -534,16 +561,13 @@ export default function SendPage() {
 							]}
 							value={formData.addressTo}
 							onChangeText={(text) => handleInputChange('addressTo', text)}
-							placeholder="Enter recipient address"
+							placeholder={t('enterRecipientAddress')}
 							autoCapitalize="none"
 							autoCorrect={false}
 						/>
 						{formData.addressTo.length > 0 && (
 							<View
-								style={[
-									styles.addressPreviewContainer,
-									formErrors.addressTo && styles.inputError,
-								]}
+								style={[styles.addressPreviewContainer, formErrors.addressTo && styles.inputError]}
 							>
 								<Text style={styles.addressPreview} numberOfLines={1}>
 									{formatDisplayAddress(formData.addressTo)}
@@ -563,13 +587,13 @@ export default function SendPage() {
 				</View>
 
 				<View style={styles.inputGroup}>
-					<Text style={styles.label}>Amount</Text>
+					<Text style={styles.label}>{t('amount')}</Text>
 					<View style={styles.inputWrapper}>
 						<TextInput
 							style={[styles.input, formErrors.amount && styles.inputError]}
 							value={formData.amount}
 							onChangeText={(text) => handleInputChange('amount', text)}
-							placeholder="Enter amount"
+							placeholder={t('enterAmount')}
 							keyboardType="decimal-pad"
 							autoCapitalize="none"
 							autoCorrect={false}
@@ -587,13 +611,13 @@ export default function SendPage() {
 				</View>
 
 				<View style={styles.inputGroup}>
-					<Text style={styles.label}>Password</Text>
+					<Text style={styles.label}>{t('password')}</Text>
 					<View style={styles.inputWrapper}>
 						<TextInput
 							style={[styles.input, formErrors.password && styles.inputError]}
 							value={formData.password}
 							onChangeText={(text) => handleInputChange('password', text)}
-							placeholder="Enter your password"
+							placeholder={t('enterYourPassword')}
 							secureTextEntry={true}
 							autoCapitalize="none"
 							autoCorrect={false}
@@ -612,7 +636,7 @@ export default function SendPage() {
 
 				<View style={styles.divider} />
 				<View style={styles.feeContainer}>
-					<Text style={styles.feeLabel}>Estimated Fee: </Text>
+					<Text style={styles.feeLabel}>{t('estimatedFee')}: </Text>
 					<View style={styles.feeValueContainer}>
 						{isCalculatingFee ? (
 							<ActivityIndicator size="small" color="#666" />
@@ -631,25 +655,33 @@ export default function SendPage() {
 				<TouchableOpacity
 					style={[
 						styles.sendButton,
-						(!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee) &&
+						(!estimatedFee ||
+							Object.values(formErrors).some(Boolean) ||
+							isCalculatingFee ||
+							isSubmitting) &&
 							styles.sendButtonDisabled,
 					]}
 					onPress={handleSubmit}
-					disabled={!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee}
+					disabled={
+						!estimatedFee ||
+						Object.values(formErrors).some(Boolean) ||
+						isCalculatingFee ||
+						isSubmitting
+					}
 				>
 					<Text style={styles.sendButtonText}>
-						{isCalculatingFee ? 'Calculating Fee...' : 'Send'}
+						{isSubmitting ? t('sending') : isCalculatingFee ? t('calculatingFee') : t('send')}
 					</Text>
 				</TouchableOpacity>
 			</ScrollView>
-			
+
 			<AddressSelector
 				visible={showAddressSelector}
 				onClose={() => setShowAddressSelector(false)}
 				onSelect={(address) => handleInputChange('addressTo', address)}
 				userAddress={currentAddress}
 			/>
-			
+
 			<AssetSelector
 				visible={showAssetSelector}
 				onClose={() => setShowAssetSelector(false)}

@@ -10,6 +10,7 @@ import {
 	TouchableWithoutFeedback,
 	View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { hp, wp } from '@/lib/common';
 import { formatLongString } from '@/lib/util';
@@ -32,6 +33,7 @@ export const MultiSigAddressSelector = ({
 	onSelect,
 	addresses,
 }: MultiSigAddressSelectorProps) => {
+	const { t } = useTranslation();
 	const [searchText, setSearchText] = useState('');
 	const [filteredAddresses, setFilteredAddresses] = useState<MultiSigAddress[]>(addresses);
 
@@ -75,12 +77,12 @@ export const MultiSigAddressSelector = ({
 					<TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
 						<View style={styles.modalContent}>
 							<View style={styles.header}>
-								<Text style={styles.title}>Select MultiSig Address</Text>
+								<Text style={styles.title}>{t('selectMultiSigAddress')}</Text>
 								<View style={styles.searchInputWrapper}>
 									<MaterialIcons name="search" size={20} color="#666" style={styles.searchIcon} />
 									<TextInput
 										style={styles.searchInput}
-										placeholder="Search"
+										placeholder={t('search')}
 										value={searchText}
 										onChangeText={setSearchText}
 										autoCapitalize="none"
@@ -112,8 +114,8 @@ export const MultiSigAddressSelector = ({
 							) : (
 								<Text style={styles.emptyText}>
 									{searchText
-										? 'No matching MultiSig addresses found'
-										: 'No MultiSig addresses available'}
+										? t('noMatchingMultiSigAddressesFound')
+										: t('noMultiSigAddressesAvailable')}
 								</Text>
 							)}
 						</View>

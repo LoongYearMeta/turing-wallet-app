@@ -590,10 +590,11 @@ export async function addMultiSig(multiSig: MultiSig, userAddress: string): Prom
 	);
 }
 
-export async function softDeleteMultiSig(multiSigAddress: string): Promise<void> {
+export async function softDeleteMultiSig(multiSigAddress: string, userAddress: string): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	await db.runAsync('UPDATE MultiSig SET isDeleted = 1 WHERE multiSig_address = ?;', [
+	await db.runAsync('UPDATE MultiSig SET isDeleted = 1 WHERE multiSig_address = ? AND user_address = ?;', [
 		multiSigAddress,
+		userAddress,
 	]);
 }
 

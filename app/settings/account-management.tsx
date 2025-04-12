@@ -2,6 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { ConfirmModal } from '@/components/modals/confirm-modal';
 import { Modal } from '@/components/ui/modal';
@@ -13,6 +14,7 @@ import { deleteAccountData, clearAllData } from '@/utils/sqlite';
 import { SwitchTypeModal } from '@/components/modals/switch-type-modal';
 
 export default function AccountManagementPage() {
+	const { t } = useTranslation();
 	const { accounts, currentAccount, removeAccount, switchAccount, clear } = useAccount();
 
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -89,11 +91,11 @@ export default function AccountManagementPage() {
 			case AccountType.TAPROOT:
 				return 'Taproot';
 			case AccountType.TAPROOT_LEGACY:
-				return 'Taproot Legacy';
+				return t('btcTaprootLegacy');
 			case AccountType.LEGACY:
-				return 'Legacy';
+				return t('btcLegacy');
 			default:
-				return 'Unknown';
+				return t('unknown');
 		}
 	};
 
@@ -133,15 +135,15 @@ export default function AccountManagementPage() {
 						))}
 					<TouchableOpacity style={styles.addAccountItem} onPress={handleAddAccount}>
 						<MaterialIcons name="add-circle-outline" size={24} color={theme.colors.primary} />
-						<Text style={styles.addAccountText}>Add New Account</Text>
+						<Text style={styles.addAccountText}>{t('addNewAccount')}</Text>
 					</TouchableOpacity>
 				</View>
 			</ScrollView>
 
 			<ConfirmModal
 				visible={deleteModalVisible}
-				title="Delete Account"
-				message="Are you sure you want to delete this account? This action cannot be undone."
+				title={t('deleteAccount')}
+				message={t('confirmDeleteAccountMessage')}
 				onConfirm={confirmDelete}
 				onCancel={() => setDeleteModalVisible(false)}
 			/>
@@ -151,7 +153,7 @@ export default function AccountManagementPage() {
 				onClose={() => setSwitchAccountsModalVisible(false)}
 			>
 				<View style={styles.switchAccountsModal}>
-					<Text style={styles.modalTitle}>Select Account</Text>
+					<Text style={styles.modalTitle}>{t('selectAccount')}</Text>
 					{Object.entries(accounts)
 						.filter(([addr]) => addr !== currentAccount)
 						.map(([address, account]) => (

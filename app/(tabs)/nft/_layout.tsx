@@ -1,49 +1,52 @@
 import { Stack } from 'expo-router';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function NFTLayout() {
+	const { t } = useTranslation();
+	
 	return (
 		<Stack>
 			<Stack.Screen name="index" options={{ headerShown: false }} />
 			<Stack.Screen
 				name="collection/create-collection"
 				options={{
-					headerTitle: 'Create Collection',
+					headerTitle: t('createCollection'),
 					headerShown: true,
 				}}
 			/>
 			<Stack.Screen
 				name="collection/collection-detail"
 				options={{
-					headerTitle: 'Collection Detail',
+					headerTitle: t('collectionDetail'),
 					headerShown: true,
 				}}
 			/>
 			<Stack.Screen
 				name="create-nft"
 				options={{
-					headerTitle: 'Create NFT',
+					headerTitle: t('createNFT'),
 					headerShown: true,
 				}}
 			/>
 			<Stack.Screen
 				name="nft-detail"
 				options={{
-					headerTitle: 'NFT Detail',
+					headerTitle: t('nftDetail'),
 					headerShown: true,
 				}}
 			/>
 			<Stack.Screen
 				name="nft-history"
 				options={{
-					headerTitle: 'NFT Detail',
+					headerTitle: t('nftHistory'),
 					headerShown: true,
 				}}
 			/>
 			<Stack.Screen
 				name="nft-transfer"
 				options={{
-					headerTitle: 'NFT Transfer',
+					headerTitle: t('transferNFT'),
 					headerShown: true,
 				}}
 			/>

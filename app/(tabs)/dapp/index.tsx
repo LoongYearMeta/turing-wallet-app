@@ -144,13 +144,13 @@ export default function DAppPage() {
 					<View style={styles.listContainer}>
 						{isSearching ? (
 							<View style={styles.emptyContainer}>
-								<Text style={styles.emptyText}>Searching...</Text>
+								<Text style={styles.emptyText}>{t('searching')}</Text>
 							</View>
 						) : noResults ? (
 							<View style={styles.emptyContainer}>
-								<Text style={styles.emptyText}>No DApps found matching "{searchText}"</Text>
+								<Text style={styles.emptyText}>{t('noDappsFoundMatching')} "{searchText}"</Text>
 								<Text style={styles.emptySubText}>
-									Try different keywords or check your spelling
+									{t('tryDifferentKeywords')}
 								</Text>
 							</View>
 						) : filteredDapps.length > 0 ? (
@@ -175,7 +175,7 @@ export default function DAppPage() {
 							))
 						) : (
 							<View style={styles.emptyContainer}>
-								<Text style={styles.emptyText}>No DApps available</Text>
+								<Text style={styles.emptyText}>{t('noDappsAvailable')}</Text>
 							</View>
 						)}
 					</View>

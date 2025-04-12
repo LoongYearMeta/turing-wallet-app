@@ -2,6 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { Modal } from '@/components/ui/modal';
 import { hp, wp } from '@/lib/common';
@@ -15,6 +16,7 @@ interface AddAddressModalProps {
 }
 
 export const AddAddressModal = ({ visible, onClose, onAddSuccess }: AddAddressModalProps) => {
+	const { t } = useTranslation();
 	const [address, setAddress] = useState('');
 	const [error, setError] = useState('');
 
@@ -26,28 +28,28 @@ export const AddAddressModal = ({ visible, onClose, onAddSuccess }: AddAddressMo
 
 	const validateAddress = (address: string): boolean => {
 		if (!address) {
-			setError('Invalid address');
+			setError(t('invalidAddress'));
 			return false;
 		}
 
 		if (!/^[a-zA-Z0-9]+$/.test(address)) {
-			setError('Invalid address');
+			setError(t('invalidAddress'));
 			return false;
 		}
 
 		if (address.startsWith('1')) {
 			if (address.length !== 33 && address.length !== 34) {
-				setError('Invalid address');
+				setError(t('invalidAddress'));
 				return false;
 			}
 		} else if (address.startsWith('bc1p')) {
 			if (address.length !== 62) {
-				setError('Invalid address');
+				setError(t('invalidAddress'));
 				return false;
 			}
 		} else {
 			if (address.length !== 33) {
-				setError('Invalid address');
+				setError(t('invalidAddress'));
 				return false;
 			}
 		}
@@ -69,15 +71,15 @@ export const AddAddressModal = ({ visible, onClose, onAddSuccess }: AddAddressMo
 			onAddSuccess();
 			Toast.show({
 				type: 'success',
-				text1: 'Success',
-				text2: 'Address added to book',
+				text1: t('success'),
+				text2: t('addressAddedToBook'),
 			});
 		} catch (error) {
 			console.error('Failed to add address:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to add address',
+				text1: t('error'),
+				text2: t('failedToAddAddress'),
 			});
 		}
 	};
@@ -92,11 +94,11 @@ export const AddAddressModal = ({ visible, onClose, onAddSuccess }: AddAddressMo
 	return (
 		<Modal visible={visible} onClose={handleClose}>
 			<View style={styles.container}>
-				<Text style={styles.title}>Add Address</Text>
+				<Text style={styles.title}>{t('addAddress')}</Text>
 				<View style={styles.inputWrapper}>
 					<TextInput
 						style={[styles.input, error ? styles.inputError : null]}
-						placeholder="Enter address"
+						placeholder={t('enterAddress')}
 						value={address}
 						onChangeText={handleChangeText}
 						autoCapitalize="none"
@@ -112,11 +114,11 @@ export const AddAddressModal = ({ visible, onClose, onAddSuccess }: AddAddressMo
 					<Text style={styles.errorText}>{error}</Text>
 				) : (
 					address.trim() && (
-						<Text style={styles.preview}>Preview: {formatLongString(address.trim(), 12)}</Text>
+						<Text style={styles.preview}>{t('preview')}: {formatLongString(address.trim(), 12)}</Text>
 					)
 				)}
 				<TouchableOpacity style={styles.button} onPress={handleAddAddress}>
-					<Text style={styles.buttonText}>Confirm</Text>
+					<Text style={styles.buttonText}>{t('confirm')}</Text>
 				</TouchableOpacity>
 			</View>
 		</Modal>

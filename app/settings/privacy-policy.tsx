@@ -8,11 +8,13 @@ import {
 	TouchableOpacity,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
 
 export default function PrivacyPolicyPage() {
+	const { t } = useTranslation();
 	const [loading, setLoading] = useState(true);
 	const [showFullPolicy, setShowFullPolicy] = useState(false);
 
@@ -39,54 +41,49 @@ export default function PrivacyPolicyPage() {
 					<ActivityIndicator size="large" color={theme.colors.primary} style={styles.loader} />
 				) : (
 					<>
-						<Text style={styles.title}>PRIVACY POLICY</Text>
+						<Text style={styles.title}>{t('privacyPolicyTitle')}</Text>
 
 						<Text style={styles.paragraph}>
-							This Privacy Policy describes how Turing Wallet collects, uses, and shares your
-							personal information when you use our mobile application.
+							{t('privacyPolicyIntro')}
 						</Text>
 
-						<Text style={styles.sectionTitle}>Information We Collect</Text>
+						<Text style={styles.sectionTitle}>{t('informationWeCollect')}</Text>
 						<Text style={styles.paragraph}>
-							When you use Turing Wallet, we may collect certain information about you, including:
+							{t('informationWeCollectDesc')}
 						</Text>
-						<Text style={styles.bulletPoint}>• Device information (model, operating system)</Text>
-						<Text style={styles.bulletPoint}>• Usage data and analytics</Text>
+						<Text style={styles.bulletPoint}>{t('deviceInfoBullet')}</Text>
+						<Text style={styles.bulletPoint}>{t('usageDataBullet')}</Text>
 						<Text style={styles.bulletPoint}>
-							• Information you provide when contacting support
+							{t('supportInfoBullet')}
 						</Text>
 
-						<Text style={styles.sectionTitle}>How We Use Your Information</Text>
-						<Text style={styles.paragraph}>We use the information we collect to:</Text>
-						<Text style={styles.bulletPoint}>• Provide, maintain, and improve our services</Text>
-						<Text style={styles.bulletPoint}>• Respond to your requests and inquiries</Text>
-						<Text style={styles.bulletPoint}>• Monitor and analyze usage patterns</Text>
+						<Text style={styles.sectionTitle}>{t('howWeUseYourInformation')}</Text>
+						<Text style={styles.paragraph}>{t('howWeUseIntro')}</Text>
+						<Text style={styles.bulletPoint}>{t('provideServicesBullet')}</Text>
+						<Text style={styles.bulletPoint}>{t('respondRequestsBullet')}</Text>
+						<Text style={styles.bulletPoint}>{t('monitorUsageBullet')}</Text>
 						<Text style={styles.bulletPoint}>
-							• Protect against fraudulent or unauthorized activity
+							{t('protectAgainstFraudBullet')}
 						</Text>
 
-						<Text style={styles.sectionTitle}>Data Security</Text>
+						<Text style={styles.sectionTitle}>{t('dataSecurityTitle')}</Text>
 						<Text style={styles.paragraph}>
-							We implement appropriate security measures to protect your personal information.
-							However, no method of transmission over the Internet or electronic storage is 100%
-							secure.
+							{t('dataSecurityDesc')}
 						</Text>
 
-						<Text style={styles.sectionTitle}>Your Rights</Text>
+						<Text style={styles.sectionTitle}>{t('yourRights')}</Text>
 						<Text style={styles.paragraph}>
-							Depending on your location, you may have certain rights regarding your personal
-							information, such as the right to access, correct, or delete your data.
+							{t('yourRightsDesc')}
 						</Text>
 
-						<Text style={styles.sectionTitle}>Changes to This Policy</Text>
+						<Text style={styles.sectionTitle}>{t('changesToThisPolicy')}</Text>
 						<Text style={styles.paragraph}>
-							We may update our Privacy Policy from time to time. We will notify you of any changes
-							by posting the new Privacy Policy on this page.
+							{t('changesToThisPolicyDesc')}
 						</Text>
 
 						<TouchableOpacity onPress={toggleFullPolicy} style={styles.linkButton}>
 							<Text style={styles.linkText}>
-								{showFullPolicy ? 'Show Summary' : 'View Full Privacy Policy'}
+								{showFullPolicy ? t('showSummary') : t('viewFullPrivacyPolicy')}
 							</Text>
 							<MaterialIcons
 								name={showFullPolicy ? 'expand-less' : 'expand-more'}
@@ -97,87 +94,68 @@ export default function PrivacyPolicyPage() {
 
 						{showFullPolicy && (
 							<View style={styles.fullPolicyContainer}>
-								<Text style={styles.sectionTitle}>Full Privacy Policy</Text>
+								<Text style={styles.sectionTitle}>{t('fullPrivacyPolicy')}</Text>
 
-								<Text style={styles.sectionSubtitle}>1. Introduction</Text>
+								<Text style={styles.sectionSubtitle}>1. {t('introduction')}</Text>
 								<Text style={styles.paragraph}>
-									Welcome to Turing Wallet. We respect your privacy and are committed to protecting
-									your personal data. This privacy policy will inform you about how we look after
-									your personal data when you use our application and tell you about your privacy
-									rights and how the law protects you.
+									{t('fullIntroductionDesc')}
 								</Text>
 
-								<Text style={styles.sectionSubtitle}>2. The Data We Collect About You</Text>
+								<Text style={styles.sectionSubtitle}>2. {t('theDataWeCollectAboutYou')}</Text>
 								<Text style={styles.paragraph}>
-									Personal data, or personal information, means any information about an individual
-									from which that person can be identified. It does not include data where the
-									identity has been removed (anonymous data).
+									{t('personalDataDefinition')}
 								</Text>
 								<Text style={styles.paragraph}>
-									We may collect, use, store and transfer different kinds of personal data about you
-									which we have grouped together as follows:
+									{t('dataTypesWeCollect')}
 								</Text>
 								<Text style={styles.bulletPoint}>
-									• Identity Data includes username or similar identifier.
+									{t('identityDataBullet')}
 								</Text>
 								<Text style={styles.bulletPoint}>
-									• Technical Data includes internet protocol (IP) address, your login data, browser
-									type and version, time zone setting and location, browser plug-in types and
-									versions, operating system and platform, and other technology on the devices you
-									use to access this application.
+									{t('technicalDataBullet')}
 								</Text>
 								<Text style={styles.bulletPoint}>
-									• Usage Data includes information about how you use our application.
+									{t('usageDataDetailBullet')}
 								</Text>
 
-								<Text style={styles.sectionSubtitle}>3. How We Use Your Personal Data</Text>
+								<Text style={styles.sectionSubtitle}>3. {t('howWeUseYourPersonalData')}</Text>
 								<Text style={styles.paragraph}>
-									We will only use your personal data when the law allows us to. Most commonly, we
-									will use your personal data in the following circumstances:
+									{t('legalBasisForProcessing')}
 								</Text>
 								<Text style={styles.bulletPoint}>
-									• Where we need to perform the contract we are about to enter into or have entered
-									into with you.
+									{t('contractPerformanceBullet')}
 								</Text>
 								<Text style={styles.bulletPoint}>
-									• Where it is necessary for our legitimate interests (or those of a third party)
-									and your interests and fundamental rights do not override those interests.
+									{t('legitimateInterestsBullet')}
 								</Text>
 								<Text style={styles.bulletPoint}>
-									• Where we need to comply with a legal obligation.
+									{t('legalObligationBullet')}
 								</Text>
 
-								<Text style={styles.sectionSubtitle}>4. Data Security</Text>
+								<Text style={styles.sectionSubtitle}>4. {t('dataSecurityDetails')}</Text>
 								<Text style={styles.paragraph}>
-									We have put in place appropriate security measures to prevent your personal data
-									from being accidentally lost, used or accessed in an unauthorized way, altered or
-									disclosed. In addition, we limit access to your personal data to those employees,
-									agents, contractors and other third parties who have a business need to know. They
-									will only process your personal data on our instructions and they are subject to a
-									duty of confidentiality.
+									{t('dataSecurityMeasures')}
 								</Text>
 
-								<Text style={styles.sectionSubtitle}>5. Your Legal Rights</Text>
+								<Text style={styles.sectionSubtitle}>5. {t('yourLegalRights')}</Text>
 								<Text style={styles.paragraph}>
-									Under certain circumstances, you have rights under data protection laws in
-									relation to your personal data, including the right to:
+									{t('yourLegalRightsIntro')}
 								</Text>
-								<Text style={styles.bulletPoint}>• Request access to your personal data.</Text>
-								<Text style={styles.bulletPoint}>• Request correction of your personal data.</Text>
-								<Text style={styles.bulletPoint}>• Request erasure of your personal data.</Text>
+								<Text style={styles.bulletPoint}>{t('rightToAccessBullet')}</Text>
+								<Text style={styles.bulletPoint}>{t('rightToCorrectionBullet')}</Text>
+								<Text style={styles.bulletPoint}>{t('rightToErasureBullet')}</Text>
 								<Text style={styles.bulletPoint}>
-									• Object to processing of your personal data.
+									{t('rightToObjectBullet')}
 								</Text>
 								<Text style={styles.bulletPoint}>
-									• Request restriction of processing your personal data.
+									{t('rightToRestrictBullet')}
 								</Text>
-								<Text style={styles.bulletPoint}>• Request transfer of your personal data.</Text>
-								<Text style={styles.bulletPoint}>• Right to withdraw consent.</Text>
+								<Text style={styles.bulletPoint}>{t('rightToTransferBullet')}</Text>
+								<Text style={styles.bulletPoint}>{t('rightToWithdrawConsentBullet')}</Text>
 
-								<Text style={styles.sectionSubtitle}>6. Contact Us</Text>
+								<Text style={styles.sectionSubtitle}>6. {t('contactUs')}</Text>
 								<Text style={styles.paragraph}>
-									If you have any questions about this privacy policy or our privacy practices,
-									please contact us at support@turingwallet.xyz.
+									{t('contactUsDesc')}
 								</Text>
 							</View>
 						)}

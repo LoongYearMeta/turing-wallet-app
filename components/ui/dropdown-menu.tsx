@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
@@ -10,6 +11,7 @@ interface MenuItem {
 	icon: any;
 	label: string;
 	onPress: () => void;
+	id?: string;
 }
 
 interface DropdownMenuProps {
@@ -20,6 +22,7 @@ interface DropdownMenuProps {
 }
 
 export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuProps) => {
+	const { t } = useTranslation();
 	const { getCurrentAccountName } = useAccount();
 	const username = getCurrentAccountName();
 
@@ -30,6 +33,15 @@ export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuP
 	if (!visible) {
 		return null;
 	}
+
+	const processedItems = items.map(item => {
+		const id = item.id || getLabelId(item.label);
+		return {
+			...item,
+			id,
+			label: t(id)
+		};
+	});
 
 	return (
 		<Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
@@ -44,7 +56,7 @@ export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuP
 
 					<View style={styles.divider} />
 
-					{items.map((item, index) => (
+					{processedItems.map((item, index) => (
 						<TouchableOpacity
 							key={index}
 							style={styles.menuItem}
@@ -54,7 +66,7 @@ export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuP
 							}}
 						>
 							<View style={styles.iconContainer}>
-								<Ionicons name={getIconName(item.label)} size={20} color="white" />
+								<Ionicons name={getIconName(item.id || '')} size={20} color="white" />
 							</View>
 							<Text style={[styles.menuItemText]}>{item.label}</Text>
 						</TouchableOpacity>
@@ -65,21 +77,42 @@ export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuP
 	);
 };
 
-const getIconName = (label: string): any => {
+const getLabelId = (label: string): string => {
 	switch (label) {
 		case 'Scan QR Code':
-			return 'qr-code-outline';
+			return 'scanQRCode';
 		case 'Information Management':
-			return 'information-circle-outline';
+			return 'informationManagement';
 		case 'Account Management':
-			return 'person-outline';
+			return 'accountManagement';
 		case 'System Settings':
-			return 'settings-outline';
+			return 'systemSettings';
 		case 'Address Book':
-			return 'book-outline';
+			return 'addressBook';
 		case 'Export Mnemonic':
-			return 'key-outline';
+			return 'exportMnemonic';
 		case 'Sign Out':
+			return 'signOut';
+		default:
+			return label.toLowerCase().replace(/\s+(.)/g, (_, c) => c.toUpperCase());
+	}
+};
+
+const getIconName = (id: string): any => {
+	switch (id) {
+		case 'scanQRCode':
+			return 'qr-code-outline';
+		case 'informationManagement':
+			return 'information-circle-outline';
+		case 'accountManagement':
+			return 'person-outline';
+		case 'systemSettings':
+			return 'settings-outline';
+		case 'addressBook':
+			return 'book-outline';
+		case 'exportMnemonic':
+			return 'key-outline';
+		case 'signOut':
 			return 'log-out-outline';
 		default:
 			return 'ellipsis-horizontal';

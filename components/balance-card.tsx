@@ -5,6 +5,7 @@ import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { getExchangeRate, getTbcBalance } from '@/actions/get-balance';
 import { get_BTC_AddressBalance, getBTCPriceInfo } from '@/actions/get-btc-information';
@@ -15,6 +16,7 @@ import { formatBalance, formatBalance_btc } from '@/lib/util';
 import { AccountType } from '@/types';
 
 export const BalanceCard = () => {
+	const { t } = useTranslation();
 	const {
 		getCurrentAccountAddress,
 		getCurrentAccountBalance,
@@ -43,7 +45,7 @@ export const BalanceCard = () => {
 			await Clipboard.setStringAsync(address);
 			Toast.show({
 				type: 'success',
-				text1: 'Address copied to clipboard',
+				text1: t('addressCopied'),
 			});
 		}
 	};
@@ -100,7 +102,7 @@ export const BalanceCard = () => {
 		<View style={styles.container}>
 			<View style={styles.header}>
 				<View style={styles.leftContent}>
-					<Text style={styles.title}>{displayBtc ? 'BTC Balance' : 'TBC Balance'}</Text>
+					<Text style={styles.title}>{displayBtc ? t('btcBalance') : t('tbcBalance')}</Text>
 					<Text style={styles.balance}>
 						{displayBtc ? formatBalance_btc(displayBalance) : formatBalance(displayBalance)}{' '}
 						{displayBtc ? 'BTC' : 'TBC'}
@@ -122,7 +124,7 @@ export const BalanceCard = () => {
 						</View>
 					</View>
 					<View style={styles.totalAssetsContainer}>
-						<Text style={styles.totalAssetsLabel}>Total Assets:</Text>
+						<Text style={styles.totalAssetsLabel}>{t('totalAssets')}:</Text>
 						<Text style={styles.totalAssetsValue}>${totalAssets.toFixed(2)}</Text>
 					</View>
 				</View>
@@ -137,16 +139,16 @@ export const BalanceCard = () => {
 			</View>
 			<View style={styles.buttonGroup}>
 				<Link href="/(tabs)/home/send" asChild>
-					<RoundButton icon="send" label="Send" />
+					<RoundButton icon="send" label={t('send')} />
 				</Link>
 				<Link href="/(tabs)/home/history" asChild>
-					<RoundButton icon="history" label="History" />
+					<RoundButton icon="history" label={t('history')} />
 				</Link>
 				{disableMultiSig ? (
-					<RoundButton icon="people" label="MultiSig" disabled={true} />
+					<RoundButton icon="people" label={t('multiSig')} disabled={true} />
 				) : (
 					<Link href="/multiSigs/multiSig-transactions" asChild>
-						<RoundButton icon="people" label="MultiSig" />
+						<RoundButton icon="people" label={t('multiSig')} />
 					</Link>
 				)}
 			</View>

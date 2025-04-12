@@ -13,6 +13,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { hp, wp } from '@/lib/common';
@@ -32,9 +33,10 @@ enum TabType {
 }
 
 export default function MultiSigTransactionsPage() {
+	const { t } = useTranslation();
 	const [searchText, setSearchText] = useState('');
 	const [activeTab, setActiveTab] = useState<TabType>(TabType.Completed);
-	const { getCurrentAccountTbcPubKey, getPassKey, getSalt } = useAccount();
+	const { getCurrentAccountTbcPubKey } = useAccount();
 	const {
 		completedTxs,
 		waitBroadcastedTxs,
@@ -313,20 +315,40 @@ export default function MultiSigTransactionsPage() {
 	return (
 		<ScreenWrapper bg="#f5f5f5" disableTopPadding>
 			<View style={styles.container}>
-		
-				<View style={styles.tabContainer}>
+				<View style={styles.tabsContainer}>
 					<ScrollView horizontal showsHorizontalScrollIndicator={false}>
-						{Object.values(TabType).map((type) => (
-							<TouchableOpacity
-								key={type}
-								style={[styles.tabButton, activeTab === type && styles.activeTabButton]}
-								onPress={() => setActiveTab(type)}
-							>
-								<Text style={[styles.tabText, activeTab === type && styles.activeTabText]}>
-									{type}
-								</Text>
-							</TouchableOpacity>
-						))}
+						<TouchableOpacity
+							style={[styles.tab, activeTab === TabType.Completed && styles.activeTab]}
+							onPress={() => setActiveTab(TabType.Completed)}
+						>
+							<Text style={[styles.tabText, activeTab === TabType.Completed && styles.activeTabText]}>
+								{t('completed')}
+							</Text>
+						</TouchableOpacity>
+						<TouchableOpacity
+							style={[styles.tab, activeTab === TabType.WaitBroadcasted && styles.activeTab]}
+							onPress={() => setActiveTab(TabType.WaitBroadcasted)}
+						>
+							<Text style={[styles.tabText, activeTab === TabType.WaitBroadcasted && styles.activeTabText]}>
+								{t('waitBroadcast')}
+							</Text>
+						</TouchableOpacity>
+						<TouchableOpacity
+							style={[styles.tab, activeTab === TabType.WaitOtherSign && styles.activeTab]}
+							onPress={() => setActiveTab(TabType.WaitOtherSign)}
+						>
+							<Text style={[styles.tabText, activeTab === TabType.WaitOtherSign && styles.activeTabText]}>
+								{t('waitOtherSign')}
+							</Text>
+						</TouchableOpacity>
+						<TouchableOpacity
+							style={[styles.tab, activeTab === TabType.WaitSigned && styles.activeTab]}
+							onPress={() => setActiveTab(TabType.WaitSigned)}
+						>
+							<Text style={[styles.tabText, activeTab === TabType.WaitSigned && styles.activeTabText]}>
+								{t('waitSigned')}
+							</Text>
+						</TouchableOpacity>
 					</ScrollView>
 				</View>
 
@@ -335,11 +357,9 @@ export default function MultiSigTransactionsPage() {
 						<MaterialIcons name="search" size={24} color="#666" style={styles.searchIcon} />
 						<TextInput
 							style={styles.searchInput}
-							placeholder="Search by address..."
+							placeholder={t('searchTransactions')}
 							value={searchText}
 							onChangeText={setSearchText}
-							autoCapitalize="none"
-							autoCorrect={false}
 						/>
 						{searchText.length > 0 && (
 							<TouchableOpacity style={styles.clearButton} onPress={() => setSearchText('')}>
@@ -375,7 +395,7 @@ export default function MultiSigTransactionsPage() {
 					ListEmptyComponent={
 						!isLoading ? (
 							<View style={styles.emptyContainer}>
-								<Text style={styles.emptyText}>No transactions found</Text>
+								<Text style={styles.emptyText}>{t('noTransactionsFound')}</Text>
 							</View>
 						) : null
 					}
@@ -384,8 +404,8 @@ export default function MultiSigTransactionsPage() {
 
 			<PasswordModal
 				visible={passwordModalVisible}
-				title="Sign Transaction"
-				message="Please enter your password to sign this transaction"
+				title={t('signTransaction')}
+				message={t('enterPasswordToSign')}
 				onSubmit={handlePasswordSubmit}
 				onCancel={() => setPasswordModalVisible(false)}
 				loading={passwordLoading}
@@ -394,12 +414,12 @@ export default function MultiSigTransactionsPage() {
 			<ConfirmModal
 				visible={confirmModalVisible}
 				title={
-					confirmAction?.type === 'broadcast' ? 'Broadcast Transaction' : 'Withdraw Transaction'
+					confirmAction?.type === 'broadcast' ? t('confirmBroadcast') : t('confirmWithdraw')
 				}
 				message={
 					confirmAction?.type === 'broadcast'
-						? 'Are you sure you want to broadcast this transaction?'
-						: 'Are you sure you want to withdraw this transaction?'
+						? t('confirmBroadcastMessage')
+						: t('confirmWithdrawMessage')
 				}
 				onConfirm={handleConfirmAction}
 				onCancel={() => {
@@ -416,18 +436,18 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: '#f5f5f5',
 	},
-	tabContainer: {
+	tabsContainer: {
 		flexDirection: 'row',
 		borderBottomWidth: 1,
 		borderBottomColor: '#f0f0f0',
 		backgroundColor: '#f5f5f5',
 	},
-	tabButton: {
+	tab: {
 		paddingVertical: hp(1.5),
 		paddingHorizontal: wp(4),
 		alignItems: 'center',
 	},
-	activeTabButton: {
+	activeTab: {
 		borderBottomWidth: 3,
 		borderBottomColor: theme.colors.primary,
 	},

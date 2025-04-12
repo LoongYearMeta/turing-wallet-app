@@ -9,6 +9,7 @@ import {
 	TouchableWithoutFeedback,
 	View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { hp, wp } from '@/lib/common';
 import { getAllAddressesFromBook, getAllMultiSigAddresses } from '@/utils/sqlite';
@@ -26,6 +27,7 @@ export const AddressSelector = ({
 	onSelect,
 	userAddress,
 }: AddressSelectorProps) => {
+	const { t } = useTranslation();
 	const [addresses, setAddresses] = useState<string[]>([]);
 	const [multiSigAddresses, setMultiSigAddresses] = useState<string[]>([]);
 
@@ -63,7 +65,7 @@ export const AddressSelector = ({
 		<TouchableOpacity style={styles.addressItem} onPress={() => handleSelect(item)}>
 			<View style={{ flex: 1 }}>
 				<Text style={styles.addressText}>{item}</Text>
-				{item === userAddress && <Text style={styles.currentAddressLabel}>Current Account</Text>}
+				{item === userAddress && <Text style={styles.currentAddressLabel}>{t('currentAccount')}</Text>}
 			</View>
 		</TouchableOpacity>
 	);
@@ -75,14 +77,14 @@ export const AddressSelector = ({
 					<TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
 						<View style={styles.modalContent}>
 							<View style={styles.header}>
-								<Text style={styles.title}>Select Address</Text>
+								<Text style={styles.title}>{t('selectAddress')}</Text>
 								<TouchableOpacity onPress={onClose} style={styles.closeButton}>
 									<Ionicons name="close" size={24} color="#000" />
 								</TouchableOpacity>
 							</View>
 
 							<View style={styles.section}>
-								<Text style={styles.sectionTitle}>Addresses</Text>
+								<Text style={styles.sectionTitle}>{t('addresses')}</Text>
 								{addresses.length > 0 ? (
 									<FlatList
 										data={addresses}
@@ -93,12 +95,12 @@ export const AddressSelector = ({
 										showsVerticalScrollIndicator={false}
 									/>
 								) : (
-									<Text style={styles.emptyText}>No addresses in your address book</Text>
+									<Text style={styles.emptyText}>{t('noAddressesInBook')}</Text>
 								)}
 							</View>
 
 							<View style={styles.section}>
-								<Text style={styles.sectionTitle}>Associated MultiSig Addresses</Text>
+								<Text style={styles.sectionTitle}>{t('associatedMultiSigAddresses')}</Text>
 								{multiSigAddresses.length > 0 ? (
 									<FlatList
 										data={multiSigAddresses}
@@ -109,7 +111,7 @@ export const AddressSelector = ({
 										showsVerticalScrollIndicator={false}
 									/>
 								) : (
-									<Text style={styles.emptyText}>No associated MultiSig addresses</Text>
+									<Text style={styles.emptyText}>{t('noAssociatedMultiSigAddresses')}</Text>
 								)}
 							</View>
 						</View>

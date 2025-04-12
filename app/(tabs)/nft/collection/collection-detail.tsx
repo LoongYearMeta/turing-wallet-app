@@ -14,6 +14,7 @@ import {
 	View,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { ConfirmModal } from '@/components/modals/confirm-modal';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
@@ -25,6 +26,7 @@ import { formatContractId } from '@/lib/util';
 import { fetchNFTCounts_byCollection } from '@/actions/get-nfts';
 
 const CollectionDetailPage = () => {
+	const { t } = useTranslation();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const [collection, setCollection] = useState<Collection | null>(null);
 	const [nfts, setNfts] = useState<NFT[]>([]);
@@ -59,13 +61,13 @@ const CollectionDetailPage = () => {
 			console.error('Failed to load collection details:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to load collection details',
+				text1: t('error'),
+				text2: t('failedToLoadCollectionDetails'),
 			});
 		} finally {
 			setLoading(false);
 		}
-	}, [id, getCurrentAccountAddress]);
+	}, [id, getCurrentAccountAddress, t]);
 
 	useFocusEffect(
 		useCallback(() => {
@@ -78,7 +80,7 @@ const CollectionDetailPage = () => {
 			await Clipboard.setStringAsync(collection.id);
 			Toast.show({
 				type: 'success',
-				text1: 'Collection ID copied to clipboard',
+				text1: t('collectionIdCopied'),
 			});
 		}
 	};
@@ -95,15 +97,15 @@ const CollectionDetailPage = () => {
 			await softDeleteNFT(selectedNFT.id);
 			Toast.show({
 				type: 'success',
-				text1: 'NFT hidden',
+				text1: t('nftHidden'),
 			});
 			loadCollectionAndNFTs();
 		} catch (error) {
 			console.error('Failed to hide NFT:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to hide NFT',
+				text1: t('error'),
+				text2: t('failedToHideNFT'),
 			});
 		} finally {
 			setDeleteModalVisible(false);
@@ -131,7 +133,7 @@ const CollectionDetailPage = () => {
 		return (
 			<ScreenWrapper bg="#f5f5f5">
 				<View style={styles.emptyContainer}>
-					<Text style={styles.emptyText}>Collection not found</Text>
+					<Text style={styles.emptyText}>{t('collectionNotFound')}</Text>
 				</View>
 			</ScreenWrapper>
 		);
@@ -156,16 +158,18 @@ const CollectionDetailPage = () => {
 						<Text style={styles.collectionName}>{collection.name}</Text>
 						<View style={styles.idContainer}>
 							<Text style={styles.collectionId} numberOfLines={1} ellipsizeMode="middle">
-								Collection Address: {formatContractId(collection.id, 10)}
+								{t('collectionId')}: {formatContractId(collection.id, 10)}
 							</Text>
-							<TouchableOpacity onPress={handleCopyId} style={styles.copyButton}>
+							<TouchableOpacity style={styles.copyButton} onPress={handleCopyId}>
 								<Ionicons name="copy-outline" size={20} color="#666" />
 							</TouchableOpacity>
 						</View>
 						<View style={styles.supplyContainer}>
-							<Text style={styles.collectionSupply}>Supply: {collection.supply}</Text>
+							<Text style={styles.collectionSupply}>
+								{t('supply')}: {collection.supply}
+							</Text>
 							<Text style={[styles.collectionSupply, styles.remainingText]}>
-								Remaining: {Math.max(0, collection.supply - createdNFTCount)}
+								{t('remainingSupply')}: {Math.max(0, collection.supply - createdNFTCount)}
 							</Text>
 						</View>
 					</View>
@@ -176,7 +180,7 @@ const CollectionDetailPage = () => {
 						<MaterialIcons name="search" size={20} color="#999" style={styles.searchIcon} />
 						<TextInput
 							style={styles.searchInput}
-							placeholder="Search NFTs..."
+							placeholder={t('searchByNameOrId')}
 							value={searchText}
 							onChangeText={setSearchText}
 						/>
@@ -239,7 +243,7 @@ const CollectionDetailPage = () => {
 				) : (
 					<View style={styles.emptyContainer}>
 						<Text style={styles.emptyText}>
-							{searchText ? 'No matching NFTs found' : 'No NFTs in this collection'}
+							{searchText ? t('noMatchingNFTsFound') : t('noNFTsInCollection')}
 						</Text>
 					</View>
 				)}
@@ -247,8 +251,8 @@ const CollectionDetailPage = () => {
 
 			<ConfirmModal
 				visible={deleteModalVisible}
-				title="Hide NFT"
-				message={`Are you sure you want to hide "${selectedNFT?.name}"? You can restore it anytime.`}
+				title={t('hideNFT')}
+				message={t('confirmHideNFT')}
 				onConfirm={confirmDeleteNFT}
 				onCancel={() => {
 					setDeleteModalVisible(false);

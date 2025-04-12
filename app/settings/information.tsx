@@ -10,8 +10,10 @@ import {
 	TextInput,
 	TouchableOpacity,
 	View,
+	ActivityIndicator,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { syncMultiSigs } from '@/actions/get-multiSigs';
 import { RestoreMultiSigModal } from '@/components/modals/restore-multisig-modal';
@@ -29,6 +31,7 @@ interface MultiSigAddress {
 }
 
 export default function InformationPage() {
+	const { t } = useTranslation();
 	const {
 		getCurrentAccountAddress,
 		getCurrentAccountTbcPubKey,
@@ -56,6 +59,7 @@ export default function InformationPage() {
 	const [expandedMultiSig, setExpandedMultiSig] = useState<string | null>(null);
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [multiSigToDelete, setMultiSigToDelete] = useState<string | null>(null);
+	const [refreshingMultiSigs, setRefreshingMultiSigs] = useState(false);
 
 	useEffect(() => {
 		if (disableMultiSig) {
@@ -75,28 +79,33 @@ export default function InformationPage() {
 			console.error('Failed to load MultiSig addresses:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to load MultiSig addresses',
+				text1: t('error'),
+				text2: t('failedToLoadMultiSigAddresses'),
 			});
 		}
-	}, [address, disableMultiSig]);
+	}, [address, disableMultiSig, t]);
 
 	const handleCopy = async (text: string, label: string) => {
 		await Clipboard.setStringAsync(text);
 		Toast.show({
 			type: 'success',
-			text1: `${label} copied to clipboard`,
+			text1: `${label} ${t('copied')}`,
 		});
 	};
 
 	const handleSaveUsername = () => {
 		if (!newUsername?.trim()) {
-			setError('Account name cannot be empty');
+			setError(t('accountNameCannotBeEmpty'));
 			return;
 		}
 
 		if (newUsername.trim().length < 3 || newUsername.trim().length > 15) {
-			setError('Account name must be between 3 and 15 characters');
+			setError(t('accountNameMustBeBetween3And15'));
+			return;
+		}
+
+		if (!/^[a-zA-Z0-9]+$/.test(newUsername.trim())) {
+			setError(t('accountNameOnlyLettersAndNumbers'));
 			return;
 		}
 
@@ -104,20 +113,21 @@ export default function InformationPage() {
 		setModalVisible(false);
 		Toast.show({
 			type: 'success',
-			text1: 'Account name updated successfully',
+			text1: t('accountNameUpdatedSuccessfully'),
 		});
 	};
 
 	const handleRestoreMultiSig = async () => {
 		Toast.show({
 			type: 'success',
-			text1: 'MultiSig address restored successfully',
+			text1: t('multiSigAddressRestoredSuccessfully'),
 		});
 		await loadMultiSigAddresses();
 	};
 
 	const handleRefreshMultiSigs = async () => {
 		try {
+			setRefreshingMultiSigs(true);
 			await syncMultiSigs(address);
 			await loadMultiSigAddresses();
 			Toast.show({
@@ -131,6 +141,8 @@ export default function InformationPage() {
 				text1: 'Error',
 				text2: 'Failed to sync MultiSig wallets',
 			});
+		} finally {
+			setRefreshingMultiSigs(false);
 		}
 	};
 
@@ -150,18 +162,18 @@ export default function InformationPage() {
 		if (!multiSigToDelete) return;
 
 		try {
-			await softDeleteMultiSig(multiSigToDelete);
+			await softDeleteMultiSig(multiSigToDelete, address);
 			await loadMultiSigAddresses();
 			Toast.show({
 				type: 'success',
-				text1: 'MultiSig wallet deleted successfully',
+				text1: t('multiSigAddressDeletedSuccessfully'),
 			});
 		} catch (error) {
-			console.error('Failed to delete MultiSig wallet:', error);
+			console.error('Failed to delete MultiSig address:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to delete MultiSig wallet',
+				text1: t('error'),
+				text2: t('failedToDeleteMultiSig'),
 			});
 		} finally {
 			setDeleteModalVisible(false);
@@ -180,7 +192,7 @@ export default function InformationPage() {
 			<View style={styles.listContainer}>
 				<View style={styles.listItem}>
 					<View style={styles.itemLeft}>
-						<Text style={styles.itemLabel}>Account name</Text>
+						<Text style={styles.itemLabel}>{t('accountName')}</Text>
 						<Text style={styles.itemValue}>{username}</Text>
 					</View>
 					<TouchableOpacity
@@ -199,7 +211,7 @@ export default function InformationPage() {
 
 				<View style={styles.listItem}>
 					<View style={styles.itemLeft}>
-						<Text style={styles.itemLabel}>Current address</Text>
+						<Text style={styles.itemLabel}>{t('currentAddress')}</Text>
 						<Text style={styles.itemValue} numberOfLines={1} ellipsizeMode="middle">
 							{address}
 						</Text>
@@ -223,9 +235,7 @@ export default function InformationPage() {
 									</TouchableOpacity>
 								</View>
 								<Text style={styles.addressDescription}>
-									Use this address to trade TBC, TBC721, TBC20 assets and connect to DApps. You can
-									also create MultiSig wallets with this address for more secure storage of your TBC
-									and TBC20 assets
+									{t('tbcAddressDescription')}
 								</Text>
 							</View>
 						</View>
@@ -248,7 +258,9 @@ export default function InformationPage() {
 										<MaterialIcons name="content-copy" size={16} color={theme.colors.primary} />
 									</TouchableOpacity>
 								</View>
-								<Text style={styles.addressDescription}>Use this address to trade BTC</Text>
+								<Text style={styles.addressDescription}>
+									{t('taprootAddressDescription')}
+								</Text>
 							</View>
 						</View>
 					</>
@@ -270,7 +282,9 @@ export default function InformationPage() {
 										<MaterialIcons name="content-copy" size={16} color={theme.colors.primary} />
 									</TouchableOpacity>
 								</View>
-								<Text style={styles.addressDescription}>Use this address to trade BTC</Text>
+								<Text style={styles.addressDescription}>
+									{t('legacyAddressDescription')}
+								</Text>
 							</View>
 						</View>
 					</>
@@ -295,9 +309,7 @@ export default function InformationPage() {
 									</TouchableOpacity>
 								</View>
 								<Text style={styles.addressDescription}>
-									Use this address to trade TBC, TBC721, TBC20 assets. If you use inscription
-									cross-chain @https://bitbus.net/, you will receive corresponding TBC and TBC20
-									assets at this address
+									{t('taprootLegacyAddressDescription')}
 								</Text>
 							</View>
 						</View>
@@ -308,7 +320,7 @@ export default function InformationPage() {
 
 				<View style={styles.listItem}>
 					<View style={styles.itemLeft}>
-						<Text style={styles.itemLabel}>Public Key</Text>
+						<Text style={styles.itemLabel}>{t('publicKey')}</Text>
 						<View style={styles.valueWithCopy}>
 							<Text style={styles.itemValue} numberOfLines={1} ellipsizeMode="middle">
 								{publicKey}
@@ -325,7 +337,7 @@ export default function InformationPage() {
 			</View>
 
 			<View style={styles.sectionHeader}>
-				<Text style={styles.sectionTitle}>MultiSig Wallets</Text>
+				<Text style={styles.sectionTitle}>{t('multiSigWallets')}</Text>
 				<View style={styles.headerActions}>
 					<TouchableOpacity
 						style={[styles.actionButton, disableMultiSig && styles.disabledButton]}
@@ -339,15 +351,15 @@ export default function InformationPage() {
 						/>
 					</TouchableOpacity>
 					<TouchableOpacity
-						style={[styles.actionButton, disableMultiSig && styles.disabledButton]}
+						style={[styles.actionButton, refreshingMultiSigs && styles.disabledButton]}
 						onPress={handleRefreshMultiSigs}
-						disabled={disableMultiSig}
+						disabled={refreshingMultiSigs}
 					>
-						<MaterialIcons
-							name="sync"
-							size={24}
-							color={disableMultiSig ? '#999' : theme.colors.primary}
-						/>
+						{refreshingMultiSigs ? (
+							<ActivityIndicator size="small" color="#333" />
+						) : (
+							<MaterialIcons name="refresh" size={24} color="#333" />
+						)}
 					</TouchableOpacity>
 					<TouchableOpacity
 						style={[styles.actionButton, disableMultiSig && styles.disabledButton]}
@@ -427,12 +439,12 @@ export default function InformationPage() {
 			<Modal visible={modalVisible} transparent animationType="fade">
 				<View style={styles.modalOverlay}>
 					<View style={styles.modalContent}>
-						<Text style={styles.modalTitle}>Edit Account Name</Text>
+						<Text style={styles.modalTitle}>{t('editAccountName')}</Text>
 						<TextInput
 							style={styles.input}
 							value={newUsername || ''}
 							onChangeText={setNewUsername}
-							placeholder="Enter account name"
+							placeholder={t('enterAccountName')}
 							autoCapitalize="none"
 							autoCorrect={false}
 							maxLength={15}
@@ -443,13 +455,13 @@ export default function InformationPage() {
 								style={[styles.modalButton, styles.cancelButton]}
 								onPress={() => setModalVisible(false)}
 							>
-								<Text style={styles.cancelButtonText}>Cancel</Text>
+								<Text style={styles.cancelButtonText}>{t('cancel')}</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
 								style={[styles.modalButton, styles.saveButton]}
 								onPress={handleSaveUsername}
 							>
-								<Text style={styles.saveButtonText}>Save</Text>
+								<Text style={styles.saveButtonText}>{t('save')}</Text>
 							</TouchableOpacity>
 						</View>
 					</View>

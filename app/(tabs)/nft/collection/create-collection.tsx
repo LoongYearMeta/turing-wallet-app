@@ -13,6 +13,7 @@ import {
 	View,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { useAccount } from '@/hooks/useAccount';
 import { useNftTransaction } from '@/hooks/useNftTransaction';
@@ -42,6 +43,7 @@ interface FormErrors {
 }
 
 const CreateCollectionPage = () => {
+	const { t } = useTranslation();
 	const [formData, setFormData] = useState<FormData>({
 		name: '',
 		description: '',
@@ -65,139 +67,119 @@ const CreateCollectionPage = () => {
 	const currentAddress = getCurrentAccountAddress();
 
 	const validateName = (name: string) => {
-		if (!name) return 'Collection name is required';
-		if (name.length < 1 || name.length > 20) return 'Name must be 1-20 characters';
+		if (!name) return t('collectionNameRequired');
+		if (name.length < 1 || name.length > 20) return t('nameMustBe1To20Chars');
 
 		if (name.startsWith(' ') || name.endsWith(' ')) {
-			return 'Name cannot start or end with spaces';
+			return t('nameCannotStartOrEndWithSpaces');
 		}
 
 		if (!/^[a-zA-Z0-9 ]+$/.test(name)) {
-			return 'Name can only contain letters, numbers and spaces';
+			return t('nameCanOnlyContainLettersNumbersSpaces');
 		}
 
 		return '';
 	};
 
 	const validateDescription = (description: string) => {
-		if (!description) return 'Description is required';
-		if (description.length > 100) return 'Description must be less than 100 characters';
+		if (!description) return t('descriptionRequired');
+		if (description.length > 100) return t('descriptionMustBeLessThan100Chars');
 		return '';
 	};
 
 	const validateSupply = (supply: string) => {
-		if (!supply) return 'Supply is required';
+		if (!supply) return t('supplyRequired');
 		const num = Number(supply);
 		if (isNaN(num) || !Number.isInteger(num) || num < 1 || num > 1000) {
-			return 'Supply must be an integer between 1 and 1000';
+			return t('supplyMustBeIntegerBetween1And1000');
 		}
 		return '';
 	};
 
 	const validateImage = (image: string | null) => {
-		if (!image) return 'Collection image is required';
+		if (!image) return t('collectionImageRequired');
 		return '';
 	};
 
-	const debouncedPasswordValidation = useCallback(
-		debounce(async (password: string) => {
-			if (!password) {
-				setFormErrors((prev) => ({ ...prev, password: 'Password is required' }));
-				return;
-			}
-
-			const passKey = getPassKey();
-			const salt = getSalt();
-
-			if (!passKey || !salt) {
-				setFormErrors((prev) => ({
-					...prev,
-					password: 'Account error, please try again',
-				}));
-				return;
-			}
-
-			try {
-				const isValid = verifyPassword(password, passKey, salt);
-				setFormErrors((prev) => ({
-					...prev,
-					password: isValid ? '' : 'Incorrect password',
-				}));
-			} catch (error) {
-				console.error('Password validation error:', error);
-				setFormErrors((prev) => ({
-					...prev,
-					password: 'Incorrect password',
-				}));
-			}
-		}, 1500),
-		[getPassKey, getSalt],
-	);
-
-	const calculateEstimatedFee = useCallback(async () => {
-		if (
-			!formData.name ||
-			!formData.description ||
-			!formData.supply ||
-			!formData.image ||
-			!formData.password
-		) {
-			return;
-		}
-
-		const nameError = validateName(formData.name);
-		const descriptionError = validateDescription(formData.description);
-		const supplyError = validateSupply(formData.supply);
-		const imageError = validateImage(formData.image);
-
-		if (nameError || descriptionError || supplyError || imageError) {
-			return;
+	const validatePassword = (password: string) => {
+		if (!password) {
+			return t('passwordIsRequired');
 		}
 
 		const passKey = getPassKey();
 		const salt = getSalt();
-		if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
-			return;
+
+		if (!passKey || !salt) {
+			return t('accountErrorTryAgain');
 		}
 
-		setIsCalculatingFee(true);
 		try {
-			const collectionData = {
-				collectionName: formData.name,
-				description: formData.description,
-				supply: parseInt(formData.supply),
-				file: formData.image,
-			};
-
-			const transaction = await createCollection(collectionData, currentAddress, formData.password);
-			setEstimatedFee(transaction.fee);
-			setPendingTransaction({
-				txHex: transaction.txHex || '',
-				utxos: transaction.utxos || [],
-			});
+			const isValid = verifyPassword(password, passKey, salt);
+			return isValid ? '' : t('incorrectPassword');
 		} catch (error) {
-			if (
-				error instanceof Error &&
-				!error.message.includes('Invalid') &&
-				!error.message.includes('Password') &&
-				!error.message.includes('required')
-			) {
-				Toast.show({
-					type: 'error',
-					text1: 'Error',
-					text2: error.message,
-				});
-			}
-			setEstimatedFee(null);
-			setPendingTransaction(null);
-		} finally {
-			setIsCalculatingFee(false);
+			console.error('Password validation error:', error);
+			return t('incorrectPassword');
 		}
-	}, [formData]);
+	};
 
-	useEffect(() => {
-		calculateEstimatedFee();
-	}, [formData]);
+	const debouncedCalculateFee = useCallback(
+		debounce(async () => {
+			if (
+				!formData.name ||
+				!formData.description ||
+				!formData.supply ||
+				!formData.image ||
+				!formData.password
+			) {
+				return;
+			}
+
+			const nameError = validateName(formData.name);
+			const descriptionError = validateDescription(formData.description);
+			const supplyError = validateSupply(formData.supply);
+			const imageError = validateImage(formData.image);
+			const passwordError = validatePassword(formData.password);
+
+			if (nameError || descriptionError || supplyError || imageError || passwordError) {
+				return;
+			}
+
+			setIsCalculatingFee(true);
+			try {
+				const collectionData = {
+					collectionName: formData.name,
+					description: formData.description,
+					supply: parseInt(formData.supply),
+					file: formData.image,
+				};
+
+				const transaction = await createCollection(collectionData, currentAddress, formData.password);
+				setEstimatedFee(transaction.fee);
+				setPendingTransaction({
+					txHex: transaction.txHex || '',
+					utxos: transaction.utxos || [],
+				});
+			} catch (error) {
+				if (
+					error instanceof Error &&
+					!error.message.includes('Invalid') &&
+					!error.message.includes('Password') &&
+					!error.message.includes('required')
+				) {
+					Toast.show({
+						type: 'error',
+						text1: t('error'),
+						text2: error.message,
+					});
+				}
+				setEstimatedFee(null);
+				setPendingTransaction(null);
+			} finally {
+				setIsCalculatingFee(false);
+			}
+		}, 1000),
+		[formData, currentAddress, createCollection, t]
+	);
 
 	const handleInputChange = (field: keyof FormData, value: string) => {
 		if (field === 'password') {
@@ -215,12 +197,20 @@ const CreateCollectionPage = () => {
 		} else if (field === 'supply') {
 			error = validateSupply(value);
 		} else if (field === 'password') {
-			debouncedPasswordValidation(value);
-
-			return;
+			error = validatePassword(value);
 		}
 
 		setFormErrors((prev) => ({ ...prev, [field]: error }));
+
+		if (
+			updatedFormData.name &&
+			updatedFormData.description &&
+			updatedFormData.supply &&
+			updatedFormData.image &&
+			updatedFormData.password
+		) {
+			debouncedCalculateFee();
+		}
 	};
 
 	const handleClearInput = (field: keyof FormData) => {
@@ -303,12 +293,13 @@ const CreateCollectionPage = () => {
 
 		try {
 			setIsCreating(true);
+			await new Promise((resolve) => setTimeout(resolve, 50));
 			let txId: string | undefined;
 			try {
 				txId = await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
 			} catch (error: any) {
 				if (
-					error.message.includes('missing inputs') ||
+					error.message.includes('Missing inputs') ||
 					error.message.includes('txn-mempool-conflict')
 				) {
 					const utxos = await fetchUTXOs(currentAddress);
@@ -368,6 +359,18 @@ const CreateCollectionPage = () => {
 		}
 	};
 
+	useEffect(() => {
+		if (
+			formData.name &&
+			formData.description &&
+			formData.supply &&
+			formData.image &&
+			formData.password
+		) {
+			debouncedCalculateFee();
+		}
+	}, [formData, debouncedCalculateFee]);
+
 	return (
 		<View style={styles.container}>
 			<KeyboardAvoidingWrapper 
@@ -375,11 +378,11 @@ const CreateCollectionPage = () => {
 				backgroundColor="#fff"
 			>
 				<View style={styles.formGroup}>
-					<Text style={styles.label}>Collection Name</Text>
+					<Text style={styles.label}>{t('collectionName')}</Text>
 					<View style={styles.inputWrapper}>
 						<TextInput
 							style={[styles.input, formErrors.name ? styles.inputError : null]}
-							placeholder="Enter collection name"
+							placeholder={t('enterCollectionName')}
 							value={formData.name}
 							onChangeText={(text) => handleInputChange('name', text)}
 							maxLength={20}
@@ -397,7 +400,7 @@ const CreateCollectionPage = () => {
 				</View>
 
 				<View style={styles.formGroup}>
-					<Text style={styles.label}>Description</Text>
+					<Text style={styles.label}>{t('description')}</Text>
 					<View style={styles.inputWrapper}>
 						<TextInput
 							style={[
@@ -405,7 +408,7 @@ const CreateCollectionPage = () => {
 								styles.textArea,
 								formErrors.description ? styles.inputError : null,
 							]}
-							placeholder="Enter collection description"
+							placeholder={t('enterCollectionDescription')}
 							value={formData.description}
 							onChangeText={(text) => handleInputChange('description', text)}
 							multiline
@@ -428,14 +431,14 @@ const CreateCollectionPage = () => {
 				</View>
 
 				<View style={styles.formGroup}>
-					<Text style={styles.label}>Supply</Text>
+					<Text style={styles.label}>{t('supply')}</Text>
 					<View style={styles.inputWrapper}>
 						<TextInput
 							style={[styles.input, formErrors.supply ? styles.inputError : null]}
-							placeholder="Enter supply (1-1000)"
+							placeholder={t('enterSupply')}
 							value={formData.supply}
 							onChangeText={(text) => handleInputChange('supply', text)}
-							keyboardType="number-pad"
+							keyboardType="numeric"
 							maxLength={4}
 						/>
 						{formData.supply ? (
@@ -451,25 +454,22 @@ const CreateCollectionPage = () => {
 				</View>
 
 				<View style={styles.formGroup}>
-					<Text style={styles.label}>Collection Image</Text>
+					<Text style={styles.label}>{t('collectionImage')}</Text>
 					<TouchableOpacity style={styles.imagePickerButton} onPress={handlePickImage}>
 						{formData.image ? (
-							<>
+							<View style={{ position: 'relative' }}>
 								<Image source={{ uri: formData.image }} style={styles.previewImage} />
 								<TouchableOpacity
 									style={styles.imageCloseButton}
-									onPress={() => {
-										setFormData((prev) => ({ ...prev, image: null }));
-										setFormErrors((prev) => ({ ...prev, image: '' }));
-									}}
+									onPress={() => handleClearInput('image')}
 								>
-									<MaterialIcons name="close" size={20} color="white" />
+									<MaterialIcons name="close" size={20} color="#fff" />
 								</TouchableOpacity>
-							</>
+							</View>
 						) : (
 							<View style={styles.imagePlaceholder}>
 								<MaterialIcons name="add-photo-alternate" size={40} color="#999" />
-								<Text style={styles.imagePlaceholderText}>Tap to select image (max 5MB)</Text>
+								<Text style={styles.imagePlaceholderText}>{t('tapToSelectImage')}</Text>
 							</View>
 						)}
 					</TouchableOpacity>
@@ -477,11 +477,11 @@ const CreateCollectionPage = () => {
 				</View>
 
 				<View style={styles.formGroup}>
-					<Text style={styles.label}>Password</Text>
+					<Text style={styles.label}>{t('password')}</Text>
 					<View style={styles.inputWrapper}>
 						<TextInput
 							style={[styles.input, formErrors.password ? styles.inputError : null]}
-							placeholder="Enter your password"
+							placeholder={t('enterYourPassword')}
 							value={formData.password}
 							onChangeText={(text) => handleInputChange('password', text)}
 							secureTextEntry
@@ -495,20 +495,18 @@ const CreateCollectionPage = () => {
 							</TouchableOpacity>
 						) : null}
 					</View>
-					{formErrors.password ? (
-						<Text style={styles.errorText}>{formErrors.password}</Text>
-					) : null}
+					{formErrors.password ? <Text style={styles.errorText}>{formErrors.password}</Text> : null}
 				</View>
 
-				<View style={styles.feeContainer}>
-					<Text style={styles.feeLabel}>Estimated Fee:</Text>
+				<View style={[styles.feeContainer, { marginTop: hp(1) }]}>
+					<Text style={styles.feeLabel}>{t('estimatedFee')}</Text>
 					<View style={styles.feeValueContainer}>
 						{isCalculatingFee ? (
-							<ActivityIndicator size="small" color={theme.colors.primary} />
+							<ActivityIndicator size="small" color="#000" />
+						) : estimatedFee !== null ? (
+							<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
 						) : (
-							estimatedFee !== null && (
-								<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
-							)
+							<Text style={styles.feeAmount}>-</Text>
 						)}
 					</View>
 				</View>
@@ -516,27 +514,18 @@ const CreateCollectionPage = () => {
 				<TouchableOpacity
 					style={[
 						styles.createButton,
-						(!estimatedFee ||
-							Object.values(formErrors).some(Boolean) ||
-							isCalculatingFee ||
-							isCreating) &&
-							styles.createButtonDisabled,
+						(!estimatedFee || isCreating || isCalculatingFee) && styles.createButtonDisabled,
 					]}
 					onPress={handleCreateCollection}
-					disabled={
-						!estimatedFee ||
-						Object.values(formErrors).some(Boolean) ||
-						isCalculatingFee ||
-						isCreating
-					}
+					disabled={!estimatedFee || isCreating || isCalculatingFee}
 				>
-					<Text style={styles.createButtonText}>
-						{isCreating
-							? 'Creating...'
-							: isCalculatingFee
-								? 'Calculating Fee...'
-								: 'Create Collection'}
-					</Text>
+					{isCreating ? (
+						<Text style={styles.createButtonText}>{t('sending')}</Text>
+					) : isCalculatingFee ? (
+						<Text style={styles.createButtonText}>{t('calculatingFee')}</Text>
+					) : (
+						<Text style={styles.createButtonText}>{t('createCollection')}</Text>
+					)}
 				</TouchableOpacity>
 			</KeyboardAvoidingWrapper>
 		</View>
@@ -634,11 +623,11 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
-		paddingVertical: hp(2),
+		paddingVertical: hp(1.5),
 		paddingHorizontal: wp(1),
 		borderTopWidth: 1,
 		borderTopColor: '#f0f0f0',
-		marginTop: hp(2),
+		marginTop: hp(1),
 	},
 	feeLabel: {
 		fontSize: hp(1.6),

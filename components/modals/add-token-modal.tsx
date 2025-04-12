@@ -9,6 +9,7 @@ import {
 	View,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { syncFTInfo } from '@/actions/get-ft';
 import { Modal } from '@/components/ui/modal';
@@ -23,6 +24,7 @@ interface AddContractModalProps {
 }
 
 export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContractModalProps) => {
+	const { t } = useTranslation();
 	const [contractId, setContractId] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 	const { getCurrentAccountAddress } = useAccount();
@@ -49,8 +51,8 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 		if (!trimmedId || trimmedId.length !== 64) {
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Please enter a valid 64-character hexadecimal contract ID',
+				text1: t('error'),
+				text2: t('enterValidContractId'),
 			});
 			return;
 		}
@@ -66,8 +68,8 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 			if (existingFT && !existingFT.isDeleted && existingPublic) {
 				Toast.show({
 					type: 'error',
-					text1: 'Error',
-					text2: 'Token already exists in both lists',
+					text1: t('error'),
+					text2: t('tokenAlreadyExists'),
 				});
 				return;
 			}
@@ -78,50 +80,58 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 					await syncFTInfo(trimmedId);
 					Toast.show({
 						type: 'success',
-						text1: 'Success',
-						text2: 'Token restored and added successfully',
+						text1: t('success'),
+						text2: t('tokenRestoredAndAdded'),
 					});
 				} else {
 					Toast.show({
 						type: 'success',
-						text1: 'Success',
-						text2: 'Token restored successfully',
+						text1: t('success'),
+						text2: t('tokenRestored'),
 					});
 				}
 			} else if (!existingPublic) {
 				await syncFTInfo(trimmedId);
 				Toast.show({
 					type: 'success',
-					text1: 'Success',
-					text2: 'Token added successfully',
+					text1: t('success'),
+					text2: t('tokenAdded'),
+				});
+			} else {
+				Toast.show({
+					type: 'success',
+					text1: t('success'),
+					text2: t('tokenAdded'),
 				});
 			}
 
 			onRefreshLists();
 			onClose();
 		} catch (error) {
+			console.error('Failed to add token:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: error instanceof Error ? error.message : 'Failed to add token',
+				text1: t('error'),
+				text2: t('failedToAddToken'),
 			});
 		} finally {
 			setIsLoading(false);
 		}
 	};
 
-	const displayContractId = contractId.length > 41 
-		? `${contractId.substring(0, 20)}...${contractId.substring(contractId.length - 20)}`
-		: contractId;
+	const displayContractId =
+		contractId.length > 41
+			? `${contractId.substring(0, 15)}...${contractId.substring(contractId.length - 15)}`
+			: contractId;
 
 	return (
 		<Modal visible={visible} onClose={handleClose}>
 			<View style={styles.container}>
-				<Text style={styles.title}>Add or Restore Token</Text>
+				<Text style={styles.title}>{t('addOrRestoreToken')}</Text>
 				<View style={styles.inputWrapper}>
 					<TextInput
 						style={styles.input}
-						placeholder="Enter contract ID"
+						placeholder={t('enterContractId')}
 						value={displayContractId}
 						onChangeText={handleContractIdChange}
 						autoCapitalize="none"
@@ -139,17 +149,14 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 					)}
 				</View>
 				<TouchableOpacity
-					style={[
-						styles.button, 
-						(isLoading || contractId.length !== 64) && styles.buttonDisabled
-					]}
+					style={[styles.button, (isLoading || contractId.length !== 64) && styles.buttonDisabled]}
 					onPress={handleSubmit}
 					disabled={isLoading || contractId.length !== 64}
 				>
 					{isLoading ? (
 						<ActivityIndicator color="#fff" size="small" />
 					) : (
-						<Text style={styles.buttonText}>Confirm</Text>
+						<Text style={styles.buttonText}>{t('confirm')}</Text>
 					)}
 				</TouchableOpacity>
 			</View>

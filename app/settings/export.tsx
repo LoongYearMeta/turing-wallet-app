@@ -10,6 +10,7 @@ import {
 	ActivityIndicator,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
@@ -20,6 +21,7 @@ interface FormErrors {
 }
 
 export default function ExportPage() {
+	const { t } = useTranslation();
 	const { getSalt, getPassKey, getEncryptedKeys } = useAccount();
 	const [password, setPassword] = useState('');
 	const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -42,7 +44,7 @@ export default function ExportPage() {
 
 	const handleExport = async () => {
 		if (!password) {
-			setFormErrors({ password: 'Password is required' });
+			setFormErrors({ password: t('passwordIsRequired') });
 			return;
 		}
 
@@ -56,7 +58,7 @@ export default function ExportPage() {
 
 			if (!passKey || !salt) {
 				setFormErrors({
-					password: 'Account error, please try again',
+					password: t('accountErrorTryAgain'),
 				});
 				setIsPasswordValid(false);
 				return;
@@ -65,7 +67,7 @@ export default function ExportPage() {
 			const isValid = verifyPassword(password, passKey, salt);
 			if (!isValid) {
 				setFormErrors({
-					password: 'Incorrect password',
+					password: t('incorrectPassword'),
 				});
 				setIsPasswordValid(false);
 				return;
@@ -83,7 +85,7 @@ export default function ExportPage() {
 			}
 		} catch (error) {
 			setFormErrors({
-				password: 'Incorrect password',
+				password: t('incorrectPassword'),
 			});
 			setIsPasswordValid(false);
 			setKeys({ walletWif: '' });
@@ -96,20 +98,24 @@ export default function ExportPage() {
 		await Clipboard.setStringAsync(text);
 		Toast.show({
 			type: 'success',
-			text1: `${label} copied to clipboard`,
+			text1: label === t('mnemonic') 
+				? t('mnemonicCopied') 
+				: label === t('derivationPath') 
+					? t('derivationPathCopied') 
+					: t('privateKeyCopied'),
 		});
 	};
 
 	return (
 		<View style={styles.container}>
 			<View style={styles.inputGroup}>
-				<Text style={styles.label}>Password</Text>
+				<Text style={styles.label}>{t('password')}</Text>
 				<View style={styles.inputWrapper}>
 					<TextInput
 						style={[styles.input, formErrors.password && styles.inputError]}
 						value={password}
 						onChangeText={handlePasswordChange}
-						placeholder="Enter your password"
+						placeholder={t('enterPassword')}
 						secureTextEntry={true}
 						autoCapitalize="none"
 						autoCorrect={false}
@@ -121,33 +127,33 @@ export default function ExportPage() {
 					)}
 				</View>
 				{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
-
-				<TouchableOpacity
-					style={[styles.exportButton, (isLoading || !password) && styles.disabledButton]}
-					onPress={handleExport}
-					disabled={isLoading || !password}
-				>
-					{isLoading ? (
-						<View style={styles.loadingContainer}>
-							<ActivityIndicator size="small" color="#fff" />
-							<Text style={[styles.exportButtonText, { marginLeft: 8 }]}>Verifying...</Text>
-						</View>
-					) : (
-						<Text style={styles.exportButtonText}>Export Keys</Text>
-					)}
-				</TouchableOpacity>
 			</View>
+
+			<TouchableOpacity
+				style={[styles.exportButton, (isLoading || !password) && styles.disabledButton]}
+				onPress={handleExport}
+				disabled={isLoading || !password}
+			>
+				{isLoading ? (
+					<View style={styles.loadingContainer}>
+						<ActivityIndicator size="small" color="#fff" style={{ marginRight: 10 }} />
+						<Text style={styles.exportButtonText}>{t('verifying')}</Text>
+					</View>
+				) : (
+					<Text style={styles.exportButtonText}>{t('exportKeys')}</Text>
+				)}
+			</TouchableOpacity>
 
 			{isPasswordValid && (
 				<View style={styles.keysContainer}>
 					{keys.mnemonic && (
 						<View style={styles.keyGroup}>
-							<Text style={styles.keyLabel}>Mnemonic</Text>
+							<Text style={styles.keyLabel}>{t('mnemonic')}</Text>
 							<View style={styles.keyWrapper}>
 								<Text style={styles.keyValue}>{keys.mnemonic}</Text>
 								<TouchableOpacity
 									style={styles.copyButton}
-									onPress={() => handleCopy(keys.mnemonic!, 'Mnemonic')}
+									onPress={() => handleCopy(keys.mnemonic!, t('mnemonic'))}
 								>
 									<MaterialIcons name="content-copy" size={20} color="#666" />
 								</TouchableOpacity>
@@ -157,12 +163,12 @@ export default function ExportPage() {
 
 					{keys.walletDerivationPath && (
 						<View style={styles.keyGroup}>
-							<Text style={styles.keyLabel}>Derivation Path</Text>
+							<Text style={styles.keyLabel}>{t('derivationPath')}</Text>
 							<View style={styles.keyWrapper}>
 								<Text style={styles.keyValue}>{keys.walletDerivationPath}</Text>
 								<TouchableOpacity
 									style={styles.copyButton}
-									onPress={() => handleCopy(keys.walletDerivationPath!, 'Derivation Path')}
+									onPress={() => handleCopy(keys.walletDerivationPath!, t('derivationPath'))}
 								>
 									<MaterialIcons name="content-copy" size={20} color="#666" />
 								</TouchableOpacity>
@@ -171,12 +177,12 @@ export default function ExportPage() {
 					)}
 
 					<View style={styles.keyGroup}>
-						<Text style={styles.keyLabel}>Private Key</Text>
+						<Text style={styles.keyLabel}>{t('privateKey')}</Text>
 						<View style={styles.keyWrapper}>
 							<Text style={styles.keyValue}>{keys.walletWif}</Text>
 							<TouchableOpacity
 								style={styles.copyButton}
-								onPress={() => handleCopy(keys.walletWif, 'Private Key')}
+								onPress={() => handleCopy(keys.walletWif, t('privateKey'))}
 							>
 								<MaterialIcons name="content-copy" size={20} color="#666" />
 							</TouchableOpacity>

@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { LoginCard } from '@/components/login-card';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
@@ -9,33 +10,34 @@ import { theme } from '@/lib/theme';
 
 const LoginPage = () => {
 	const router = useRouter();
+	const { t } = useTranslation();
 
 	return (
 		<ScreenWrapper bg={'#F0F2F5'}>
 			<View style={styles.container}>
 				<View style={styles.header}>
-					<Text style={styles.title}>Create or Restore wallet</Text>
-					<Text style={styles.subtitle}>Choose an option to get started</Text>
+					<Text style={styles.title}>{t('createOrRestoreWallet')}</Text>
+					<Text style={styles.subtitle}>{t('chooseOption')}</Text>
 				</View>
 
 				<View style={styles.cardsContainer}>
 					<LoginCard
-						title="Create a new wallet"
-						description="Start fresh with a new wallet for your digital assets"
+						title={t('createNewWallet')}
+						description={t('createNewWalletDesc')}
 						onPress={() => router.replace('/create')}
 						style={styles.card}
 					/>
 
 					<LoginCard
-						title="Restore with Mnemonic"
-						description="Recover your existing wallet using your recovery phrase"
+						title={t('restoreWithMnemonic')}
+						description={t('restoreWithMnemonicDesc')}
 						onPress={() => router.replace('/restore')}
 						style={styles.card}
 					/>
 
 					<LoginCard
-						title="Restore with Private Key"
-						description="Recover your existing wallet using your private key"
+						title={t('restoreWithPrivateKey')}
+						description={t('restoreWithPrivateKeyDesc')}
 						onPress={() => router.replace('/restore-by-priKey')}
 						style={styles.card}
 					/>

@@ -3,6 +3,7 @@ import * as Clipboard from 'expo-clipboard';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { hp, wp } from '@/lib/common';
 import { formatBalance, formatContractId, formatDate } from '@/lib/util';
@@ -13,11 +14,13 @@ interface TransactionHistoryCardProps {
 }
 
 export const TransactionHistoryCard = ({ history }: TransactionHistoryCardProps) => {
+    const { t } = useTranslation();
+    
     const handleCopyId = async () => {
         await Clipboard.setStringAsync(history.id);
         Toast.show({
             type: 'success',
-            text1: 'Transaction ID copied to clipboard',
+            text1: t('transactionIdCopied'),
         });
     };
 
@@ -25,7 +28,7 @@ export const TransactionHistoryCard = ({ history }: TransactionHistoryCardProps)
         <View style={styles.card}>
             <View style={styles.header}>
                 <View style={styles.idRow}>
-                    <Text style={styles.label}>TxID: </Text>
+                    <Text style={styles.label}>{t('txId')}: </Text>
                     <Text style={styles.value}>{formatContractId(history.id)}</Text>
                     <TouchableOpacity onPress={handleCopyId} style={styles.copyButton}>
                         <MaterialIcons name="content-copy" size={16} color="#666" />
@@ -35,7 +38,7 @@ export const TransactionHistoryCard = ({ history }: TransactionHistoryCardProps)
             </View>
             <View style={styles.content}>
                 <View style={styles.row}>
-                    <Text style={styles.label}>Change: </Text>
+                    <Text style={styles.label}>{t('change')}: </Text>
                     <Text
                         style={[
                             styles.value,
@@ -47,15 +50,15 @@ export const TransactionHistoryCard = ({ history }: TransactionHistoryCardProps)
                     </Text>
                 </View>
                 <View style={styles.row}>
-                    <Text style={styles.label}>Fee: </Text>
+                    <Text style={styles.label}>{t('fee')}: </Text>
                     <Text style={styles.value}>{formatBalance(history.fee)}</Text>
                 </View>
                 <View style={styles.row}>
-                    <Text style={styles.label}>From: </Text>
+                    <Text style={styles.label}>{t('from')}: </Text>
                     <Text style={styles.value}>{history.send_address}</Text>
                 </View>
                 <View style={styles.row}>
-                    <Text style={styles.label}>To: </Text>
+                    <Text style={styles.label}>{t('to')}: </Text>
                     <Text style={styles.value}>{history.receive_address}</Text>
                 </View>
             </View>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { Modal } from '@/components/ui/modal';
 import { hp, wp } from '@/lib/common';
@@ -19,6 +20,8 @@ export const ConfirmModal = ({
 	onConfirm,
 	onCancel,
 }: ConfirmModalProps) => {
+	const { t } = useTranslation();
+	
 	return (
 		<Modal visible={visible} onClose={onCancel}>
 			<View style={styles.container}>
@@ -26,10 +29,10 @@ export const ConfirmModal = ({
 				<Text style={styles.message}>{message}</Text>
 				<View style={styles.buttonContainer}>
 					<TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onCancel}>
-						<Text style={[styles.buttonText, styles.cancelText]}>Cancel</Text>
+						<Text style={[styles.buttonText, styles.cancelText]}>{t('cancel')}</Text>
 					</TouchableOpacity>
 					<TouchableOpacity style={[styles.button, styles.confirmButton]} onPress={onConfirm}>
-						<Text style={[styles.buttonText, styles.confirmText]}>Confirm</Text>
+						<Text style={[styles.buttonText, styles.confirmText]}>{t('confirm')}</Text>
 					</TouchableOpacity>
 				</View>
 			</View>

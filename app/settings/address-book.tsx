@@ -3,6 +3,7 @@ import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { AddAddressModal } from '@/components/modals/add-address-modal';
 import { ConfirmModal } from '@/components/modals/confirm-modal';
@@ -15,6 +16,7 @@ import {
 } from '@/utils/sqlite';
 
 export default function AddressBookScreen() {
+	const { t } = useTranslation();
 	const [addresses, setAddresses] = useState<string[]>([]);
 	const [multiSigAddresses, setMultiSigAddresses] = useState<string[]>([]);
 	const [showAddModal, setShowAddModal] = useState(false);
@@ -43,8 +45,8 @@ export default function AddressBookScreen() {
 			console.error('Failed to load addresses:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to load addresses',
+				text1: t('error'),
+				text2: t('failedToLoadAddresses'),
 			});
 		}
 	};
@@ -60,15 +62,15 @@ export default function AddressBookScreen() {
 			await loadAddresses();
 			Toast.show({
 				type: 'success',
-				text1: 'Success',
-				text2: 'Address removed from book',
+				text1: t('success'),
+				text2: t('addressRemovedFromBook'),
 			});
 		} catch (error) {
 			console.error('Failed to delete address:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to delete address',
+				text1: t('error'),
+				text2: t('failedToDeleteAddress'),
 			});
 		} finally {
 			setShowDeleteModal(false);
@@ -80,7 +82,7 @@ export default function AddressBookScreen() {
 		await Clipboard.setStringAsync(text);
 		Toast.show({
 			type: 'success',
-			text1: `${label} copied to clipboard`,
+			text1: label === 'MultiSig Address' ? t('multiSigAddressCopied') : t('addressCopied'),
 		});
 	};
 
@@ -91,7 +93,7 @@ export default function AddressBookScreen() {
 					{item}
 				</Text>
 				{item === getCurrentAccountAddress() && (
-					<Text style={styles.currentAddressLabel}>Current Account</Text>
+					<Text style={styles.currentAddressLabel}>{t('currentAccount')}</Text>
 				)}
 			</View>
 			<View style={styles.actionButtons}>
@@ -125,7 +127,7 @@ export default function AddressBookScreen() {
 		<View style={styles.container}>
 			<View style={styles.section}>
 				<View style={styles.sectionHeader}>
-					<Text style={styles.sectionTitle}>Addresses</Text>
+					<Text style={styles.sectionTitle}>{t('addresses')}</Text>
 					<TouchableOpacity style={styles.addButton} onPress={() => setShowAddModal(true)}>
 						<Ionicons name="add-outline" size={24} color="#000" />
 					</TouchableOpacity>
@@ -140,13 +142,13 @@ export default function AddressBookScreen() {
 						ItemSeparatorComponent={() => <View style={styles.separator} />}
 					/>
 				) : (
-					<Text style={styles.emptyText}>No addresses in your address book</Text>
+					<Text style={styles.emptyText}>{t('noAddressesInBook')}</Text>
 				)}
 			</View>
 
 			<View style={styles.section}>
 				<View style={styles.sectionHeader}>
-					<Text style={styles.sectionTitle}>Associated MultiSig Addresses</Text>
+					<Text style={styles.sectionTitle}>{t('associatedMultiSigAddresses')}</Text>
 				</View>
 
 				{multiSigAddresses.length > 0 ? (
@@ -158,7 +160,7 @@ export default function AddressBookScreen() {
 						ItemSeparatorComponent={() => <View style={styles.separator} />}
 					/>
 				) : (
-					<Text style={styles.emptyText}>No associated MultiSig addresses</Text>
+					<Text style={styles.emptyText}>{t('noAssociatedMultiSigAddresses')}</Text>
 				)}
 			</View>
 
@@ -170,8 +172,8 @@ export default function AddressBookScreen() {
 
 			<ConfirmModal
 				visible={showDeleteModal}
-				title="Delete Address"
-				message="Are you sure you want to delete this address from your address book?"
+				title={t('deleteAddress')}
+				message={t('confirmDeleteAddressMessage')}
 				onConfirm={confirmDeleteAddress}
 				onCancel={() => setShowDeleteModal(false)}
 			/>

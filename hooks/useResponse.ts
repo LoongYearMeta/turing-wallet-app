@@ -90,7 +90,7 @@ export const useResponse = () => {
 					txid = await finish_transaction(txHex, utxos!);
 				} catch (error: any) {
 					if (
-						error.message.includes('missing inputs') ||
+						error.message.includes('Missing inputs') ||
 						error.message.includes('txn-mempool-conflict')
 					) {
 						const newUtxos = await fetchUTXOs(address_from);
@@ -126,7 +126,7 @@ export const useResponse = () => {
 					txid = await finish_transaction(txHex, utxos!);
 				} catch (error: any) {
 					if (
-						error.message.includes('missing inputs') ||
+						error.message.includes('Missing inputs') ||
 						error.message.includes('txn-mempool-conflict')
 					) {
 						const newUtxos = await fetchUTXOs(address_from);
@@ -177,7 +177,7 @@ export const useResponse = () => {
 					txid = await finish_transaction(txHex, utxos!);
 				} catch (error: any) {
 					if (
-						error.message.includes('missing inputs') ||
+						error.message.includes('Missing inputs') ||
 						error.message.includes('txn-mempool-conflict')
 					) {
 						const newUtxos = await fetchUTXOs(address_from);
@@ -236,7 +236,7 @@ export const useResponse = () => {
 					txid = await finish_transaction(txHex, utxos!);
 				} catch (error: any) {
 					if (
-						error.message.includes('missing inputs') ||
+						error.message.includes('Missing inputs') ||
 						error.message.includes('txn-mempool-conflict')
 					) {
 						const newUtxos = await fetchUTXOs(address_from);
@@ -307,7 +307,7 @@ export const useResponse = () => {
 					]);
 				} catch (error: any) {
 					if (
-						error.message.includes('missing inputs') ||
+						error.message.includes('Missing inputs') ||
 						error.message.includes('txn-mempool-conflict')
 					) {
 						const newUtxos = await fetchUTXOs(address_from);
@@ -367,7 +367,7 @@ export const useResponse = () => {
 					txid = await finish_transaction(txHex, utxos!);
 				} catch (error: any) {
 					if (
-						error.message.includes('missing inputs') ||
+						error.message.includes('Missing inputs') ||
 						error.message.includes('txn-mempool-conflict')
 					) {
 						const newUtxos = await fetchUTXOs(address_from);
@@ -467,7 +467,7 @@ export const useResponse = () => {
 						]);
 					} catch (error: any) {
 						if (
-							error.message.includes('missing inputs') ||
+							error.message.includes('Missing inputs') ||
 							error.message.includes('txn-mempool-conflict')
 						) {
 							const newUtxos = await fetchUTXOs(address_from);
@@ -517,7 +517,7 @@ export const useResponse = () => {
 						]);
 					} catch (error: any) {
 						if (
-							error.message.includes('missing inputs') ||
+							error.message.includes('Missing inputs') ||
 							error.message.includes('txn-mempool-conflict')
 						) {
 							const newUtxos = await fetchUTXOs(address_from);
@@ -610,7 +610,7 @@ export const useResponse = () => {
 					]);
 				} catch (error: any) {
 					if (
-						error.message.includes('missing inputs') ||
+						error.message.includes('Missing inputs') ||
 						error.message.includes('txn-mempool-conflict')
 					) {
 						const newUtxos = await fetchUTXOs(address_from);
@@ -712,7 +712,7 @@ export const useResponse = () => {
 					]);
 				} catch (error: any) {
 					if (
-						error.message.includes('missing inputs') ||
+						error.message.includes('Missing inputs') ||
 						error.message.includes('txn-mempool-conflict')
 					) {
 						const newUtxos = await fetchUTXOs(address_from);
@@ -843,7 +843,7 @@ export const useResponse = () => {
 					]);
 				} catch (error: any) {
 					if (
-						error.message.includes('missing inputs') ||
+						error.message.includes('Missing inputs') ||
 						error.message.includes('txn-mempool-conflict')
 					) {
 						const newUtxos = await fetchUTXOs(address_from);
@@ -939,7 +939,7 @@ export const useResponse = () => {
 					]);
 				} catch (error: any) {
 					if (
-						error.message.includes('missing inputs') ||
+						error.message.includes('Missing inputs') ||
 						error.message.includes('txn-mempool-conflict')
 					) {
 						const newUtxos = await fetchUTXOs(address_from);
@@ -1026,7 +1026,7 @@ export const useResponse = () => {
 					]);
 				} catch (error: any) {
 					if (
-						error.message.includes('missing inputs') ||
+						error.message.includes('Missing inputs') ||
 						error.message.includes('txn-mempool-conflict')
 					) {
 						const newUtxos = await fetchUTXOs(address_from);
@@ -1094,7 +1094,7 @@ export const useResponse = () => {
 						]);
 					} catch (error: any) {
 						if (
-							error.message.includes('missing inputs') ||
+							error.message.includes('Missing inputs') ||
 							error.message.includes('txn-mempool-conflict')
 						) {
 							const newUtxos = await fetchUTXOs(address_from);
@@ -1165,7 +1165,7 @@ export const useResponse = () => {
 						]);
 					} catch (error: any) {
 						if (
-							error.message.includes('missing inputs') ||
+							error.message.includes('Missing inputs') ||
 							error.message.includes('txn-mempool-conflict')
 						) {
 							const newUtxos = await fetchUTXOs(address_from);

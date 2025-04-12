@@ -8,13 +8,14 @@ import { DropdownMenu } from '@/components/ui/dropdown-menu';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { clearAllData } from '@/utils/sqlite';
+import { useTranslation } from 'react-i18next';
 
 export const Navbar = () => {
 	const [menuVisible, setMenuVisible] = useState(false);
 	const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 	const router = useRouter();
 	const { clear, getCurrentAccountAddress } = useAccount();
-
+	const { t } = useTranslation();
 	const address = getCurrentAccountAddress();
 
 	const handleSignOut = () => {
@@ -93,8 +94,8 @@ export const Navbar = () => {
 
 			<ConfirmModal
 				visible={logoutModalVisible}
-				title="Sign Out All Accounts"
-				message="Are you sure you want to sign out from all accounts? This will clear all data and cannot be undone."
+				title={t('signOutAllAccounts')}
+				message={t('confirmSignOutMessage')}
 				onConfirm={confirmSignOut}
 				onCancel={() => setLogoutModalVisible(false)}
 			/>

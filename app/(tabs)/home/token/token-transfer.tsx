@@ -1,5 +1,5 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { debounce } from 'lodash';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -11,6 +11,7 @@ import {
 	View,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { AddressSelector } from '@/components/selector/address-selector';
 import { useAccount } from '@/hooks/useAccount';
@@ -36,6 +37,7 @@ interface FormErrors {
 }
 
 const TokenTransferPage = () => {
+	const { t } = useTranslation();
 	const {
 		getCurrentAccountAddress,
 		getSalt,
@@ -67,6 +69,7 @@ const TokenTransferPage = () => {
 	const currentAddress = getCurrentAccountAddress();
 	const passKey = getPassKey();
 	const salt = getSalt();
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	useEffect(() => {
 		if (amount) {
@@ -75,33 +78,33 @@ const TokenTransferPage = () => {
 	}, [amount]);
 
 	const validateAddress = (address: string) => {
-		if (!address) return 'Address is required';
+		if (!address) return t('addressRequired');
 
 		if (!/^[a-zA-Z0-9]+$/.test(address)) {
-			return 'Invalid address';
+			return t('invalidAddress');
 		}
 
 		if (address.startsWith('1')) {
 			if (address.length !== 33 && address.length !== 34) {
-				return 'Invalid address';
+				return t('invalidAddress');
 			}
 		} else {
 			if (address.length !== 34) {
-				return 'Invalid address';
+				return t('invalidAddress');
 			}
 		}
 		return '';
 	};
 
 	const validateAmount = (amountStr: string) => {
-		if (!amountStr) return 'Amount is required';
+		if (!amountStr) return t('amountRequired');
 		const num = Number(amountStr);
 		if (isNaN(num) || num <= 0) {
-			return 'Please enter a valid positive number';
+			return t('enterValidPositiveNumber');
 		}
 
 		if (num > availableAmount) {
-			return 'Amount exceeds your balance';
+			return t('amountExceedsBalance');
 		}
 
 		return '';
@@ -111,7 +114,7 @@ const TokenTransferPage = () => {
 		debounce(async (address: string) => {
 			const error = validateAddress(address);
 			setFormErrors((prev) => ({ ...prev, addressTo: error }));
-		}, 1500),
+		}, 1000),
 		[],
 	);
 
@@ -121,38 +124,6 @@ const TokenTransferPage = () => {
 			setFormErrors((prev) => ({ ...prev, amount: error }));
 		}, 1000),
 		[availableAmount],
-	);
-
-	const debouncedPasswordValidation = useCallback(
-		debounce(async (password: string) => {
-			if (!password) {
-				setFormErrors((prev) => ({ ...prev, password: 'Password is required' }));
-				return;
-			}
-
-			if (!passKey || !salt) {
-				setFormErrors((prev) => ({
-					...prev,
-					password: 'Account error, please try again',
-				}));
-				return;
-			}
-
-			try {
-				const isValid = verifyPassword(password, passKey, salt);
-				setFormErrors((prev) => ({
-					...prev,
-					password: isValid ? '' : 'Incorrect password',
-				}));
-			} catch (error) {
-				console.error('Password validation error:', error);
-				setFormErrors((prev) => ({
-					...prev,
-					password: 'Incorrect password',
-				}));
-			}
-		}, 1500),
-		[passKey, salt],
 	);
 
 	const handleInputChange = async (field: keyof FormData, value: string) => {
@@ -169,8 +140,6 @@ const TokenTransferPage = () => {
 			debouncedAddressValidation(value);
 		} else if (field === 'amount') {
 			debouncedAmountValidation(value);
-		} else if (field === 'password') {
-			debouncedPasswordValidation(value);
 		}
 	};
 
@@ -190,6 +159,15 @@ const TokenTransferPage = () => {
 	const debouncedCalculateFee = useCallback(
 		debounce(async (formData: FormData, hasErrors: boolean) => {
 			if (!formData.addressTo || !formData.amount || !formData.password || hasErrors) return;
+
+			if (!passKey || !salt) {
+				return;
+			}
+
+			const isPasswordValid = verifyPassword(formData.password, passKey, salt);
+			if (!isPasswordValid) {
+				return;
+			}
 
 			setIsCalculatingFee(true);
 			try {
@@ -214,7 +192,7 @@ const TokenTransferPage = () => {
 				) {
 					Toast.show({
 						type: 'error',
-						text1: 'Error',
+						text1: t('error'),
 						text2: error.message,
 					});
 				}
@@ -224,7 +202,7 @@ const TokenTransferPage = () => {
 				setIsCalculatingFee(false);
 			}
 		}, 1000),
-		[contractId, currentAddress, sendFT],
+		[contractId, currentAddress, sendFT, passKey, salt],
 	);
 
 	useEffect(() => {
@@ -233,44 +211,38 @@ const TokenTransferPage = () => {
 	}, [formData, formErrors]);
 
 	const handleSubmit = async () => {
-		const addressError = validateAddress(formData.addressTo);
-		const amountError = validateAmount(formData.amount);
-
-		const passwordError = formErrors.password;
-
-		const newErrors = {
-			addressTo: addressError,
-			amount: amountError,
-			password: passwordError,
-		};
-
-		setFormErrors(newErrors);
-
-		if (Object.values(newErrors).some((error) => error)) {
-			Toast.show({
-				type: 'error',
-				text1: 'Validation Error',
-				text2: 'Please check your input',
-			});
-			return;
-		}
-
 		if (!pendingTransaction) {
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Please wait for fee calculation',
+				text1: t('error'),
+				text2: t('pleaseWaitForTransaction'),
 			});
 			return;
 		}
 
 		try {
+			setIsSubmitting(true);
+			await new Promise((resolve) => setTimeout(resolve, 50));
+
+			if (!formData.password) {
+				setFormErrors((prev) => ({ ...prev, password: t('passwordRequired') }));
+				setIsSubmitting(false);
+				return;
+			}
+
+			const isPasswordValid = verifyPassword(formData.password, passKey, salt);
+			if (!isPasswordValid) {
+				setFormErrors((prev) => ({ ...prev, password: t('incorrectPassword') }));
+				setIsSubmitting(false);
+				return;
+			}
+
 			let txid: string | undefined;
 			try {
 				txid = await finish_transaction(pendingTransaction.txHex, pendingTransaction.utxos!);
 			} catch (error: any) {
 				if (
-					error.message.includes('missing inputs') ||
+					error.message.includes('Missing inputs') ||
 					error.message.includes('txn-mempool-conflict')
 				) {
 					const utxos = await fetchUTXOs(currentAddress);
@@ -332,30 +304,42 @@ const TokenTransferPage = () => {
 
 				Toast.show({
 					type: 'success',
-					text1: 'Success',
-					text2: 'Token transferred successfully',
+					text1: t('success'),
+					text2: t('transactionSentSuccessfully'),
 				});
 
-				router.back();
+				setFormData({
+					addressTo: '',
+					amount: '',
+					password: '',
+				});
+				setEstimatedFee(null);
+				setPendingTransaction(null);
 			}
 		} catch (error) {
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: error instanceof Error ? error.message : 'Failed to transfer token',
+				text1: t('error'),
+				text2: error instanceof Error ? error.message : t('transactionFailed'),
 			});
+			setFormData({
+				addressTo: '',
+				amount: '',
+				password: '',
+			});
+			setEstimatedFee(null);
+			setPendingTransaction(null);
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
 
 	return (
-		<KeyboardAvoidingWrapper 
-			contentContainerStyle={styles.container}
-			backgroundColor="#fff"
-		>
+		<KeyboardAvoidingWrapper contentContainerStyle={styles.container} backgroundColor="#fff">
 			<View style={styles.inputGroup}>
 				<View style={styles.inputGroup}>
 					<View style={styles.labelRow}>
-						<Text style={styles.label}>Recipient Address</Text>
+						<Text style={styles.label}>{t('recipientAddress')}</Text>
 						<TouchableOpacity onPress={() => setShowAddressSelector(true)}>
 							<Ionicons name="book-outline" size={20} color="#333" />
 						</TouchableOpacity>
@@ -365,7 +349,7 @@ const TokenTransferPage = () => {
 							style={[styles.input, formErrors.addressTo && styles.inputError]}
 							value={formData.addressTo}
 							onChangeText={(text) => handleInputChange('addressTo', text)}
-							placeholder="Enter recipient address"
+							placeholder={t('enterRecipientAddress')}
 							autoCapitalize="none"
 							autoCorrect={false}
 						/>
@@ -382,19 +366,22 @@ const TokenTransferPage = () => {
 				</View>
 
 				<View style={styles.inputGroup}>
-					<Text style={styles.label}>Amount</Text>
+					<Text style={styles.label}>{t('amount')}</Text>
 					<View style={styles.inputWrapper}>
 						<TextInput
 							style={[styles.input, formErrors.amount && styles.inputError]}
 							value={formData.amount}
 							onChangeText={(text) => handleInputChange('amount', text)}
-							placeholder="Enter amount"
+							placeholder={t('enterAmount')}
 							keyboardType="decimal-pad"
 							autoCapitalize="none"
 							autoCorrect={false}
 						/>
 						{formData.amount.length > 0 && (
-							<TouchableOpacity style={styles.clearButton} onPress={() => handleClearField('amount')}>
+							<TouchableOpacity
+								style={styles.clearButton}
+								onPress={() => handleClearField('amount')}
+							>
 								<MaterialIcons name="close" size={20} color="#666" />
 							</TouchableOpacity>
 						)}
@@ -402,18 +389,20 @@ const TokenTransferPage = () => {
 					{formErrors.amount ? (
 						<Text style={styles.errorText}>{formErrors.amount}</Text>
 					) : (
-						<Text style={styles.balanceText}>Available: {availableAmount}</Text>
+						<Text style={styles.balanceText}>
+							{t('available')}: {availableAmount}
+						</Text>
 					)}
 				</View>
 
 				<View style={styles.inputGroup}>
-					<Text style={styles.label}>Password</Text>
+					<Text style={styles.label}>{t('password')}</Text>
 					<View style={styles.inputWrapper}>
 						<TextInput
 							style={[styles.input, formErrors.password && styles.inputError]}
 							value={formData.password}
 							onChangeText={(text) => handleInputChange('password', text)}
-							placeholder="Enter your password"
+							placeholder={t('enterYourPassword')}
 							secureTextEntry={true}
 							autoCapitalize="none"
 							autoCorrect={false}
@@ -432,10 +421,10 @@ const TokenTransferPage = () => {
 
 				<View style={styles.divider} />
 				<View style={styles.feeContainer}>
-					<Text style={styles.feeLabel}>Estimated Fee: </Text>
+					<Text style={styles.feeLabel}>{t('estimatedFee')}</Text>
 					<View style={styles.feeValueContainer}>
 						{isCalculatingFee ? (
-							<ActivityIndicator size="small" color="#666" />
+							<ActivityIndicator size="small" color="#999" />
 						) : (
 							estimatedFee !== null && (
 								<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
@@ -447,14 +436,22 @@ const TokenTransferPage = () => {
 				<TouchableOpacity
 					style={[
 						styles.transferButton,
-						(!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee) &&
+						(!estimatedFee ||
+							Object.values(formErrors).some(Boolean) ||
+							isCalculatingFee ||
+							isSubmitting) &&
 							styles.transferButtonDisabled,
 					]}
 					onPress={handleSubmit}
-					disabled={!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee}
+					disabled={
+						!estimatedFee ||
+						Object.values(formErrors).some(Boolean) ||
+						isCalculatingFee ||
+						isSubmitting
+					}
 				>
 					<Text style={styles.transferButtonText}>
-						{isCalculatingFee ? 'Calculating Fee...' : 'Transfer'}
+						{isSubmitting ? t('sending') : isCalculatingFee ? t('calculatingFee') : t('transfer')}
 					</Text>
 				</TouchableOpacity>
 

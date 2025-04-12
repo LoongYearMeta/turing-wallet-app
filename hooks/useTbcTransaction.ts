@@ -202,7 +202,7 @@ export const useTbcTransaction = () => {
 					await finish_transaction(txraw, storedUtxos);
 				} catch (error: any) {
 					if (
-						error.message.includes('missing inputs') ||
+						error.message.includes('Missing inputs') ||
 						error.message.includes('txn-mempool-conflict')
 					) {
 						const newUtxos = await fetchUTXOs(address_from);

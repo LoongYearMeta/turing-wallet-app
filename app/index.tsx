@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { Animated, Dimensions, Easing, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { useAccount } from '@/hooks/useAccount';
@@ -18,6 +19,7 @@ const TEXT_ANIMATION_DELAY = 300;
 const WelcomePage = () => {
 	const router = useRouter();
 	const navigation = useNavigation();
+	const { t } = useTranslation();
 	const [imageLoaded, setImageLoaded] = useState(false);
 	const imageOpacity = new Animated.Value(0);
 	const imageScale = new Animated.Value(0.9);
@@ -132,9 +134,9 @@ const WelcomePage = () => {
 							},
 						]}
 					>
-						<Text style={styles.title}>Welcome!</Text>
+						<Text style={styles.title}>{t('welcome')}</Text>
 						<Text style={styles.punchline}>
-							Experience digital asset management with security and simplicity.
+							{t('welcomePunchline')}
 						</Text>
 					</Animated.View>
 				</View>

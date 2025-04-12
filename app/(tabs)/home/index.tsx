@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import React, { useCallback, useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { syncFTs } from '@/actions/get-fts';
 import { AddContractModal } from '@/components/modals/add-token-modal';
@@ -32,6 +33,7 @@ type TabType = 'owned' | 'added';
 type SortOption = 'default' | 'amountHighToLow' | 'amountLowToHigh';
 
 export default function HomePage() {
+	const { t } = useTranslation();
 	const [activeTab, setActiveTab] = useState<TabType>('owned');
 	const [ownedTokens, setOwnedTokens] = useState<FT[]>([]);
 	const [addedTokens, setAddedTokens] = useState<FTPublic[]>([]);
@@ -150,15 +152,22 @@ export default function HomePage() {
 		try {
 			const address = getCurrentAccountAddress();
 			await syncFTs(address);
+
 			if (activeTab === 'owned') {
 				await loadOwnedTokens();
 			}
+			
+			Toast.show({
+				type: 'success',
+				text1: t('success'),
+				text2: t('tokensRefreshed'),
+			});
 		} catch (error) {
 			console.error('Failed to refresh tokens:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to refresh tokens',
+				text1: t('error'),
+				text2: t('failedToRefreshTokens'),
 			});
 		}
 	};
@@ -304,15 +313,15 @@ export default function HomePage() {
 
 			Toast.show({
 				type: 'success',
-				text1: 'Success',
-				text2: isPinned ? 'Token unpinned successfully' : 'Token pinned successfully',
+				text1: t('success'),
+				text2: isPinned ? t('tokenUnpinned') : t('tokenPinned'),
 			});
 		} catch (error) {
 			console.error('Failed to toggle pin status:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to update token pin status',
+				text1: t('error'),
+				text2: t('failedToUpdatePinStatus'),
 			});
 		} finally {
 			setPinModalVisible(false);
@@ -366,13 +375,13 @@ export default function HomePage() {
 			</ScrollView>
 			<ConfirmModal
 				visible={deleteModalVisible}
-				title={'amount' in (tokenToDelete || {}) ? 'Hide Token' : 'Delete Token'}
-				message={`Are you sure you want to ${'amount' in (tokenToDelete || {}) ? 'hide' : 'delete'} ${
-					tokenToDelete?.name || 'this token'
+				title={'amount' in (tokenToDelete || {}) ? t('hideToken') : t('deleteToken')}
+				message={`${t('areYouSureWantTo')} ${'amount' in (tokenToDelete || {}) ? t('hide') : t('delete')} ${
+					tokenToDelete?.name || t('thisToken')
 				}? ${
 					'amount' in (tokenToDelete || {})
-						? 'You can restore it anytime.'
-						: 'This will remove it from your added tokens list.'
+						? t('youCanRestoreAnytime')
+						: t('thisWillRemoveFromList')
 				}`}
 				onConfirm={handleConfirmDelete}
 				onCancel={() => {
@@ -382,13 +391,13 @@ export default function HomePage() {
 			/>
 			<ConfirmModal
 				visible={pinModalVisible}
-				title={tokenToPin?.is_pin ? 'Unpin Token' : 'Pin Token'}
-				message={`Are you sure you want to ${tokenToPin?.is_pin ? 'unpin' : 'pin'} ${
-					tokenToPin?.name || 'this token'
+				title={tokenToPin?.is_pin ? t('unpinToken') : t('pinToken')}
+				message={`${t('areYouSureWantTo')} ${tokenToPin?.is_pin ? t('unpin') : t('pin')} ${
+					tokenToPin?.name || t('thisToken')
 				}? ${
 					tokenToPin?.is_pin
-						? 'This will remove it from the top of the list.'
-						: 'This will keep it at the top of the list.'
+						? t('thisWillRemoveFromTop')
+						: t('thisWillKeepAtTop')
 				}`}
 				onConfirm={handleConfirmPin}
 				onCancel={() => {

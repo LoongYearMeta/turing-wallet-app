@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { debounce } from 'lodash';
+import { useTranslation } from 'react-i18next';
 
 import { getTbcBalance_byMultiSigAddress } from '@/actions/get-balance';
 import { AddressSelector } from '@/components/selector/address-selector';
@@ -57,6 +58,7 @@ interface MultiSigAddress {
 }
 
 export default function InitiateMultiSigTransactionPage() {
+	const { t } = useTranslation();
 	const { getCurrentAccountAddress, getPassKey, getSalt } = useAccount();
 	const { createMultiSigTransaction } = useFtTransaction();
 
@@ -195,7 +197,7 @@ export default function InitiateMultiSigTransactionPage() {
 		debounce(async (address: string) => {
 			const error = address ? '' : 'Receiver address is required';
 			setFormErrors((prev) => ({ ...prev, receiverAddress: error }));
-		}, 1500),
+		}, 1000),
 		[],
 	);
 
@@ -309,7 +311,7 @@ export default function InitiateMultiSigTransactionPage() {
 			>
 				<View style={styles.inputGroup}>
 					<View style={styles.labelRow}>
-						<Text style={styles.label}>From</Text>
+						<Text style={styles.label}>{t('senderAddress')}</Text>
 						<TouchableOpacity onPress={() => setShowMultiSigAddressSelector(true)}>
 							<MaterialIcons name="menu-book" size={24} color={theme.colors.primary} />
 						</TouchableOpacity>
@@ -326,7 +328,7 @@ export default function InitiateMultiSigTransactionPage() {
 
 				<View style={styles.inputGroup}>
 					<View style={styles.labelRow}>
-						<Text style={styles.label}>Asset</Text>
+						<Text style={styles.label}>{t('asset')}</Text>
 						<TouchableOpacity onPress={() => setShowAssetSelector(true)}>
 							<MaterialIcons name="account-balance-wallet" size={24} color={theme.colors.primary} />
 						</TouchableOpacity>
@@ -343,7 +345,7 @@ export default function InitiateMultiSigTransactionPage() {
 
 				<View style={styles.inputGroup}>
 					<View style={styles.labelRow}>
-						<Text style={styles.label}>To</Text>
+						<Text style={styles.label}>{t('receiverAddress')}</Text>
 						<TouchableOpacity onPress={() => setShowAddressSelector(true)}>
 							<MaterialIcons name="contacts" size={24} color="#666" />
 						</TouchableOpacity>
@@ -353,7 +355,7 @@ export default function InitiateMultiSigTransactionPage() {
 							style={[styles.input, formErrors.receiverAddress && styles.inputError]}
 							value={formData.receiverAddress}
 							onChangeText={(text) => handleInputChange('receiverAddress', text)}
-							placeholder="Enter receiver address"
+							placeholder={t('enterReceiverAddress')}
 						/>
 						{formData.receiverAddress.length > 0 && (
 							<TouchableOpacity
@@ -373,13 +375,13 @@ export default function InitiateMultiSigTransactionPage() {
 				</View>
 
 				<View style={styles.inputGroup}>
-					<Text style={styles.label}>Amount</Text>
+					<Text style={styles.label}>{t('amount')}</Text>
 					<View style={styles.inputWrapper}>
 						<TextInput
 							style={[styles.input, formErrors.amount && styles.inputError]}
 							value={formData.amount}
 							onChangeText={(text) => handleInputChange('amount', text)}
-							placeholder="Enter amount"
+							placeholder={t('enterAmount')}
 							keyboardType="decimal-pad"
 							autoCapitalize="none"
 							autoCorrect={false}
@@ -401,14 +403,14 @@ export default function InitiateMultiSigTransactionPage() {
 
 				<View style={styles.inputGroup}>
 					<View style={styles.labelRow}>
-						<Text style={styles.label}>Password</Text>
+						<Text style={styles.label}>{t('password')}</Text>
 					</View>
 					<View style={styles.inputWrapper}>
 						<TextInput
 							style={[styles.input, formErrors.password && styles.inputError]}
 							value={formData.password}
 							onChangeText={(text) => handleInputChange('password', text)}
-							placeholder="Enter your password"
+							placeholder={t('enterPassword')}
 							secureTextEntry
 						/>
 						{formData.password.length > 0 && (
@@ -434,7 +436,7 @@ export default function InitiateMultiSigTransactionPage() {
 					{isLoading ? (
 						<ActivityIndicator color="#fff" size="small" />
 					) : (
-						<Text style={styles.sendButtonText}>Initiate Transaction</Text>
+						<Text style={styles.sendButtonText}>{t('initiateTransaction')}</Text>
 					)}
 				</TouchableOpacity>
 			</ScrollView>

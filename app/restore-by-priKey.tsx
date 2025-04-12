@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { Input } from '@/components/ui/input';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
@@ -28,6 +29,7 @@ import { initDApps } from '@/actions/get-dapps';
 import { clearAllData, deleteAccountData } from '@/utils/sqlite';
 
 const RestoreByPriKeyPage = () => {
+	const { t } = useTranslation();
 	const [privateKey, setPrivateKey] = useState('');
 	const [password, setPassword] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
@@ -51,16 +53,13 @@ const RestoreByPriKeyPage = () => {
 
 	const validatePassword = (password: string) => {
 		if (password.length < 8) {
-			showToast('error', 'Password must be at least 8 characters long');
+			showToast('error', t('passwordTooShort'));
 			return false;
 		}
 
 		const validChars = /^[a-zA-Z0-9!@#$%*]+$/;
 		if (!validChars.test(password)) {
-			showToast(
-				'error',
-				'Password can only contain letters, numbers, and special characters (!@#$%*)',
-			);
+			showToast('error', t('passwordInvalidChars'));
 			return false;
 		}
 
@@ -81,25 +80,25 @@ const RestoreByPriKeyPage = () => {
 	const validateAndSubmitForm = async () => {
 		if (hasExistingAccount) {
 			if (!confirmPassword) {
-				showToast('error', 'Please enter your password');
+				showToast('error', t('pleaseEnterPassword'));
 				setIsSubmitting(false);
 				return;
 			}
 			if (!verifyPassword(confirmPassword, passKey, salt)) {
-				showToast('error', 'Incorrect password');
+				showToast('error', t('incorrectPassword'));
 				setIsSubmitting(false);
 				return;
 			}
 			setPassword(confirmPassword);
 		} else {
 			if (!privateKey.trim()) {
-				showToast('error', 'Please enter your private key');
+				showToast('error', t('pleaseEnterPrivateKey'));
 				setIsSubmitting(false);
 				return;
 			}
 
 			if (!password || !confirmPassword) {
-				showToast('error', 'Please fill in all password fields');
+				showToast('error', t('pleaseFillAllPasswordFields'));
 				setIsSubmitting(false);
 				return;
 			}
@@ -110,7 +109,7 @@ const RestoreByPriKeyPage = () => {
 			}
 
 			if (password !== confirmPassword) {
-				showToast('error', 'Passwords do not match');
+				showToast('error', t('passwordsDoNotMatch'));
 				setIsSubmitting(false);
 				return;
 			}
@@ -122,7 +121,7 @@ const RestoreByPriKeyPage = () => {
 			if (hasExistingAccount) {
 				const result = generateKeysEncrypted_wif(confirmPassword, privateKey.trim(), salt);
 				if (!result) {
-					throw new Error('Invalid private key');
+					throw new Error(t('privateKeyInvalid'));
 				}
 
 				const {
@@ -143,7 +142,7 @@ const RestoreByPriKeyPage = () => {
 				);
 
 				if (isDuplicate) {
-					throw new Error('This account already exists in your wallet');
+					throw new Error(t('thisAccountAlreadyExists'));
 				}
 
 				const accountsCount = getAccountsCount();
@@ -172,7 +171,7 @@ const RestoreByPriKeyPage = () => {
 						await initializeWalletData(tbcAddress);
 					} catch (error) {
 						await deleteAccountData(tbcAddress);
-						throw new Error('Failed to restore wallet data from blockchain.');
+						throw new Error(t('failedToRestoreWalletData'));
 					}
 					try {
 						await initializeWalletData(taprootLegacyAddress);
@@ -186,7 +185,7 @@ const RestoreByPriKeyPage = () => {
 			} else {
 				const result = generateKeysEncrypted_wif(password, privateKey.trim());
 				if (!result) {
-					throw new Error('Invalid private key');
+					throw new Error(t('privateKeyInvalid'));
 				}
 
 				const {
@@ -227,7 +226,7 @@ const RestoreByPriKeyPage = () => {
 						await initDApps();
 					} catch (error) {
 						await clearAllData();
-						throw new Error('Failed to restore wallet data from blockchain.');
+						throw new Error(t('failedToRestoreWalletData'));
 					}
 					try {
 						await initializeWalletData(taprootLegacyAddress);
@@ -241,7 +240,7 @@ const RestoreByPriKeyPage = () => {
 			}
 
 			router.replace('/(tabs)/home');
-			showToast('success', 'Wallet restored successfully!');
+			showToast('success', t('walletRestored'));
 		} catch (error: any) {
 			showToast('error', error.message);
 		} finally {
@@ -279,7 +278,7 @@ const RestoreByPriKeyPage = () => {
 				<View style={styles.loadingContent}>
 					<ActivityIndicator size="large" color={theme.colors.primary} />
 					<Text style={styles.loadingText}>
-						Restoring your data from blockchain, please wait...
+						{t('restoringData')}
 					</Text>
 				</View>
 			) : (
@@ -291,28 +290,25 @@ const RestoreByPriKeyPage = () => {
 					>
 						<View style={styles.content}>
 							<Text style={styles.welcomeText}>
-								{hasExistingAccount ? 'Import a new wallet' : 'Restore your wallet'}
+								{hasExistingAccount ? t('importWallet') : t('restoreWallet')}
 							</Text>
 
 							<View style={styles.form}>
 								{!hasExistingAccount && (
 									<Text style={styles.description}>
-										Please set a password to protect your wallet.
-										{'\n\n'}The password must be at least 8 characters long.
-										{'\n\n'}You can only use letters (a-z, A-Z), numbers (0-9), and special
-										characters (!@#$%*).
+										{t('passwordRequirements')}
 									</Text>
 								)}
 
 								<View style={styles.inputGroup}>
 									<View style={styles.labelContainer}>
-										<Text style={styles.label}>Private Key</Text>
+										<Text style={styles.label}>{t('privateKey')}</Text>
 									</View>
 									<Input
 										value={formatLongString(privateKey, 18)}
 										onChangeText={handlePrivateKeyChange}
 										editable={!isButtonDisabled}
-										placeholder="Enter your private key"
+										placeholder={t('pleaseEnterPrivateKey')}
 										multiline={false}
 										autoCapitalize="none"
 										autoCorrect={false}
@@ -322,11 +318,11 @@ const RestoreByPriKeyPage = () => {
 
 								{!hasExistingAccount && (
 									<View style={styles.inputGroup}>
-										<Text style={styles.label}>Password</Text>
+										<Text style={styles.label}>{t('password')}</Text>
 										<Input
 											icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
 											secureTextEntry
-											placeholder="Set your password"
+											placeholder={t('setPassword')}
 											value={password}
 											onChangeText={setPassword}
 											editable={!isButtonDisabled}
@@ -335,12 +331,12 @@ const RestoreByPriKeyPage = () => {
 								)}
 
 								<View style={styles.inputGroup}>
-									<Text style={styles.label}>Confirm Password</Text>
+									<Text style={styles.label}>{t('confirmPassword')}</Text>
 									<Input
 										icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
 										secureTextEntry
 										placeholder={
-											hasExistingAccount ? 'Enter your password' : 'Confirm your password'
+											hasExistingAccount ? t('enterPassword') : t('confirmYourPassword')
 										}
 										value={confirmPassword}
 										onChangeText={setConfirmPassword}
@@ -349,7 +345,7 @@ const RestoreByPriKeyPage = () => {
 								</View>
 
 								<View style={styles.switchContainer}>
-									<Text style={styles.switchLabel}>Restore wallet data from blockchain</Text>
+									<Text style={styles.switchLabel}>{t('restoreFromBlockchain')}</Text>
 									<Switch
 										value={shouldRestore}
 										onValueChange={setShouldRestore}
@@ -367,7 +363,7 @@ const RestoreByPriKeyPage = () => {
 								activeOpacity={0.5}
 								pressRetentionOffset={{ top: 10, left: 10, bottom: 10, right: 10 }}
 							>
-								<Text style={styles.buttonText}>Restore wallet</Text>
+								<Text style={styles.buttonText}>{t('restoreWallet')}</Text>
 							</TouchableOpacity>
 						</View>
 					</ScrollView>

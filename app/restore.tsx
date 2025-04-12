@@ -372,7 +372,7 @@ const RestorePage = () => {
 	const renderDerivationPathSection = () => {
 		return (
 			<View style={styles.inputGroup}>
-				<Text style={styles.label}>Derivation Path</Text>
+				<Text style={styles.label}>{t('derivationPath')}</Text>
 
 				<View style={styles.tabContainer}>
 					<TouchableOpacity
@@ -472,14 +472,16 @@ const RestorePage = () => {
 							</Text>
 							<View style={styles.form}>
 								{!hasExistingAccount && (
-									<Text style={styles.description}>
-										{t('passwordRequirements')}
-									</Text>
+									<View style={styles.descriptionContainer}>
+										<Text style={styles.description} numberOfLines={0}>
+											{t('passwordRequirements')}
+										</Text>
+									</View>
 								)}
 
-								<View style={styles.inputGroup}>
+								<View style={[styles.inputGroup, { marginTop: !hasExistingAccount ? hp(2) : 0 }]}>
 									<View style={styles.labelContainer}>
-										<Text style={styles.label}>Mnemonic Phrase</Text>
+										<Text style={styles.label}>{t('mnemonicPhrase')}</Text>
 										{mnemonic && (
 											<TouchableOpacity onPress={handleClearAll} disabled={isButtonDisabled}>
 												<MaterialIcons name="close" size={20} color={theme.colors.text} />
@@ -499,7 +501,7 @@ const RestorePage = () => {
 								{!hasExistingAccount ? (
 									<>
 										<View style={styles.inputGroup}>
-											<Text style={styles.label}>Password</Text>
+											<Text style={styles.label}>{t('password')}</Text>
 											<Input
 												icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
 												secureTextEntry
@@ -511,7 +513,7 @@ const RestorePage = () => {
 										</View>
 										
 										<View style={styles.inputGroup}>
-											<Text style={styles.label}>Confirm Password</Text>
+											<Text style={styles.label}>{t('confirmPassword')}</Text>
 											<Input
 												icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
 												secureTextEntry
@@ -524,7 +526,7 @@ const RestorePage = () => {
 									</>
 								) : (
 									<View style={styles.inputGroup}>
-										<Text style={styles.label}>Confirm Password</Text>
+										<Text style={styles.label}>{t('confirmPassword')}</Text>
 										<Input
 											icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
 											secureTextEntry
@@ -611,10 +613,13 @@ const styles = StyleSheet.create({
 		gap: hp(2),
 		marginBottom: hp(2),
 	},
+	descriptionContainer: {
+		width: '100%',
+	},
 	description: {
 		fontSize: hp(1.5),
 		color: theme.colors.text,
-		marginBottom: hp(0.3),
+		lineHeight: hp(2.2),
 	},
 	inputGroup: {
 		gap: hp(0.5),

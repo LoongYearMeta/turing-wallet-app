@@ -11,6 +11,7 @@ import {
 	ScrollView,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import Icon from '@/assets/icons';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,7 @@ import { Account, AccountType } from '@/types';
 import { clearAllData } from '@/utils/sqlite';
 
 const CreatePage = () => {
+	const { t } = useTranslation();
 	const {
 		addAccount,
 		setCurrentAccount,
@@ -47,16 +49,13 @@ const CreatePage = () => {
 
 	const validatePassword = (password: string) => {
 		if (password.length < 8) {
-			showToast('error', 'Password must be at least 8 characters long');
+			showToast('error', t('passwordTooShort'));
 			return false;
 		}
 
 		const validChars = /^[a-zA-Z0-9!@#$%*]+$/;
 		if (!validChars.test(password)) {
-			showToast(
-				'error',
-				'Password can only contain letters, numbers, and special characters (!@#$%*)',
-			);
+			showToast('error', t('passwordInvalidChars'));
 			return false;
 		}
 
@@ -90,19 +89,19 @@ const CreatePage = () => {
 		try {
 			if (initialHasAccount) {
 				if (!confirmPassword) {
-					showToast('error', 'Please enter your password');
+					showToast('error', t('pleaseEnterPassword'));
 					setIsSubmitting(false);
 					return;
 				}
 				if (!verifyPassword(confirmPassword, passKey, salt)) {
-					showToast('error', 'Incorrect password');
+					showToast('error', t('incorrectPassword'));
 					setIsSubmitting(false);
 					return;
 				}
 				setPassword(confirmPassword);
 			} else {
 				if (!password || !confirmPassword) {
-					showToast('error', 'Please fill in all fields');
+					showToast('error', t('pleaseFillAllFields'));
 					setIsSubmitting(false);
 					return;
 				}
@@ -111,7 +110,7 @@ const CreatePage = () => {
 					return;
 				}
 				if (password !== confirmPassword) {
-					showToast('error', 'Passwords do not match');
+					showToast('error', t('passwordsDoNotMatch'));
 					setIsSubmitting(false);
 					return;
 				}
@@ -201,11 +200,11 @@ const CreatePage = () => {
 			}
 
 			router.replace('/(tabs)/home');
-			showToast('success', 'Wallet created successfully!');
+			showToast('success', t('accountCreatedSuccessfully'));
 		} catch (error) {
 			await clearAllData();
 			await clear();
-			showToast('error', 'Failed to create wallet. Please try again.');
+			showToast('error', t('failedToCreateWallet'));
 		} finally {
 			setLoading(false);
 			setIsSubmitting(false);
@@ -228,11 +227,11 @@ const CreatePage = () => {
 					<ActivityIndicator size="large" color={theme.colors.primary} />
 					<Text style={styles.loadingText}>
 						{initialHasAccount
-							? 'Creating additional wallet, please wait...'
-							: 'Creating your first wallet, please wait...'}
+							? t('creatingAdditionalWallet')
+							: t('creatingFirstWallet')}
 					</Text>
 					<Text style={styles.loadingSubText}>
-						This may take a few moments while we generate your secure wallet.
+						{t('walletCreationWaitMessage')}
 					</Text>
 				</View>
 			) : (
@@ -244,26 +243,23 @@ const CreatePage = () => {
 					>
 						<View style={styles.content}>
 							<Text style={styles.welcomeText}>
-								{initialHasAccount ? 'Create a new account' : 'Create your wallet'}
+								{initialHasAccount ? t('createNewAccount') : t('createYourWallet')}
 							</Text>
 
 							<View style={styles.form}>
 								{!initialHasAccount && (
 									<Text style={styles.description}>
-										Please set a password to protect your wallet.
-										{'\n\n'}The password must be at least 8 characters long.
-										{'\n\n'}You can only use letters (a-z, A-Z), numbers (0-9), and special
-										characters (!@#$%*).
+										{t('passwordRequirements')}
 									</Text>
 								)}
 
 								{!initialHasAccount ? (
 									<View style={styles.inputGroup}>
-										<Text style={styles.label}>Password</Text>
+										<Text style={styles.label}>{t('password')}</Text>
 										<Input
 											icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
 											secureTextEntry
-											placeholder="Set your password"
+											placeholder={t('setPassword')}
 											value={password}
 											onChangeText={setPassword}
 											editable={!isButtonDisabled}
@@ -272,12 +268,12 @@ const CreatePage = () => {
 								) : null}
 
 								<View style={styles.inputGroup}>
-									<Text style={styles.label}>Confirm Password</Text>
+									<Text style={styles.label}>{t('confirmPassword')}</Text>
 									<Input
 										icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
 										secureTextEntry
 										placeholder={
-											initialHasAccount ? 'Enter your password' : 'Confirm your password'
+											initialHasAccount ? t('enterPassword') : t('confirmYourPassword')
 										}
 										value={confirmPassword}
 										onChangeText={setConfirmPassword}
@@ -293,7 +289,9 @@ const CreatePage = () => {
 								activeOpacity={0.5}
 								pressRetentionOffset={{ top: 10, left: 10, bottom: 10, right: 10 }}
 							>
-								<Text style={styles.buttonText}>Create account</Text>
+								<Text style={styles.buttonText}>
+									{initialHasAccount ? t('createAccount') : t('createWallet')}
+								</Text>
 							</TouchableOpacity>
 						</View>
 					</ScrollView>

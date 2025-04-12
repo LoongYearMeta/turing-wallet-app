@@ -13,6 +13,7 @@ import {
 	View,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { useAccount } from '@/hooks/useAccount';
@@ -22,6 +23,7 @@ import { formatContractId } from '@/lib/util';
 import { Collection, NFT, getCollection, getNFT } from '@/utils/sqlite';
 
 const NFTDetailPage = () => {
+	const { t } = useTranslation();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const [nft, setNFT] = useState<NFT | null>(null);
 	const [collection, setCollection] = useState<Collection | null>(null);
@@ -45,13 +47,13 @@ const NFTDetailPage = () => {
 			console.error('Failed to load NFT details:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to load NFT details',
+				text1: t('error'),
+				text2: t('failedToLoadNFTDetails'),
 			});
 		} finally {
 			setLoading(false);
 		}
-	}, [id, getCurrentAccountAddress]);
+	}, [id, getCurrentAccountAddress, t]);
 
 	useFocusEffect(
 		useCallback(() => {
@@ -64,7 +66,7 @@ const NFTDetailPage = () => {
 			await Clipboard.setStringAsync(nft.id);
 			Toast.show({
 				type: 'success',
-				text1: 'NFT ID copied to clipboard',
+				text1: t('nftIdCopied'),
 			});
 		}
 	};
@@ -74,7 +76,7 @@ const NFTDetailPage = () => {
 			await Clipboard.setStringAsync(nft.collection_id);
 			Toast.show({
 				type: 'success',
-				text1: 'Collection ID copied to clipboard',
+				text1: t('collectionIdCopied'),
 			});
 		}
 	};
@@ -99,7 +101,7 @@ const NFTDetailPage = () => {
 		return (
 			<ScreenWrapper bg="#f5f5f5">
 				<View style={styles.emptyContainer}>
-					<Text style={styles.emptyText}>NFT not found</Text>
+					<Text style={styles.emptyText}>{t('nftNotFound')}</Text>
 				</View>
 			</ScreenWrapper>
 		);
@@ -120,9 +122,9 @@ const NFTDetailPage = () => {
 						<Text style={styles.nftName}>{nft.name}</Text>
 						<View style={styles.idContainer}>
 							<Text style={styles.nftId} numberOfLines={1} ellipsizeMode="middle">
-								NFT Address: {formatContractId(nft.id, 10)}
+								{t('nftId')}: {formatContractId(nft.id, 10)}
 							</Text>
-							<TouchableOpacity onPress={handleCopyId} style={styles.copyButton}>
+							<TouchableOpacity style={styles.copyButton} onPress={handleCopyId}>
 								<Ionicons name="copy-outline" size={20} color="#666" />
 							</TouchableOpacity>
 						</View>
@@ -130,25 +132,29 @@ const NFTDetailPage = () => {
 						{nft.collection_id && (
 							<View style={styles.idContainer}>
 								<Text style={styles.nftId} numberOfLines={1} ellipsizeMode="middle">
-									Collection Address: {formatContractId(nft.collection_id, 10)}
+									{t('collectionId')}: {formatContractId(nft.collection_id, 10)}
 								</Text>
-								<TouchableOpacity onPress={handleCopyCollectionId} style={styles.copyButton}>
+								<TouchableOpacity style={styles.copyButton} onPress={handleCopyCollectionId}>
 									<Ionicons name="copy-outline" size={20} color="#666" />
 								</TouchableOpacity>
 							</View>
 						)}
 
 						<View style={styles.infoContainer}>
-							<Text style={styles.infoText}>Transfer Times: {nft.transfer_times || '0'}</Text>
 							<Text style={styles.infoText}>
-								Collection Name: {collection ? collection.name : 'Unknown'}
+								{t('transferTimes')}: {nft.transfer_times || '0'}
 							</Text>
-							<Text style={styles.infoText}>Collection Index: {nft.collection_index || 'N/A'}</Text>
+							<Text style={styles.infoText}>
+								{t('collectionName')}: {collection ? collection.name : 'Unknown'}
+							</Text>
+							<Text style={styles.infoText}>
+								{t('collectionIndex')}: {nft.collection_index || 'N/A'}
+							</Text>
 						</View>
 
 						{collection && (
 							<TouchableOpacity style={styles.viewCollectionButton} onPress={handleViewCollection}>
-								<Text style={styles.viewCollectionText}>View Collection</Text>
+								<Text style={styles.viewCollectionText}>{t('viewCollection')}</Text>
 							</TouchableOpacity>
 						)}
 
@@ -156,7 +162,7 @@ const NFTDetailPage = () => {
 							style={[styles.viewCollectionButton, { marginTop: hp(0.5) }]}
 							onPress={() => router.push(`/(tabs)/nft/nft-history?id=${nft.id}`)}
 						>
-							<Text style={styles.viewCollectionText}>View NFT History</Text>
+							<Text style={styles.viewCollectionText}>{t('viewNFTHistory')}</Text>
 						</TouchableOpacity>
 
 						<TouchableOpacity
@@ -167,7 +173,7 @@ const NFTDetailPage = () => {
 								)
 							}
 						>
-							<Text style={styles.viewCollectionText}>Transfer NFT</Text>
+							<Text style={styles.viewCollectionText}>{t('transferNFT')}</Text>
 						</TouchableOpacity>
 					</View>
 				</View>

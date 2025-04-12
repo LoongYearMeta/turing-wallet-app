@@ -2,6 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Menu, MenuItem } from 'react-native-material-menu';
+import { useTranslation } from 'react-i18next';
 
 import { AddContractModal } from '@/components/modals/add-token-modal';
 import { hp, wp } from '@/lib/common';
@@ -28,6 +29,7 @@ export const SearchFilterBar = ({
 	disableAddToken,
 	disableAllActions,
 }: SearchFilterBarProps) => {
+	const { t } = useTranslation();
 	const [searchText, setSearchText] = useState('');
 	const [menuVisible, setMenuVisible] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabType>('owned');
@@ -62,7 +64,7 @@ export const SearchFilterBar = ({
 						onPress={() => handleTabPress('owned')}
 					>
 						<Text style={[styles.tabText, activeTab === 'owned' && styles.activeTabText]}>
-							Owned
+							{t('owned')}
 						</Text>
 					</TouchableOpacity>
 					<TouchableOpacity
@@ -70,7 +72,7 @@ export const SearchFilterBar = ({
 						onPress={() => handleTabPress('added')}
 					>
 						<Text style={[styles.tabText, activeTab === 'added' && styles.activeTabText]}>
-							Added
+							{t('added')}
 						</Text>
 					</TouchableOpacity>
 				</View>
@@ -126,19 +128,19 @@ export const SearchFilterBar = ({
 					>
 						<MenuItem onPress={() => handleSort('default')} textStyle={styles.menuItemText}>
 							<View style={styles.menuItem}>
-								<Text style={styles.menuItemText}>Default</Text>
+								<Text style={styles.menuItemText}>{t('default')}</Text>
 								<MaterialIcons name="sort-by-alpha" size={16} color="#333" />
 							</View>
 						</MenuItem>
 						<MenuItem onPress={() => handleSort('amountLowToHigh')} textStyle={styles.menuItemText}>
 							<View style={styles.menuItem}>
-								<Text style={styles.menuItemText}>Amount</Text>
+								<Text style={styles.menuItemText}>{t('amount')}</Text>
 								<MaterialIcons name="arrow-upward" size={16} color="#333" />
 							</View>
 						</MenuItem>
 						<MenuItem onPress={() => handleSort('amountHighToLow')} textStyle={styles.menuItemText}>
 							<View style={styles.menuItem}>
-								<Text style={styles.menuItemText}>Amount</Text>
+								<Text style={styles.menuItemText}>{t('amount')}</Text>
 								<MaterialIcons name="arrow-downward" size={16} color="#333" />
 							</View>
 						</MenuItem>
@@ -150,7 +152,7 @@ export const SearchFilterBar = ({
 					<MaterialIcons name="search" size={24} color="#666" style={styles.searchIcon} />
 					<TextInput
 						style={styles.searchInput}
-						placeholder="Search by name or ID..."
+						placeholder={t('searchByNameOrId')}
 						value={searchText}
 						onChangeText={handleSearch}
 						autoCapitalize="none"

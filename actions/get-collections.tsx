@@ -19,7 +19,7 @@ interface CollectionResponse {
 export async function fetchCollections(address: string, page: number): Promise<CollectionResponse> {
 	const response = await api.get(
 		`https://turingwallet.xyz/v1/tbc/main/nft/collection/address/${address}/page/${page}/size/10`,
-		{ timeout: 30000 },
+		{ timeout: 60000 },
 	);
 	return response.data;
 }

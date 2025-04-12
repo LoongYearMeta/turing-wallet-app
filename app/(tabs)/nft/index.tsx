@@ -15,6 +15,7 @@ import {
 	Animated,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { syncCollections } from '@/actions/get-collections';
 import { ConfirmModal } from '@/components/modals/confirm-modal';
@@ -37,6 +38,7 @@ import { RestoreNFTModal } from '@/components/modals/restore-nft-modal';
 import { AccountType } from '@/types';
 
 const NFTPage = () => {
+	const { t } = useTranslation();
 	const [activeTab, setActiveTab] = useState<'collections' | 'nfts'>('collections');
 	const screenWidth = Dimensions.get('window').width;
 	const panX = React.useRef(new Animated.Value(0)).current;
@@ -60,14 +62,16 @@ const NFTPage = () => {
 					onPress={() => handleTabChange('collections')}
 				>
 					<Text style={[styles.tabText, activeTab === 'collections' && styles.activeTabText]}>
-						Collections
+						{t('collections')}
 					</Text>
 				</TouchableOpacity>
 				<TouchableOpacity
 					style={[styles.tabButton, activeTab === 'nfts' && styles.activeTabButton]}
 					onPress={() => handleTabChange('nfts')}
 				>
-					<Text style={[styles.tabText, activeTab === 'nfts' && styles.activeTabText]}>NFTs</Text>
+					<Text style={[styles.tabText, activeTab === 'nfts' && styles.activeTabText]}>
+						{t('nfts')}
+					</Text>
 				</TouchableOpacity>
 			</View>
 
@@ -84,6 +88,7 @@ const NFTPage = () => {
 };
 
 const CollectionsTab = () => {
+	const { t } = useTranslation();
 	const [collections, setCollections] = useState<Collection[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
@@ -99,7 +104,9 @@ const CollectionsTab = () => {
 	const loadCollections = useCallback(async () => {
 		try {
 			if (!disableCollection) {
-				setLoading(true);
+				if (!refreshing) {
+					setLoading(true);
+				}
 				const userAddress = getCurrentAccountAddress();
 				const userCollections = await getAllCollections(userAddress);
 				setCollections(userCollections);
@@ -109,7 +116,7 @@ const CollectionsTab = () => {
 		} finally {
 			setLoading(false);
 		}
-	}, [getCurrentAccountAddress, disableCollection]);
+	}, [getCurrentAccountAddress, disableCollection, refreshing]);
 
 	useFocusEffect(
 		useCallback(() => {
@@ -135,14 +142,14 @@ const CollectionsTab = () => {
 			await loadCollections();
 			Toast.show({
 				type: 'success',
-				text1: 'Collections refreshed',
+				text1: t('collectionsRefreshed'),
 			});
 		} catch (error) {
 			console.error('Failed to refresh collections:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to refresh collections',
+				text1: t('error'),
+				text2: t('failedToRefreshCollections'),
 			});
 		} finally {
 			setRefreshing(false);
@@ -161,15 +168,15 @@ const CollectionsTab = () => {
 			await softDeleteCollection(selectedCollection.id);
 			Toast.show({
 				type: 'success',
-				text1: 'Collection hidden',
+				text1: t('collectionHidden'),
 			});
 			loadCollections();
 		} catch (error) {
 			console.error('Failed to hide collection:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to hide collection',
+				text1: t('error'),
+				text2: t('failedToHideCollection'),
 			});
 		} finally {
 			setDeleteModalVisible(false);
@@ -219,7 +226,7 @@ const CollectionsTab = () => {
 					<MaterialIcons name="search" size={20} color="#999" style={styles.searchIcon} />
 					<TextInput
 						style={styles.searchInput}
-						placeholder="Search collections..."
+						placeholder={t('searchByNameOrId')}
 						value={searchText}
 						onChangeText={setSearchText}
 					/>
@@ -231,15 +238,15 @@ const CollectionsTab = () => {
 				</View>
 				<View style={styles.actionButtons}>
 					<TouchableOpacity
-						style={[styles.actionButton, disableCollection && styles.disabledButton]}
+						style={[styles.actionButton, (disableCollection || refreshing) && styles.disabledButton]}
 						onPress={handleRefresh}
 						disabled={disableCollection || refreshing}
 					>
-						{refreshing ? (
-							<ActivityIndicator size="small" color={disableCollection ? '#999' : '#333'} />
-						) : (
-							<MaterialIcons name="refresh" size={24} color={disableCollection ? '#999' : '#333'} />
-						)}
+						<MaterialIcons 
+							name="refresh" 
+							size={24} 
+							color={(disableCollection || refreshing) ? '#999' : '#333'} 
+						/>
 					</TouchableOpacity>
 					<TouchableOpacity
 						style={[styles.actionButton, disableCollection && styles.disabledButton]}
@@ -257,7 +264,11 @@ const CollectionsTab = () => {
 						onPress={() => router.push('/(tabs)/nft/collection/create-collection')}
 						disabled={disableCollection}
 					>
-						<MaterialIcons name="add" size={24} color={disableCollection ? '#999' : '#333'} />
+						<MaterialIcons
+							name="add-circle-outline"
+							size={24}
+							color={disableCollection ? '#999' : '#333'}
+						/>
 					</TouchableOpacity>
 				</View>
 			</View>
@@ -277,15 +288,15 @@ const CollectionsTab = () => {
 			) : (
 				<View style={styles.emptyContainer}>
 					<Text style={styles.emptyText}>
-						{searchText ? 'No matching collections found' : 'No collections found'}
+						{searchText ? t('noMatchingCollectionsFound') : t('noCollectionsFound')}
 					</Text>
 				</View>
 			)}
 
 			<ConfirmModal
 				visible={deleteModalVisible}
-				title="Hide Collection"
-				message={`Are you sure you want to hide "${selectedCollection?.name}"? You can restore it anytime.`}
+				title={t('hideCollection')}
+				message={t('confirmHideCollection')}
 				onConfirm={confirmDeleteCollection}
 				onCancel={() => {
 					setDeleteModalVisible(false);
@@ -303,6 +314,7 @@ const CollectionsTab = () => {
 };
 
 const NFTsTab = () => {
+	const { t } = useTranslation();
 	const [nfts, setNfts] = useState<NFT[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
@@ -317,7 +329,9 @@ const NFTsTab = () => {
 	const loadNFTs = useCallback(async () => {
 		try {
 			if (!disableNFT) {
-				setLoading(true);
+				if (!refreshing) {
+					setLoading(true);
+				}
 				const userAddress = getCurrentAccountAddress();
 				const userNFTs = await getActiveNFTs(userAddress);
 				setNfts(userNFTs);
@@ -327,7 +341,7 @@ const NFTsTab = () => {
 		} finally {
 			setLoading(false);
 		}
-	}, [getCurrentAccountAddress, disableNFT]);
+	}, [getCurrentAccountAddress, disableNFT, refreshing]);
 
 	useFocusEffect(
 		useCallback(() => {
@@ -349,18 +363,18 @@ const NFTsTab = () => {
 			setRefreshing(true);
 			const userAddress = getCurrentAccountAddress();
 
-			await syncNFTs(userAddress); 
+			await syncNFTs(userAddress);
 			await loadNFTs();
 			Toast.show({
 				type: 'success',
-				text1: 'NFTs refreshed',
+				text1: t('nftsRefreshed'),
 			});
 		} catch (error) {
 			console.error('Failed to refresh NFTs:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to refresh NFTs',
+				text1: t('error'),
+				text2: t('failedToRefreshNFTs'),
 			});
 		} finally {
 			setRefreshing(false);
@@ -379,15 +393,15 @@ const NFTsTab = () => {
 			await softDeleteNFT(selectedNFT.id);
 			Toast.show({
 				type: 'success',
-				text1: 'NFT hidden',
+				text1: t('nftHidden'),
 			});
 			loadNFTs();
 		} catch (error) {
 			console.error('Failed to hide NFT:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to hide NFT',
+				text1: t('error'),
+				text2: t('failedToHideNFT'),
 			});
 		} finally {
 			setDeleteModalVisible(false);
@@ -437,7 +451,7 @@ const NFTsTab = () => {
 					<MaterialIcons name="search" size={20} color="#999" style={styles.searchIcon} />
 					<TextInput
 						style={styles.searchInput}
-						placeholder="Search NFTs..."
+						placeholder={t('searchByNameOrId')}
 						value={searchText}
 						onChangeText={setSearchText}
 					/>
@@ -449,30 +463,22 @@ const NFTsTab = () => {
 				</View>
 				<View style={styles.actionButtons}>
 					<TouchableOpacity
-						style={[styles.actionButton, disableNFT && styles.disabledButton]}
+						style={[styles.actionButton, (disableNFT || refreshing) && styles.disabledButton]}
 						onPress={handleRefresh}
 						disabled={disableNFT || refreshing}
 					>
-						{refreshing ? (
-							<ActivityIndicator size="small" color={disableNFT ? '#999' : '#333'} />
-						) : (
-							<MaterialIcons 
-								name="refresh" 
-								size={24} 
-								color={disableNFT ? '#999' : '#333'} 
-							/>
-						)}
+						<MaterialIcons 
+							name="refresh" 
+							size={24} 
+							color={(disableNFT || refreshing) ? '#999' : '#333'} 
+						/>
 					</TouchableOpacity>
 					<TouchableOpacity
 						style={[styles.actionButton, disableNFT && styles.disabledButton]}
 						onPress={() => setRestoreModalVisible(true)}
 						disabled={disableNFT}
 					>
-						<MaterialIcons
-							name="visibility"
-							size={24}
-							color={disableNFT ? '#999' : '#333'}
-						/>
+						<MaterialIcons name="visibility" size={24} color={disableNFT ? '#999' : '#333'} />
 					</TouchableOpacity>
 				</View>
 			</View>
@@ -492,7 +498,7 @@ const NFTsTab = () => {
 			) : (
 				<View style={styles.emptyContainer}>
 					<Text style={styles.emptyText}>
-						{searchText ? 'No matching NFTs found' : 'No NFTs found'}
+						{searchText ? t('noMatchingNFTsFound') : t('noNFTsFound')}
 					</Text>
 				</View>
 			)}
@@ -505,8 +511,8 @@ const NFTsTab = () => {
 
 			<ConfirmModal
 				visible={deleteModalVisible}
-				title="Hide NFT"
-				message={`Are you sure you want to hide "${selectedNFT?.name}"? You can restore it anytime.`}
+				title={t('hideNFT')}
+				message={t('confirmHideNFT')}
 				onConfirm={confirmDeleteNFT}
 				onCancel={() => {
 					setDeleteModalVisible(false);

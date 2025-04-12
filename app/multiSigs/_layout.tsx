@@ -1,8 +1,11 @@
 import { Stack } from 'expo-router';
 import React from 'react';
 import { StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 export default function MultiSigssLayout() {
+	const { t } = useTranslation();
+	
 	return (
 		<Stack
 			screenOptions={{
@@ -13,7 +16,7 @@ export default function MultiSigssLayout() {
 			<Stack.Screen
 				name="create-multiSig-wallet"
 				options={{
-					headerTitle: 'Create a new multiSig wallet',
+					headerTitle: t('createMultiSigWallet'),
 					headerTitleStyle: styles.headerTitle,
 					headerBackVisible: true,
 				}}
@@ -21,7 +24,7 @@ export default function MultiSigssLayout() {
 			<Stack.Screen
 				name="multiSig-transactions"
 				options={{
-					headerTitle: 'MultiSig Transactions',
+					headerTitle: t('multiSigTransactions'),
 					headerTitleStyle: styles.headerTitle,
 					headerBackVisible: true,
 				}}
@@ -29,7 +32,7 @@ export default function MultiSigssLayout() {
 			<Stack.Screen
 				name="initiate-multiSig-transaction"
 				options={{
-					headerTitle: 'Initiate a new multiSig transaction',
+					headerTitle: t('initiateMultiSigTransaction'),
 					headerTitleStyle: styles.headerTitle,
 					headerBackVisible: true,
 				}}

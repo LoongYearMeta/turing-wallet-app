@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { Modal } from '@/components/ui/modal';
 import { hp, wp } from '@/lib/common';
@@ -25,6 +26,7 @@ export const RestoreNFTModal = ({
   onClose,
   onSuccess,
 }: RestoreNFTModalProps) => {
+  const { t } = useTranslation();
   const [nftId, setNftId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -42,7 +44,7 @@ export const RestoreNFTModal = ({
 
   const validateForm = () => {
     if (!nftId.trim()) {
-      setError('NFT ID cannot be empty');
+      setError(t('nftIdCannotBeEmpty'));
       return false;
     }
     return true;
@@ -58,8 +60,8 @@ export const RestoreNFTModal = ({
       await restoreNFT(nftId.trim());
       Toast.show({
         type: 'success',
-        text1: 'Success',
-        text2: 'NFT restored successfully',
+        text1: t('success'),
+        text2: t('nftRestoredSuccessfully'),
       });
       onSuccess();
       onClose();
@@ -67,10 +69,10 @@ export const RestoreNFTModal = ({
       console.error('Failed to restore NFT:', error);
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: error instanceof Error ? error.message : 'Failed to restore NFT',
+        text1: t('error'),
+        text2: error instanceof Error ? error.message : t('failedToRestoreNFT'),
       });
-      setError('Failed to restore NFT');
+      setError(t('failedToRestoreNFT'));
     } finally {
       setIsLoading(false);
     }
@@ -79,10 +81,10 @@ export const RestoreNFTModal = ({
   return (
     <Modal visible={visible} onClose={onClose}>
       <View style={styles.container}>
-        <Text style={styles.title}>Restore NFT</Text>
+        <Text style={styles.title}>{t('restoreNFT')}</Text>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>NFT ID</Text>
+          <Text style={styles.label}>{t('nftId')}</Text>
           <TextInput
             style={[styles.input, error && styles.inputError]}
             value={nftId}
@@ -90,7 +92,7 @@ export const RestoreNFTModal = ({
               setNftId(text);
               setError('');
             }}
-            placeholder="Enter NFT ID to restore"
+            placeholder={t('enterNFTIdToRestore')}
             autoCapitalize="none"
             autoCorrect={false}
             editable={!isLoading}
@@ -106,7 +108,7 @@ export const RestoreNFTModal = ({
           {isLoading ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={styles.buttonText}>Restore</Text>
+            <Text style={styles.buttonText}>{t('restore')}</Text>
           )}
         </TouchableOpacity>
       </View>

@@ -13,7 +13,7 @@ export const deriveKey = (password: string, salt: string): string => {
 	try {
 		const key = CryptoJS.PBKDF2(password, salt, {
 			keySize: 512 / 32,
-			iterations: 10000,
+			iterations: 1000,
 			hasher: CryptoJS.algo.SHA256,
 		});
 		const finalKey = CryptoJS.SHA256(key);
@@ -27,7 +27,7 @@ export const encrypt = (textToEncrypt: string, password: string): string => {
 	const iv = generateRandomSalt(16);
 	const encryptionKey = CryptoJS.PBKDF2(password, iv, {
 		keySize: 256 / 32,
-		iterations: 10000,
+		iterations: 1000,
 	}).toString();
 
 	const encrypted = CryptoJS.AES.encrypt(textToEncrypt, CryptoJS.enc.Hex.parse(encryptionKey), {
@@ -49,7 +49,7 @@ export const decrypt = (ciphertext: string, password: string): string => {
 
 		const decryptionKey = CryptoJS.PBKDF2(password, iv, {
 			keySize: 256 / 32,
-			iterations: 10000,
+			iterations: 1000,
 		}).toString();
 
 		const expectedHmac = CryptoJS.HmacSHA256(iv + actualCiphertext, decryptionKey).toString();

@@ -8,6 +8,7 @@ import {
 	View,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { Modal } from '@/components/ui/modal';
 import { hp, wp } from '@/lib/common';
@@ -27,6 +28,7 @@ export const RestoreMultiSigModal = ({
 	onSubmit,
 	userAddress,
 }: RestoreMultiSigModalProps) => {
+	const { t } = useTranslation();
 	const [multiSigAddress, setMultiSigAddress] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState('');
@@ -44,12 +46,12 @@ export const RestoreMultiSigModal = ({
 
 	const validateForm = () => {
 		if (!multiSigAddress.trim()) {
-			setError('MultiSig address cannot be empty');
+			setError(t('multiSigAddressCannotBeEmpty'));
 			return false;
 		}
 
 		if (!/^[0-9a-zA-Z]{34,42}$/.test(multiSigAddress.trim())) {
-			setError('Invalid MultiSig address format');
+			setError(t('invalidMultiSigAddressFormat'));
 			return false;
 		}
 
@@ -71,17 +73,17 @@ export const RestoreMultiSigModal = ({
 					await onSubmit(multiSigAddress.trim());
 					onClose();
 				} else {
-					setError('MultiSig address already exists and is not deleted');
+					setError(t('multiSigAddressAlreadyExists'));
 				}
 			} else {
-				setError('MultiSig address not found or never existed');
+				setError(t('multiSigAddressNotFound'));
 			}
 		} catch (error) {
 			console.error('Failed to restore MultiSig address:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: error instanceof Error ? error.message : 'Failed to restore MultiSig address',
+				text1: t('error'),
+				text2: error instanceof Error ? error.message : t('failedToRestoreMultiSigAddress'),
 			});
 		} finally {
 			setIsLoading(false);
@@ -91,10 +93,10 @@ export const RestoreMultiSigModal = ({
 	return (
 		<Modal visible={visible} onClose={onClose}>
 			<View style={styles.container}>
-				<Text style={styles.title}>Restore MultiSig Address</Text>
+				<Text style={styles.title}>{t('restoreMultiSigAddress')}</Text>
 
 				<View style={styles.formGroup}>
-					<Text style={styles.label}>MultiSig Address</Text>
+					<Text style={styles.label}>{t('multiSigAddress')}</Text>
 					<TextInput
 						style={[styles.input, error && styles.inputError]}
 						value={multiSigAddress}
@@ -102,7 +104,7 @@ export const RestoreMultiSigModal = ({
 							setMultiSigAddress(text);
 							setError('');
 						}}
-						placeholder="Enter MultiSig address to restore"
+						placeholder={t('enterMultiSigAddressToRestore')}
 						autoCapitalize="none"
 						autoCorrect={false}
 						editable={!isLoading}
@@ -118,7 +120,7 @@ export const RestoreMultiSigModal = ({
 					{isLoading ? (
 						<ActivityIndicator color="#fff" size="small" />
 					) : (
-						<Text style={styles.buttonText}>Restore</Text>
+						<Text style={styles.buttonText}>{t('restore')}</Text>
 					)}
 				</TouchableOpacity>
 			</View>

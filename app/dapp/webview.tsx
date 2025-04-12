@@ -16,7 +16,6 @@ import {
 import Toast from 'react-native-toast-message';
 import { WebView } from 'react-native-webview';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAccount } from '@/hooks/useAccount';
 import type { SendTransactionRequest, SendTransactionResponse } from '@/hooks/useResponse';
@@ -24,6 +23,7 @@ import { useResponse } from '@/hooks/useResponse';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
 import { getNFT } from '@/utils/sqlite';
+import { useTranslation } from 'react-i18next';
 
 const sslExceptionDomains = ['dev.shellswap.org', 'utxopump.fun'];
 
@@ -37,8 +37,7 @@ export default function DAppWebView() {
 	const [formErrors, setFormErrors] = useState<{ password?: string; isValid?: boolean }>({});
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [isWebViewLoading, setIsWebViewLoading] = useState(true);
-	const insets = useSafeAreaInsets();
-
+	const { t } = useTranslation();
 	const {
 		getCurrentAccountAddress,
 		getCurrentAccountTbcPubKey,
@@ -402,6 +401,8 @@ export default function DAppWebView() {
 		}
 
 		try {
+			setIsProcessing(true);
+			await new Promise((resolve) => setTimeout(resolve, 50));
 			const isValid = verifyPassword(password, encryptedPass, salt);
 			if (!isValid) {
 				setFormErrors({
@@ -410,8 +411,7 @@ export default function DAppWebView() {
 				});
 				return;
 			}
-
-			setIsProcessing(true);
+			
 			const response = await processTransaction();
 
 			webViewRef.current?.injectJavaScript(`
@@ -612,13 +612,15 @@ export default function DAppWebView() {
 									{isProcessing ? (
 										<View style={styles.loadingContainer}>
 											<ActivityIndicator size="large" color="#fff" />
-											<Text style={styles.loadingText}>Processing transaction...</Text>
+											<Text style={styles.loadingText}>{t('processingTransactionPleaseWait')}</Text>
 										</View>
 									) : (
 										<>
 											<View style={styles.formHeader}>
-												<Text style={styles.formTitle}>Transaction Request</Text>
-												<Text style={styles.formSubtitle}>Type: {currentRequest[0]?.flag}</Text>
+												<Text style={styles.formTitle}>{t('transactionRequest')}</Text>
+												<Text style={styles.formSubtitle}>
+													{t('pleaseReviewTransactionDetails')}
+												</Text>
 											</View>
 
 											<ScrollView style={styles.paramsContainer}>
@@ -628,14 +630,14 @@ export default function DAppWebView() {
 											</ScrollView>
 
 											<View style={styles.passwordContainer}>
-												<Text style={styles.passwordLabel}>Enter your password to confirm:</Text>
+												<Text style={styles.passwordLabel}>{t('password')}</Text>
 												<View style={styles.inputWrapper}>
 													<TextInput
 														style={[styles.passwordInput, formErrors.password && styles.inputError]}
 														value={password}
 														onChangeText={handlePasswordChange}
 														secureTextEntry
-														placeholder="Password"
+														placeholder={t('enterPassword')}
 														placeholderTextColor="#999"
 													/>
 													{password.length > 0 && (
@@ -660,7 +662,7 @@ export default function DAppWebView() {
 													style={[styles.button, styles.cancelButton]}
 													onPress={handleCancelTransaction}
 												>
-													<Text style={styles.buttonText}>Cancel</Text>
+													<Text style={styles.buttonText}>{t('cancel')}</Text>
 												</TouchableOpacity>
 												<TouchableOpacity
 													style={[
@@ -678,7 +680,7 @@ export default function DAppWebView() {
 																: styles.disabledButtonText,
 														]}
 													>
-														Confirm
+														{isProcessing ? t('processing') : t('confirm')}
 													</Text>
 												</TouchableOpacity>
 											</View>

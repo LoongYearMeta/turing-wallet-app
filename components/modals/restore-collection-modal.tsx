@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { Modal } from '@/components/ui/modal';
 import { hp, wp } from '@/lib/common';
@@ -25,6 +26,7 @@ export const RestoreCollectionModal = ({
   onClose,
   onSuccess,
 }: RestoreCollectionModalProps) => {
+  const { t } = useTranslation();
   const [collectionId, setCollectionId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -42,7 +44,7 @@ export const RestoreCollectionModal = ({
 
   const validateForm = () => {
     if (!collectionId.trim()) {
-      setError('Collection ID cannot be empty');
+      setError(t('collectionIdCannotBeEmpty'));
       return false;
     }
     return true;
@@ -58,8 +60,8 @@ export const RestoreCollectionModal = ({
       await restoreCollection(collectionId.trim());
       Toast.show({
         type: 'success',
-        text1: 'Success',
-        text2: 'Collection restored successfully',
+        text1: t('success'),
+        text2: t('collectionRestoredSuccessfully'),
       });
       onSuccess();
       onClose();
@@ -67,10 +69,10 @@ export const RestoreCollectionModal = ({
       console.error('Failed to restore collection:', error);
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: error instanceof Error ? error.message : 'Failed to restore collection',
+        text1: t('error'),
+        text2: error instanceof Error ? error.message : t('failedToRestoreCollection'),
       });
-      setError('Failed to restore collection');
+      setError(t('failedToRestoreCollection'));
     } finally {
       setIsLoading(false);
     }
@@ -79,10 +81,10 @@ export const RestoreCollectionModal = ({
   return (
     <Modal visible={visible} onClose={onClose}>
       <View style={styles.container}>
-        <Text style={styles.title}>Restore Collection</Text>
+        <Text style={styles.title}>{t('restoreCollection')}</Text>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Collection ID</Text>
+          <Text style={styles.label}>{t('collectionId')}</Text>
           <TextInput
             style={[styles.input, error && styles.inputError]}
             value={collectionId}
@@ -90,7 +92,7 @@ export const RestoreCollectionModal = ({
               setCollectionId(text);
               setError('');
             }}
-            placeholder="Enter collection ID to restore"
+            placeholder={t('enterCollectionIdToRestore')}
             autoCapitalize="none"
             autoCorrect={false}
             editable={!isLoading}
@@ -106,7 +108,7 @@ export const RestoreCollectionModal = ({
           {isLoading ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={styles.buttonText}>Restore</Text>
+            <Text style={styles.buttonText}>{t('restore')}</Text>
           )}
         </TouchableOpacity>
       </View>

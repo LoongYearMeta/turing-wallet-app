@@ -1,4 +1,4 @@
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { debounce } from 'lodash';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -11,6 +11,7 @@ import {
 	View,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 import { AddressSelector } from '@/components/selector/address-selector';
 import { useAccount } from '@/hooks/useAccount';
@@ -34,6 +35,7 @@ interface FormErrors {
 }
 
 const NFTTransferPage = () => {
+	const { t } = useTranslation();
 	const {
 		getCurrentAccountAddress,
 		getSalt,
@@ -61,6 +63,7 @@ const NFTTransferPage = () => {
 		txHex: string;
 		utxos: any[];
 	} | null>(null);
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const currentAddress = getCurrentAccountAddress();
 
@@ -71,60 +74,87 @@ const NFTTransferPage = () => {
 	}, [transferTimes]);
 
 	const validateAddress = (address: string) => {
-		if (!address) return 'Address is required';
+		if (!address) return t('addressRequired');
 
 		if (!/^[a-zA-Z0-9]+$/.test(address)) {
-			return 'Invalid address';
+			return t('invalidAddress');
 		}
 
 		if (!(address.startsWith('1') && (address.length === 33 || address.length === 34))) {
-			return 'Invalid address';
+			return t('invalidAddress');
 		}
 
 		return '';
 	};
 
-	const debouncedAddressValidation = useCallback(
-		debounce(async (address: string) => {
-			const error = validateAddress(address);
-			setFormErrors((prev) => ({ ...prev, addressTo: error }));
-		}, 1500),
-		[],
-	);
+	const validatePassword = (password: string) => {
+		if (!password) {
+			return t('passwordIsRequired');
+		}
 
-	const debouncedPasswordValidation = useCallback(
-		debounce(async (password: string) => {
-			if (!password) {
-				setFormErrors((prev) => ({ ...prev, password: 'Password is required' }));
+		const passKey = getPassKey();
+		const salt = getSalt();
+
+		if (!passKey || !salt) {
+			return t('accountErrorTryAgain');
+		}
+
+		try {
+			const isValid = verifyPassword(password, passKey, salt);
+			return isValid ? '' : t('incorrectPassword');
+		} catch (error) {
+			console.error('Password validation error:', error);
+			return t('incorrectPassword');
+		}
+	};
+
+	const debouncedCalculateFee = useCallback(
+		debounce(async () => {
+			if (!formData.addressTo || !formData.password) {
 				return;
 			}
 
-			const passKey = getPassKey();
-			const salt = getSalt();
+			const addressError = validateAddress(formData.addressTo);
+			const passwordError = validatePassword(formData.password);
 
-			if (!passKey || !salt) {
-				setFormErrors((prev) => ({
-					...prev,
-					password: 'Account error, please try again',
-				}));
+			if (addressError || passwordError) {
 				return;
 			}
 
+			setIsCalculatingFee(true);
 			try {
-				const isValid = verifyPassword(password, passKey, salt);
-				setFormErrors((prev) => ({
-					...prev,
-					password: isValid ? '' : 'Incorrect password',
-				}));
+				const transaction = await transferNFT(
+					id!,
+					currentAddress,
+					formData.addressTo,
+					transferTimesCount,
+					formData.password,
+				);
+				setEstimatedFee(transaction.fee);
+				setPendingTransaction({
+					txHex: transaction.txHex || '',
+					utxos: transaction.utxos || [],
+				});
 			} catch (error) {
-				console.error('Password validation error:', error);
-				setFormErrors((prev) => ({
-					...prev,
-					password: 'Incorrect password',
-				}));
+				if (
+					error instanceof Error &&
+					!error.message.includes('Invalid') &&
+					!error.message.includes('Password') &&
+					!error.message.includes('required')
+				) {
+					Toast.show({
+						type: 'error',
+						text1: t('error'),
+						text2: error.message,
+					});
+				}
+				setEstimatedFee(null);
+				setPendingTransaction(null);
+			} finally {
+				setIsCalculatingFee(false);
 			}
-		}, 1500),
-		[getPassKey, getSalt],
+		}, 1000),
+		[formData, id, currentAddress, transferNFT, t],
 	);
 
 	const handleInputChange = async (field: keyof FormData, value: string) => {
@@ -135,128 +165,39 @@ const NFTTransferPage = () => {
 		const updatedFormData = { ...formData, [field]: value };
 		setFormData(updatedFormData);
 
-		setFormErrors((prev) => ({ ...prev, [field]: '' }));
-
+		let error = '';
 		if (field === 'addressTo') {
-			debouncedAddressValidation(value);
+			error = validateAddress(value);
 		} else if (field === 'password') {
-			debouncedPasswordValidation(value);
+			error = validatePassword(value);
+		}
+
+		setFormErrors((prev) => ({ ...prev, [field]: error }));
+
+		if (updatedFormData.addressTo && updatedFormData.password) {
+			debouncedCalculateFee();
 		}
 	};
 
 	const handleClearField = (field: keyof FormData) => {
 		setFormData((prev) => ({ ...prev, [field]: '' }));
 		setFormErrors((prev) => ({ ...prev, [field]: '' }));
-
-		if (field === 'password' || field === 'addressTo') {
-			setEstimatedFee(null);
-		}
+		setEstimatedFee(null);
 	};
 
 	const handleSelectAddress = (address: string) => {
 		handleInputChange('addressTo', address);
 	};
 
-	const calculateEstimatedFee = useCallback(async () => {
-		if (!formData.addressTo || !formData.password) return;
-
-		const addressError = validateAddress(formData.addressTo);
-		if (addressError) return;
-
-		const passKey = getPassKey();
-		const salt = getSalt();
-		if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
-			return;
-		}
-
-		setIsCalculatingFee(true);
-		try {
-			const result = await transferNFT(
-				id,
-				currentAddress,
-				formData.addressTo,
-				transferTimesCount,
-				formData.password,
-			);
-			setEstimatedFee(result.fee);
-			setPendingTransaction({
-				txHex: result.txHex || '',
-				utxos: result.utxos || [],
-			});
-		} catch (error) {
-			if (
-				error instanceof Error &&
-				!error.message.includes('Invalid') &&
-				!error.message.includes('Password') &&
-				!error.message.includes('required')
-			) {
-				Toast.show({
-					type: 'error',
-					text1: 'Error',
-					text2: error.message,
-				});
-			}
-			setEstimatedFee(null);
-			setPendingTransaction(null);
-		} finally {
-			setIsCalculatingFee(false);
-		}
-	}, [formData, id, transferTimesCount]);
-
-	const debouncedCalculateFee = useCallback(
-		debounce(async (formData: FormData, hasErrors: boolean) => {
-			if (!formData.addressTo || !formData.password || hasErrors) return;
-
-			const passKey = getPassKey();
-			const salt = getSalt();
-			if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
-				return;
-			}
-
-			setIsCalculatingFee(true);
-			try {
-				const result = await transferNFT(
-					id,
-					currentAddress,
-					formData.addressTo,
-					transferTimesCount,
-					formData.password,
-				);
-				setEstimatedFee(result.fee);
-				setPendingTransaction({
-					txHex: result.txHex,
-					utxos: result.utxos || [],
-				});
-			} catch (error: any) {
-				if (
-					error instanceof Error &&
-					!error.message.includes('Invalid') &&
-					!error.message.includes('Password') &&
-					!error.message.includes('required')
-				) {
-					Toast.show({
-						type: 'error',
-						text1: 'Error',
-						text2: error.message,
-					});
-				}
-				setEstimatedFee(null);
-				setPendingTransaction(null);
-			} finally {
-				setIsCalculatingFee(false);
-			}
-		}, 1000),
-		[id, currentAddress, transferNFT, transferTimesCount, getPassKey, getSalt],
-	);
-
 	useEffect(() => {
-		const hasErrors = Object.values(formErrors).some((error) => error);
-		debouncedCalculateFee(formData, hasErrors);
-	}, [formData, formErrors]);
+		if (formData.addressTo && formData.password) {
+			debouncedCalculateFee();
+		}
+	}, [formData, debouncedCalculateFee]);
 
 	const handleSubmit = async () => {
 		const addressError = validateAddress(formData.addressTo);
-		const passwordError = formErrors.password;
+		const passwordError = validatePassword(formData.password);
 
 		const newErrors = {
 			addressTo: addressError,
@@ -284,6 +225,9 @@ const NFTTransferPage = () => {
 		}
 
 		try {
+			setIsSubmitting(true);
+			await new Promise((resolve) => setTimeout(resolve, 50));
+
 			let retried = false;
 			let txid: string | undefined;
 			try {
@@ -291,7 +235,7 @@ const NFTTransferPage = () => {
 			} catch (error: any) {
 				if (
 					!retried &&
-					(error.message.includes('missing inputs') ||
+					(error.message.includes('Missing inputs') ||
 						error.message.includes('txn-mempool-conflict'))
 				) {
 					retried = true;
@@ -342,76 +286,74 @@ const NFTTransferPage = () => {
 						? String(error.message)
 						: 'Failed to transfer NFT',
 			});
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
 
 	return (
-		<KeyboardAvoidingWrapper 
-			contentContainerStyle={styles.container}
-			backgroundColor="#fff"
-		>
+		<KeyboardAvoidingWrapper contentContainerStyle={styles.container} backgroundColor="#fff">
 			<View style={styles.inputGroup}>
 				<View style={styles.labelRow}>
-					<Text style={styles.label}>Recipient Address</Text>
-					<TouchableOpacity onPress={() => setShowAddressSelector(true)}>
+					<Text style={styles.label}>{t('recipientAddress')}</Text>
+					<TouchableOpacity
+						onPress={() => setShowAddressSelector(true)}
+						style={styles.addressBookButton}
+					>
 						<Ionicons name="book-outline" size={20} color="#333" />
 					</TouchableOpacity>
 				</View>
 				<View style={styles.inputWrapper}>
 					<TextInput
-						style={[styles.input, formErrors.addressTo && styles.inputError]}
+						style={[styles.input, formErrors.addressTo ? styles.inputError : null]}
+						placeholder={t('enterRecipientAddress')}
 						value={formData.addressTo}
 						onChangeText={(text) => handleInputChange('addressTo', text)}
-						placeholder="Enter recipient address (not support MultiSig)"
-						autoCapitalize="none"
-						autoCorrect={false}
 					/>
-					{formData.addressTo.length > 0 && (
+					{formData.addressTo ? (
 						<TouchableOpacity
 							style={styles.clearButton}
 							onPress={() => handleClearField('addressTo')}
 						>
-							<MaterialIcons name="close" size={20} color="#666" />
+							<MaterialIcons name="clear" size={20} color="#999" />
 						</TouchableOpacity>
-					)}
+					) : null}
 				</View>
-				{formErrors.addressTo && <Text style={styles.errorText}>{formErrors.addressTo}</Text>}
+				{formErrors.addressTo ? <Text style={styles.errorText}>{formErrors.addressTo}</Text> : null}
 			</View>
 
 			<View style={styles.inputGroup}>
-				<Text style={styles.label}>Password</Text>
+				<Text style={styles.label}>{t('password')}</Text>
 				<View style={styles.inputWrapper}>
 					<TextInput
-						style={[styles.input, formErrors.password && styles.inputError]}
+						style={[styles.input, formErrors.password ? styles.inputError : null]}
+						placeholder={t('enterYourPassword')}
 						value={formData.password}
 						onChangeText={(text) => handleInputChange('password', text)}
-						placeholder="Enter your password"
-						secureTextEntry={true}
-						autoCapitalize="none"
-						autoCorrect={false}
+						secureTextEntry
 					/>
-					{formData.password.length > 0 && (
+					{formData.password ? (
 						<TouchableOpacity
 							style={styles.clearButton}
 							onPress={() => handleClearField('password')}
 						>
-							<MaterialIcons name="close" size={20} color="#666" />
+							<MaterialIcons name="clear" size={20} color="#999" />
 						</TouchableOpacity>
-					)}
+					) : null}
 				</View>
-				{formErrors.password && <Text style={styles.errorText}>{formErrors.password}</Text>}
+				{formErrors.password ? <Text style={styles.errorText}>{formErrors.password}</Text> : null}
 			</View>
 
 			<View style={styles.divider} />
 			<View style={styles.feeContainer}>
-				<Text style={styles.feeLabel}>Estimated Fee: </Text>
+				<Text style={styles.feeLabel}>{t('estimatedFee')}</Text>
 				<View style={styles.feeValueContainer}>
 					{isCalculatingFee ? (
 						<ActivityIndicator size="small" color="#666" />
+					) : estimatedFee !== null ? (
+						<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
 					) : (
-						estimatedFee !== null && (
-							<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
-						)
+						<Text style={styles.feeAmount}>-</Text>
 					)}
 				</View>
 			</View>
@@ -419,14 +361,22 @@ const NFTTransferPage = () => {
 			<TouchableOpacity
 				style={[
 					styles.transferButton,
-					(!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee) &&
+					(!estimatedFee ||
+						Object.values(formErrors).some(Boolean) ||
+						isCalculatingFee ||
+						isSubmitting) &&
 						styles.transferButtonDisabled,
 				]}
 				onPress={handleSubmit}
-				disabled={!estimatedFee || Object.values(formErrors).some(Boolean) || isCalculatingFee}
+				disabled={
+					!estimatedFee ||
+					Object.values(formErrors).some(Boolean) ||
+					isCalculatingFee ||
+					isSubmitting
+				}
 			>
 				<Text style={styles.transferButtonText}>
-					{isCalculatingFee ? 'Calculating Fee...' : 'Transfer'}
+					{isSubmitting ? t('sending') : isCalculatingFee ? t('calculatingFee') : t('transfer')}
 				</Text>
 			</TouchableOpacity>
 
@@ -550,6 +500,9 @@ const styles = StyleSheet.create({
 		color: '#fff',
 		fontSize: hp(1.8),
 		fontWeight: '600',
+	},
+	addressBookButton: {
+		padding: wp(1),
 	},
 });
 
