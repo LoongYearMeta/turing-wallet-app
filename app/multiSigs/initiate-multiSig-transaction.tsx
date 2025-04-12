@@ -101,8 +101,8 @@ export default function InitiateMultiSigTransactionPage() {
 			console.error('Failed to load multi-signature addresses:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to load multi-signature addresses',
+				text1: t('error'),
+				text2: t('failedToLoadMultiSigAddresses'),
 				visibilityTime: 3000,
 			});
 		}
@@ -134,8 +134,8 @@ export default function InitiateMultiSigTransactionPage() {
 			console.error('Failed to load assets:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: 'Failed to load assets for the selected address',
+				text1: t('error'),
+				text2: t('failedToLoadAssets'),
 				visibilityTime: 3000,
 			});
 		}
@@ -176,12 +176,12 @@ export default function InitiateMultiSigTransactionPage() {
 	};
 
 	const validateAmount = (amountStr: string) => {
-		if (!amountStr) return 'Amount is required';
-		if (!selectedAsset) return 'Please select an asset first';
+		if (!amountStr) return t('amountRequired');
+		if (!selectedAsset) return t('selectAssetFirst');
 
 		const num = Number(amountStr);
-		if (isNaN(num) || num <= 0) return 'Please enter a valid positive number';
-		if (num > selectedAsset.balance) return 'Amount exceeds your balance';
+		if (isNaN(num) || num <= 0) return t('enterValidPositiveNumber');
+		if (num > selectedAsset.balance) return t('amountExceedsBalance');
 		return '';
 	};
 
@@ -223,21 +223,21 @@ export default function InitiateMultiSigTransactionPage() {
 		const errors: FormErrors = {};
 
 		if (!formData.senderAddress) {
-			errors.senderAddress = 'Sender address is required';
+			errors.senderAddress = t('senderAddressRequired');
 		}
 
 		if (!formData.asset) {
-			errors.asset = 'Asset is required';
+			errors.asset = t('assetRequired');
 		}
 
 		if (!formData.receiverAddress) {
-			errors.receiverAddress = 'Receiver address is required';
+			errors.receiverAddress = t('receiverAddressRequired');
 		} else if (!/^[0-9a-zA-Z]{34,42}$/.test(formData.receiverAddress.trim())) {
-			errors.receiverAddress = 'Invalid address format';
+			errors.receiverAddress = t('invalidReceiverAddress');
 		}
 
 		if (!formData.amount) {
-			errors.amount = 'Amount is required';
+			errors.amount = t('amountRequired');
 		} else {
 			const amountError = validateAmount(formData.amount);
 			if (amountError) {
@@ -246,7 +246,7 @@ export default function InitiateMultiSigTransactionPage() {
 		}
 
 		if (!formData.password) {
-			errors.password = 'Password is required';
+			errors.password = t('passwordRequired');
 		}
 
 		setFormErrors(errors);
@@ -260,7 +260,7 @@ export default function InitiateMultiSigTransactionPage() {
 
 		const isPasswordValid = verifyPassword(formData.password, passKey, salt);
 		if (!isPasswordValid) {
-			setFormErrors((prev) => ({ ...prev, password: 'Invalid password' }));
+			setFormErrors((prev) => ({ ...prev, password: t('invalidPassword') }));
 			return;
 		}
 
@@ -279,8 +279,8 @@ export default function InitiateMultiSigTransactionPage() {
 
 			Toast.show({
 				type: 'success',
-				text1: 'Success',
-				text2: 'Transaction initiated successfully',
+				text1: t('success'),
+				text2: t('transactionInitiatedSuccessfully'),
 				visibilityTime: 3000,
 			});
 
@@ -289,8 +289,8 @@ export default function InitiateMultiSigTransactionPage() {
 			console.error('Failed to initiate transaction:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
-				text2: error instanceof Error ? error.message : 'Failed to initiate transaction',
+				text1: t('error'),
+				text2: error instanceof Error ? error.message : t('failedToInitiateTransaction'),
 				visibilityTime: 3000,
 			});
 		} finally {

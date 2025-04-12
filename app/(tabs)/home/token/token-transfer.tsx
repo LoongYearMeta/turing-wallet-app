@@ -110,6 +110,24 @@ const TokenTransferPage = () => {
 		return '';
 	};
 
+	const validatePassword = (password: string) => {
+		if (!password) {
+			return t('passwordIsRequired');
+		}
+
+		if (!passKey || !salt) {
+			return t('accountErrorTryAgain');
+		}
+
+		try {
+			const isValid = verifyPassword(password, passKey, salt);
+			return isValid ? '' : t('incorrectPassword');
+		} catch (error) {
+			console.error('Password validation error:', error);
+			return t('incorrectPassword');
+		}
+	};
+
 	const debouncedAddressValidation = useCallback(
 		debounce(async (address: string) => {
 			const error = validateAddress(address);
@@ -140,6 +158,13 @@ const TokenTransferPage = () => {
 			debouncedAddressValidation(value);
 		} else if (field === 'amount') {
 			debouncedAmountValidation(value);
+		} else if (field === 'password') {
+			const error = validatePassword(value);
+			setFormErrors((prev) => ({ ...prev, password: error }));
+		}
+
+		if (updatedFormData.addressTo && updatedFormData.amount && updatedFormData.password) {
+			debouncedCalculateFee(updatedFormData, Object.values(formErrors).some(Boolean));
 		}
 	};
 
@@ -166,6 +191,7 @@ const TokenTransferPage = () => {
 
 			const isPasswordValid = verifyPassword(formData.password, passKey, salt);
 			if (!isPasswordValid) {
+				setFormErrors((prev) => ({ ...prev, password: t('incorrectPassword') }));
 				return;
 			}
 
@@ -206,9 +232,8 @@ const TokenTransferPage = () => {
 	);
 
 	useEffect(() => {
-		const hasErrors = Object.values(formErrors).some((error) => error);
-		debouncedCalculateFee(formData, hasErrors);
-	}, [formData, formErrors]);
+		debouncedCalculateFee(formData, Object.values(formErrors).some(Boolean));
+	}, [formData]);
 
 	const handleSubmit = async () => {
 		if (!pendingTransaction) {

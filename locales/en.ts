@@ -322,7 +322,7 @@ export default {
 	transferTimes: 'Transfer Times',
 	collectionIndex: 'Collection Index',
 	nftHistory: 'NFT History',
-	searchById: 'Search by ID...',
+	searchById: 'Search by TxId...',
 	historyRefreshedSuccessfully: 'History refreshed successfully',
 	failedToRefreshHistory: 'Failed to refresh history',
 	timeAscending: 'Time ↑',
@@ -450,7 +450,7 @@ export default {
 	yourPublicKey: 'Your Public Key',
 
 
-	searchTransactions: 'Search transactions by multiSig address',
+	searchTransactions: 'Search transactions by address',
 	enterReceiverAddress: 'Enter receiver address',
 
 	balance: 'Balance',
@@ -490,8 +490,8 @@ export default {
 
 	failedToUpdateTransactionHistory: 'Failed to update transaction history',
 	all: 'All',
-	positive: 'Received transactions',
-	negative: 'Sent transactions',
+	positive: 'Positive',
+	negative: 'Negative',
 	time: 'Time',
 	change: 'Amount',
 	refreshFailed: 'Refresh failed',
@@ -537,5 +537,30 @@ export default {
 	max: 'Max',
 
 	pleaseFillAllFields: 'Please fill all fields',
+	transferToken: 'Transfer Token',
+	tokenHistory: 'Token History',
+	transactionHistory: 'Transaction History',
+	sendAssets: 'Send Assets',
+	searchAssets: 'Search by name',
+	noMatchingAssetsFound: 'No matching assets found',
+	noAssetsAvailable: 'No assets available',
+	selectAddress: 'Select Address',
+	search: 'Search',
 
+
+	tokenHiddenSuccessfully: 'Token hidden successfully',
+	tokenDeletedSuccessfully: 'Token deleted successfully',
+	failedToHideToken: 'Failed to hide token',
+	failedToDeleteToken: 'Failed to delete token',
+
+	senderAddressRequired: 'Please select a sender address',
+	assetRequired: 'Please select an asset',
+	receiverAddressRequired: 'Please enter a receiver address',
+	invalidReceiverAddress: 'Invalid receiver address',
+
+	selectAssetFirst: 'Please select an asset first',
+	invalidPassword: 'Invalid password',
+
+	noMultiSigAddressesAvailable: 'No MultiSig addresses available',
+	noMatchingMultiSigAddressesFound: 'No matching MultiSig addresses found',
 };

@@ -121,7 +121,7 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 
 	const displayContractId =
 		contractId.length > 41
-			? `${contractId.substring(0, 15)}...${contractId.substring(contractId.length - 15)}`
+			? `${contractId.substring(0, 12)}...${contractId.substring(contractId.length - 12)}`
 			: contractId;
 
 	return (

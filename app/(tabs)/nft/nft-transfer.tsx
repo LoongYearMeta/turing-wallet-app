@@ -80,11 +80,29 @@ const NFTTransferPage = () => {
 			return t('invalidAddress');
 		}
 
-		if (!(address.startsWith('1') && (address.length === 33 || address.length === 34))) {
-			return t('invalidAddress');
+		if (address.startsWith('1')) {
+			if (address.length !== 33 && address.length !== 34) {
+				return t('invalidAddress');
+			}
+		} else {
+			if (address.length !== 34) {
+				return t('invalidAddress');
+			}
 		}
-
 		return '';
+	};
+
+	const debouncedValidateAddress = useCallback(
+		debounce((address: string) => {
+			const error = validateAddress(address);
+			setFormErrors((prev) => ({ ...prev, addressTo: error }));
+		}, 1000),
+		[]
+	);
+
+	const handleAddressChange = (text: string) => {
+		setFormData((prev) => ({ ...prev, addressTo: text }));
+		debouncedValidateAddress(text);
 	};
 
 	const validatePassword = (password: string) => {
@@ -308,7 +326,9 @@ const NFTTransferPage = () => {
 						style={[styles.input, formErrors.addressTo ? styles.inputError : null]}
 						placeholder={t('enterRecipientAddress')}
 						value={formData.addressTo}
-						onChangeText={(text) => handleInputChange('addressTo', text)}
+						onChangeText={handleAddressChange}
+						autoCapitalize="none"
+						autoCorrect={false}
 					/>
 					{formData.addressTo ? (
 						<TouchableOpacity

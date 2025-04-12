@@ -161,13 +161,13 @@ export default function SendPage() {
 					(address.startsWith('bc1p') && address.length === 62)
 				)
 			) {
-				return 'Invalid address format';
+				return t('invalidAddress');
 			}
 		} else {
 			if (address.startsWith('1')) {
-				if (address.length !== 33 && address.length !== 34) return 'Invalid address';
+				if (address.length !== 33 && address.length !== 34) return t('invalidAddress');
 			} else {
-				if (address.length !== 34) return 'Invalid address';
+				if (address.length !== 34) return t('invalidAddress');
 			}
 		}
 		return '';
@@ -181,6 +181,24 @@ export default function SendPage() {
 		if (isNaN(num) || num <= 0) return t('enterValidPositiveNumber');
 		if (num > selectedAsset.balance) return t('amountExceedsBalance');
 		return '';
+	};
+
+	const validatePassword = (password: string) => {
+		if (!password) {
+			return t('passwordIsRequired');
+		}
+
+		if (!passKey || !salt) {
+			return t('accountErrorTryAgain');
+		}
+
+		try {
+			const isValid = verifyPassword(password, passKey, salt);
+			return isValid ? '' : t('incorrectPassword');
+		} catch (error) {
+			console.error('Password validation error:', error);
+			return t('incorrectPassword');
+		}
 	};
 
 	const debouncedAddressValidation = useCallback(
@@ -213,6 +231,18 @@ export default function SendPage() {
 			debouncedAddressValidation(value);
 		} else if (field === 'amount') {
 			debouncedAmountValidation(value);
+		} else if (field === 'password') {
+			const error = validatePassword(value);
+			setFormErrors((prev) => ({ ...prev, password: error }));
+		}
+
+		if (
+			updatedFormData.asset &&
+			updatedFormData.addressTo &&
+			updatedFormData.amount &&
+			updatedFormData.password
+		) {
+			debouncedCalculateFee();
 		}
 	};
 
@@ -240,21 +270,20 @@ export default function SendPage() {
 	};
 
 	const debouncedCalculateFee = useCallback(
-		debounce(async (formData: FormData, hasErrors: boolean) => {
-			if (
-				!formData.asset ||
-				!formData.addressTo ||
-				!formData.amount ||
-				!formData.password ||
-				hasErrors
-			)
+		debounce(async () => {
+			if (!formData.asset || !formData.addressTo || !formData.amount || !formData.password) {
 				return;
+			}
 
 			const addressError = validateAddress(formData.addressTo);
 			const amountError = validateAmount(formData.amount);
-			if (addressError || amountError || formErrors.password) return;
 
-			if (!passKey || !salt || !verifyPassword(formData.password, passKey, salt)) {
+			if (addressError || amountError) {
+				return;
+			}
+
+			const isPasswordValid = verifyPassword(formData.password, passKey, salt);
+			if (!isPasswordValid) {
 				return;
 			}
 
@@ -321,7 +350,7 @@ export default function SendPage() {
 				) {
 					Toast.show({
 						type: 'error',
-						text1: 'Error',
+						text1: t('error'),
 						text2: error.message,
 					});
 				}
@@ -331,28 +360,15 @@ export default function SendPage() {
 				setIsCalculatingFee(false);
 			}
 		}, 1000),
-		[
-			formData.asset,
-			selectedAsset,
-			accountType,
-			currentAddress,
-			sendTbc,
-			sendFT,
-			createTransaction_taproot,
-			createTransaction_legacy,
-			calculateTransactionFee,
-			getUTXOsFromBlockstream,
-			getFeeRates,
-			selectOptimalUtxos,
-			passKey,
-			salt,
-		],
+		[formData, selectedAsset, currentAddress, accountType],
 	);
 
 	useEffect(() => {
 		const hasErrors = Object.values(formErrors).some((error) => error);
-		debouncedCalculateFee(formData, hasErrors);
-	}, [formData, formErrors]);
+		if (!hasErrors) {
+			debouncedCalculateFee();
+		}
+	}, [formData, formErrors, debouncedCalculateFee]);
 
 	const handleSubmit = async () => {
 		if (!selectedAsset || !pendingTransaction) {

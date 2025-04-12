@@ -229,14 +229,14 @@ export default function HomePage() {
 			if ('amount' in tokenToDelete) {
 				Toast.show({
 					type: 'success',
-					text1: 'Success',
-					text2: 'Token hidden successfully',
+					text1: t('success'),
+					text2: t('tokenHiddenSuccessfully'),
 				});
 			} else {
 				Toast.show({
 					type: 'success',
-					text1: 'Success',
-					text2: 'Token deleted successfully',
+					text1: t('success'),
+					text2: t('tokenDeletedSuccessfully'),
 				});
 			}
 		} catch (error) {
@@ -244,14 +244,14 @@ export default function HomePage() {
 			if ('amount' in tokenToDelete) {
 				Toast.show({
 					type: 'error',
-					text1: 'Error',
-					text2: 'Failed to hide token',
+					text1: t('error'),
+					text2: t('failedToHideToken'),
 				});
 			} else {
 				Toast.show({
 					type: 'error',
-					text1: 'Error',
-					text2: 'Failed to delete token',
+					text1: t('error'),
+					text2: t('failedToDeleteToken'),
 				});
 			}
 		} finally {
