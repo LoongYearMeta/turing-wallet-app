@@ -543,4 +543,12 @@ export default {
 
 	noMultiSigAddressesAvailable: '未找到多签地址',
 	noMatchingMultiSigAddressesFound: '未找到匹配的多签地址',
+
+	nftCreatedSuccessfully: 'NFT创建成功',
+	nftTransferredSuccessfully: 'NFT转移成功',
+	collectionCreatedSuccessfully: '合集创建成功',
+
+	failedToCreateNFT: '创建NFT失败',
+	failedToTransferNFT: '转移NFT失败',
+	failedToCreateCollection: '创建合集失败',
 };

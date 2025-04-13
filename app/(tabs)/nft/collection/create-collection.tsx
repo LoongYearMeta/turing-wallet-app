@@ -338,8 +338,8 @@ const CreateCollectionPage = () => {
 
 				Toast.show({
 					type: 'success',
-					text1: 'Success',
-					text2: 'Collection created successfully',
+					text1: t('success'),
+					text2: t('collectionCreatedSuccessfully'),
 				});
 
 				router.back();
@@ -348,11 +348,11 @@ const CreateCollectionPage = () => {
 			console.error('Error creating collection:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
+				text1: t('error'),
 				text2:
 					typeof error === 'object' && error !== null && 'message' in error
 						? String(error.message)
-						: 'Failed to create collection',
+						: t('failedToCreateCollection'),
 			});
 		} finally {
 			setIsCreating(false);

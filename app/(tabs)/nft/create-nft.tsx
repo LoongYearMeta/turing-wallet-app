@@ -354,8 +354,8 @@ const CreateNFTPage = () => {
 
 				Toast.show({
 					type: 'success',
-					text1: 'Success',
-					text2: 'NFT created successfully',
+					text1: t('success'),
+					text2: t('nftCreatedSuccessfully'),
 				});
 
 				router.back();
@@ -364,11 +364,11 @@ const CreateNFTPage = () => {
 			console.error('Error creating NFT:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
+				text1: t('error'),
 				text2:
 					typeof error === 'object' && error !== null && 'message' in error
 						? String(error.message)
-						: 'Failed to create NFT',
+						: t('failedToCreateNFT'),
 			});
 		} finally {
 			setIsCreating(false);

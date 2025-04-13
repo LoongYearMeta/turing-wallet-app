@@ -563,4 +563,12 @@ export default {
 
 	noMultiSigAddressesAvailable: 'No MultiSig addresses available',
 	noMatchingMultiSigAddressesFound: 'No matching MultiSig addresses found',
+
+	nftCreatedSuccessfully: 'NFT created successfully',
+	nftTransferredSuccessfully: 'NFT transferred successfully',
+	collectionCreatedSuccessfully: 'Collection created successfully',
+
+	failedToCreateNFT: 'Failed to create NFT',
+	failedToTransferNFT: 'Failed to transfer NFT',
+	failedToCreateCollection: 'Failed to create collection',
 };

@@ -288,8 +288,8 @@ const NFTTransferPage = () => {
 
 				Toast.show({
 					type: 'success',
-					text1: 'Success',
-					text2: 'NFT transferred successfully',
+					text1: t('success'),
+					text2: t('nftTransferredSuccessfully'),
 				});
 
 				router.back();
@@ -298,11 +298,11 @@ const NFTTransferPage = () => {
 			console.error('Error transferring NFT:', error);
 			Toast.show({
 				type: 'error',
-				text1: 'Error',
+				text1: t('error'),
 				text2:
 					typeof error === 'object' && error !== null && 'message' in error
 						? String(error.message)
-						: 'Failed to transfer NFT',
+						: t('failedToTransferNFT'),
 			});
 		} finally {
 			setIsSubmitting(false);
