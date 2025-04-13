@@ -361,14 +361,18 @@ export default function InformationPage() {
 						/>
 					</TouchableOpacity>
 					<TouchableOpacity
-						style={[styles.actionButton, refreshingMultiSigs && styles.disabledButton]}
+						style={[styles.actionButton, (refreshingMultiSigs || disableMultiSig) && styles.disabledButton]}
 						onPress={handleRefreshMultiSigs}
-						disabled={refreshingMultiSigs}
+						disabled={refreshingMultiSigs || disableMultiSig}
 					>
 						{refreshingMultiSigs ? (
 							<ActivityIndicator size="small" color="#333" />
 						) : (
-							<MaterialIcons name="refresh" size={24} color="#333" />
+							<MaterialIcons 
+								name="refresh" 
+								size={24} 
+								color={disableMultiSig ? '#999' : '#333'} 
+							/>
 						)}
 					</TouchableOpacity>
 					<TouchableOpacity
