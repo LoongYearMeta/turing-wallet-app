@@ -532,7 +532,6 @@ export default {
 	failedToHideToken: '隐藏Token失败',
 	failedToDeleteToken: '删除Token失败',
 
-	// 多签交易表单验证相关
 	senderAddressRequired: '请选择发送地址',
 	assetRequired: '请选择资产',
 	receiverAddressRequired: '请输入接收地址',
