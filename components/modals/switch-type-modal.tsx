@@ -1,9 +1,8 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, Modal as RNModal } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { Modal } from '@/components/ui/modal';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
@@ -12,9 +11,10 @@ import { AccountType } from '@/types';
 interface SwitchTypeModalProps {
 	visible: boolean;
 	onClose: () => void;
+	onSwitchComplete?: () => void;
 }
 
-export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
+export const SwitchTypeModal = ({ visible, onClose, onSwitchComplete }: SwitchTypeModalProps) => {
 	const { t } = useTranslation();
 	const {
 		getAddresses,
@@ -28,6 +28,10 @@ export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
 		canSwitchToTaprootLegacy,
 		canSwitchToLegacy,
 	} = useAccount();
+
+	if (!visible) {
+		return null;
+	}
 
 	const addresses = getAddresses();
 	const currentType = getCurrentAccountType();
@@ -48,6 +52,11 @@ export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
 					await switchToLegacy();
 					break;
 			}
+
+			if (onSwitchComplete) {
+				onSwitchComplete();
+			}
+
 			onClose();
 		} catch (error) {
 			console.error('Failed to switch account type:', error);
@@ -55,92 +64,132 @@ export const SwitchTypeModal = ({ visible, onClose }: SwitchTypeModalProps) => {
 	};
 
 	return (
-		<Modal visible={visible} onClose={onClose}>
-			<View style={styles.container}>
-				<Text style={styles.title}>{t('switchAccountType')}</Text>
-				{canSwitchToTbc() && (
-					<TouchableOpacity
-						style={[styles.item, currentType === AccountType.TBC && styles.currentItem]}
-						onPress={() => handleSwitch(AccountType.TBC)}
+		<RNModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+			<View style={styles.overlay}>
+				<TouchableOpacity style={styles.overlayTouch} activeOpacity={1} onPress={onClose}>
+					<View
+						style={styles.container}
+						onStartShouldSetResponder={() => true}
+						onResponderRelease={(e) => e.stopPropagation()}
 					>
-						<View style={styles.itemLeft}>
-							<Text style={styles.itemType}>{t('tbcLegacy')}</Text>
-							<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
-								{addresses.tbcAddress}
-							</Text>
-						</View>
-						{currentType === AccountType.TBC && (
-							<MaterialIcons name="check" size={20} color={theme.colors.primary} />
-						)}
-					</TouchableOpacity>
-				)}
+						<TouchableOpacity style={styles.closeButton} onPress={onClose}>
+							<MaterialIcons name="close" size={24} color="#666" />
+						</TouchableOpacity>
 
-				{canSwitchToTaprootLegacy() && (
-					<TouchableOpacity
-						style={[styles.item, currentType === AccountType.TAPROOT_LEGACY && styles.currentItem]}
-						onPress={() => handleSwitch(AccountType.TAPROOT_LEGACY)}
-					>
-						<View style={styles.itemLeft}>
-							<Text style={styles.itemType}>{t('tbcTaprootLegacy')}</Text>
-							<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
-								{addresses.taprootLegacyAddress}
-							</Text>
-						</View>
-						{currentType === AccountType.TAPROOT_LEGACY && (
-							<MaterialIcons name="check" size={20} color={theme.colors.primary} />
-						)}
-					</TouchableOpacity>
-				)}
+						<Text style={styles.title}>{t('switchAccountType')}</Text>
 
-				{canSwitchToTaproot() && (
-					<TouchableOpacity
-						style={[styles.item, currentType === AccountType.TAPROOT && styles.currentItem]}
-						onPress={() => handleSwitch(AccountType.TAPROOT)}
-					>
-						<View style={styles.itemLeft}>
-							<Text style={styles.itemType}>{t('btcTaproot')}</Text>
-							<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
-								{addresses.taprootAddress}
-							</Text>
-						</View>
-						{currentType === AccountType.TAPROOT && (
-							<MaterialIcons name="check" size={20} color={theme.colors.primary} />
+						{canSwitchToTbc() && (
+							<TouchableOpacity
+								style={[styles.item, currentType === AccountType.TBC && styles.currentItem]}
+								onPress={() => handleSwitch(AccountType.TBC)}
+							>
+								<View style={styles.itemLeft}>
+									<Text style={styles.itemType}>{t('tbcLegacy')}</Text>
+									<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
+										{addresses.tbcAddress}
+									</Text>
+								</View>
+								{currentType === AccountType.TBC && (
+									<MaterialIcons name="check" size={20} color={theme.colors.primary} />
+								)}
+							</TouchableOpacity>
 						)}
-					</TouchableOpacity>
-				)}
 
-				{canSwitchToLegacy() && (
-					<TouchableOpacity
-						style={[styles.item, currentType === AccountType.LEGACY && styles.currentItem]}
-						onPress={() => handleSwitch(AccountType.LEGACY)}
-					>
-						<View style={styles.itemLeft}>
-							<Text style={styles.itemType}>{t('btcLegacy')}</Text>
-							<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
-								{addresses.legacyAddress}
-							</Text>
-						</View>
-						{currentType === AccountType.LEGACY && (
-							<MaterialIcons name="check" size={20} color={theme.colors.primary} />
+						{canSwitchToTaprootLegacy() && (
+							<TouchableOpacity
+								style={[
+									styles.item,
+									currentType === AccountType.TAPROOT_LEGACY && styles.currentItem,
+								]}
+								onPress={() => handleSwitch(AccountType.TAPROOT_LEGACY)}
+							>
+								<View style={styles.itemLeft}>
+									<Text style={styles.itemType}>{t('tbcTaprootLegacy')}</Text>
+									<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
+										{addresses.taprootLegacyAddress}
+									</Text>
+								</View>
+								{currentType === AccountType.TAPROOT_LEGACY && (
+									<MaterialIcons name="check" size={20} color={theme.colors.primary} />
+								)}
+							</TouchableOpacity>
 						)}
-					</TouchableOpacity>
-				)}
+
+						{canSwitchToTaproot() && (
+							<TouchableOpacity
+								style={[styles.item, currentType === AccountType.TAPROOT && styles.currentItem]}
+								onPress={() => handleSwitch(AccountType.TAPROOT)}
+							>
+								<View style={styles.itemLeft}>
+									<Text style={styles.itemType}>{t('btcTaproot')}</Text>
+									<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
+										{addresses.taprootAddress}
+									</Text>
+								</View>
+								{currentType === AccountType.TAPROOT && (
+									<MaterialIcons name="check" size={20} color={theme.colors.primary} />
+								)}
+							</TouchableOpacity>
+						)}
+
+						{canSwitchToLegacy() && (
+							<TouchableOpacity
+								style={[styles.item, currentType === AccountType.LEGACY && styles.currentItem]}
+								onPress={() => handleSwitch(AccountType.LEGACY)}
+							>
+								<View style={styles.itemLeft}>
+									<Text style={styles.itemType}>{t('btcLegacy')}</Text>
+									<Text style={styles.itemAddress} numberOfLines={1} ellipsizeMode="middle">
+										{addresses.legacyAddress}
+									</Text>
+								</View>
+								{currentType === AccountType.LEGACY && (
+									<MaterialIcons name="check" size={20} color={theme.colors.primary} />
+								)}
+							</TouchableOpacity>
+						)}
+					</View>
+				</TouchableOpacity>
 			</View>
-		</Modal>
+		</RNModal>
 	);
 };
 
 const styles = StyleSheet.create({
+	overlay: {
+		flex: 1,
+		backgroundColor: 'rgba(0, 0, 0, 0.5)',
+		justifyContent: 'center',
+		alignItems: 'center',
+	},
+	overlayTouch: {
+		width: '100%',
+		height: '100%',
+		justifyContent: 'center',
+		alignItems: 'center',
+	},
 	container: {
+		backgroundColor: '#fff',
+		borderRadius: 12,
 		padding: wp(4),
 		width: wp(85),
+		maxWidth: 400,
 		alignSelf: 'center',
+		position: 'relative',
+	},
+	closeButton: {
+		position: 'absolute',
+		right: wp(2),
+		top: wp(2),
+		padding: wp(1),
+		zIndex: 1,
 	},
 	title: {
 		fontSize: hp(2),
 		fontWeight: '600',
 		marginBottom: hp(2),
 		textAlign: 'center',
+		marginTop: hp(1),
 	},
 	item: {
 		flexDirection: 'row',

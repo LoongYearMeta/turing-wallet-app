@@ -72,6 +72,7 @@ export const useAccount = create(
 			currentAccount: '',
 			passKey: '',
 			salt: '',
+			accountTypeChangeCounter: 0,
 
 			addAccount: async (data: Account) => {
 				const currentAccounts = get().accounts;

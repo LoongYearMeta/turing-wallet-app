@@ -405,18 +405,13 @@ export default {
 	restoreBlockchainData: '恢复区块链数据',
 	restoreBlockchainDataDesc: '这将从区块链恢复您的钱包数据，包括Token、NFT和多签钱包',
 
-	
 	createYourWallet: '创建您的钱包',
 	createNewAccount: '创建新账户',
 	creatingAdditionalWallet: '正在创建额外的钱包，请稍候...',
 	creatingFirstWallet: '正在创建您的第一个钱包，请稍候...',
 	walletCreationWaitMessage: '生成安全钱包可能需要一些时间，请耐心等待。',
 	failedToCreateWallet: '创建钱包失败，请重试。',
-
-
 	failedToRestoreWalletData: '从区块链恢复钱包数据失败。',
-
-
 
 	accountNameMustBeBetween3And15: '账户名称必须在3到15个字符之间',
 
@@ -489,7 +484,6 @@ export default {
 
 	yourPublicKey: '您的公钥',
 
-
 	searchTransactions: '按多签地址搜索交易',
 	enterReceiverAddress: '输入接收地址',
 
@@ -515,7 +509,6 @@ export default {
 
 	accountNameOnlyLettersAndNumbers: '账户名称只能包含字母和数字',
 
-	
 	transactionRequest: '交易请求',
 	pleaseReviewTransactionDetails: '请检查交易详情',
 	processing: '处理中...',

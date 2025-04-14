@@ -131,7 +131,7 @@ const CollectionsTab = () => {
 		} else {
 			loadCollections();
 		}
-	}, [disableCollection, loadCollections]);
+	}, [disableCollection, loadCollections, accountType]);
 
 	const handleRefresh = async () => {
 		try {
@@ -238,14 +238,17 @@ const CollectionsTab = () => {
 				</View>
 				<View style={styles.actionButtons}>
 					<TouchableOpacity
-						style={[styles.actionButton, (disableCollection || refreshing) && styles.disabledButton]}
+						style={[
+							styles.actionButton,
+							(disableCollection || refreshing) && styles.disabledButton,
+						]}
 						onPress={handleRefresh}
 						disabled={disableCollection || refreshing}
 					>
-						<MaterialIcons 
-							name="refresh" 
-							size={24} 
-							color={(disableCollection || refreshing) ? '#999' : '#333'} 
+						<MaterialIcons
+							name="refresh"
+							size={24}
+							color={disableCollection || refreshing ? '#999' : '#333'}
 						/>
 					</TouchableOpacity>
 					<TouchableOpacity
@@ -320,8 +323,8 @@ const NFTsTab = () => {
 	const [refreshing, setRefreshing] = useState(false);
 	const [searchText, setSearchText] = useState('');
 	const { getCurrentAccountAddress, getCurrentAccountType } = useAccount();
-	const [restoreModalVisible, setRestoreModalVisible] = useState(false);
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+	const [restoreModalVisible, setRestoreModalVisible] = useState(false);
 	const [selectedNFT, setSelectedNFT] = useState<NFT | null>(null);
 	const accountType = getCurrentAccountType();
 	const disableNFT = accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY;
@@ -356,7 +359,7 @@ const NFTsTab = () => {
 		} else {
 			loadNFTs();
 		}
-	}, [disableNFT, loadNFTs]);
+	}, [disableNFT, loadNFTs, accountType]);
 
 	const handleRefresh = async () => {
 		try {
@@ -467,10 +470,10 @@ const NFTsTab = () => {
 						onPress={handleRefresh}
 						disabled={disableNFT || refreshing}
 					>
-						<MaterialIcons 
-							name="refresh" 
-							size={24} 
-							color={(disableNFT || refreshing) ? '#999' : '#333'} 
+						<MaterialIcons
+							name="refresh"
+							size={24}
+							color={disableNFT || refreshing ? '#999' : '#333'}
 						/>
 					</TouchableOpacity>
 					<TouchableOpacity

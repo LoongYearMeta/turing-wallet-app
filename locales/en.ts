@@ -340,7 +340,6 @@ export default {
 	createMultiSigWalletDesc:
 		'Creating a MultiSig wallet will deposit 0.005 TBC to the MultiSig address. The MultiSig address and the list of public keys will be stored on the blockchain.',
 
-
 	createOrRestoreWallet: 'Create or Restore Wallet',
 	chooseOption: 'Choose an option to get started',
 	createNewWallet: 'Create a new wallet',
@@ -350,7 +349,6 @@ export default {
 	restoreWithPrivateKey: 'Restore with Private Key',
 	restoreWithPrivateKeyDesc: 'Recover your existing wallet using your private key',
 
-	
 	createYourWallet: 'Create your wallet',
 	createNewAccount: 'Create a new account',
 	creatingAdditionalWallet: 'Creating additional wallet, please wait...',
@@ -358,15 +356,11 @@ export default {
 	walletCreationWaitMessage: 'This may take a few moments while we generate your secure wallet.',
 	failedToCreateWallet: 'Failed to create wallet. Please try again.',
 
-
 	createAccount: 'Create Account',
 	exportMnemonic: 'Export Mnemonic',
 	signOut: 'Sign Out',
 
-
 	failedToRestoreWalletData: 'Failed to restore wallet data from blockchain.',
-
-	
 
 	accountNameMustBeBetween3And15: 'Account name must be between 3 and 15 characters',
 
@@ -399,11 +393,8 @@ export default {
 
 	currentAddress: 'Current address',
 
-
-
 	copied: 'copied to clipboard',
 
-	
 	multiSigTransactions: 'MultiSig Transactions',
 	completed: 'Completed',
 	waitBroadcast: 'Wait Broadcast',
@@ -419,12 +410,11 @@ export default {
 	confirmWithdrawTransaction: 'Are you sure you want to withdraw this transaction?',
 	confirmBroadcastTransaction: 'Are you sure you want to broadcast this transaction?',
 
-
 	yourPubKey: 'Your Public Key',
 	pubKeyCount: 'Public Key Count',
 	requiredSignatures: 'Required Signatures',
 
-	
+
 	initiateMultiSigTransaction: 'Initiate MultiSig Transaction',
 	senderAddress: 'Sender Address',
 	receiverAddress: 'Receiver Address',
@@ -435,7 +425,6 @@ export default {
 	insufficientBalance: 'Insufficient balance',
 	transactionInitiatedSuccessfully: 'Transaction initiated successfully',
 	failedToInitiateTransaction: 'Failed to initiate transaction',
-
 
 	pubKey2: 'Public Key 2',
 	pubKey3: 'Public Key 3',
@@ -448,7 +437,6 @@ export default {
 	pubKey10: 'Public Key 10',
 	enterPubKey: 'Enter public key',
 	yourPublicKey: 'Your Public Key',
-
 
 	searchTransactions: 'Search transactions by address',
 	enterReceiverAddress: 'Enter receiver address',
@@ -475,7 +463,6 @@ export default {
 
 	accountNameOnlyLettersAndNumbers: 'Account name can only contain letters and numbers',
 
-	
 	transactionRequest: 'Transaction Request',
 	pleaseReviewTransactionDetails: 'Please review the transaction details',
 	processing: 'Processing...',

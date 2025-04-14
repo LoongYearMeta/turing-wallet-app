@@ -38,7 +38,10 @@ export default function HomePage() {
 	const [ownedTokens, setOwnedTokens] = useState<FT[]>([]);
 	const [addedTokens, setAddedTokens] = useState<FTPublic[]>([]);
 	const [searchText, setSearchText] = useState('');
-	const { getCurrentAccountAddress, getCurrentAccountType } = useAccount();
+	const { 
+		getCurrentAccountAddress, 
+		getCurrentAccountType,
+	} = useAccount();
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [tokenToDelete, setTokenToDelete] = useState<FT | FTPublic | null>(null);
 	const [addModalVisible, setAddModalVisible] = useState(false);
@@ -47,12 +50,19 @@ export default function HomePage() {
 	const [pinModalVisible, setPinModalVisible] = useState(false);
 	const [tokenToPin, setTokenToPin] = useState<FT | FTPublic | null>(null);
 
+	// 当账户类型变化时，更新 token 列表
 	useEffect(() => {
 		if (disableTokens) {
 			setOwnedTokens([]);
 			setAddedTokens([]);
+		} else {
+			if (activeTab === 'owned') {
+				loadOwnedTokens();
+			} else {
+				loadAddedTokens();
+			}
 		}
-	}, [disableTokens]);
+	}, [disableTokens, accountType, activeTab]); 
 
 	useFocusEffect(
 		useCallback(() => {

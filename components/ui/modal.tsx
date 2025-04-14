@@ -11,16 +11,32 @@ interface ModalProps {
 }
 
 export const Modal = ({ visible, onClose, children }: ModalProps) => {
+	if (!visible) return null;
+	
 	return (
-		<RNModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-			<TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-				<View style={styles.content} onStartShouldSetResponder={() => true}>
-					<TouchableOpacity style={styles.closeButton} onPress={onClose}>
-						<MaterialIcons name="close" size={24} color="#666" />
-					</TouchableOpacity>
-					{children}
-				</View>
-			</TouchableOpacity>
+		<RNModal 
+			visible={visible} 
+			transparent 
+			animationType="fade" 
+			onRequestClose={onClose}
+		>
+			<View style={styles.overlay}>
+				<TouchableOpacity 
+					style={styles.overlayTouch} 
+					activeOpacity={1} 
+					onPress={onClose}
+				>
+					<View 
+						style={styles.content} 
+						onStartShouldSetResponder={() => true}
+					>
+						<TouchableOpacity style={styles.closeButton} onPress={onClose}>
+							<MaterialIcons name="close" size={24} color="#666" />
+						</TouchableOpacity>
+						{children}
+					</View>
+				</TouchableOpacity>
+			</View>
 		</RNModal>
 	);
 };
@@ -29,6 +45,12 @@ const styles = StyleSheet.create({
 	overlay: {
 		flex: 1,
 		backgroundColor: 'rgba(0, 0, 0, 0.5)',
+		justifyContent: 'center',
+		alignItems: 'center',
+	},
+	overlayTouch: {
+		width: '100%',
+		height: '100%',
 		justifyContent: 'center',
 		alignItems: 'center',
 	},

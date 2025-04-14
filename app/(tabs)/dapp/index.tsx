@@ -27,7 +27,11 @@ export default function DAppPage() {
 	const [dapps, setDapps] = useState<DApp[]>([]);
 	const [filteredDapps, setFilteredDapps] = useState<DApp[]>([]);
 	const [refreshing, setRefreshing] = useState(false);
-	const { isTbcAccount, isTaprootLegacyAccount, getCurrentAccountType } = useAccount();
+	const { 
+		isTbcAccount, 
+		isTaprootLegacyAccount, 
+		getCurrentAccountType,
+	} = useAccount();
 	const [isSearching, setIsSearching] = useState(false);
 	const [noResults, setNoResults] = useState(false);
 

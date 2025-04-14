@@ -129,14 +129,6 @@ export default function AccountManagementPage() {
 									<Text style={styles.accountName}>{account.accountName}</Text>
 									<View style={styles.typeContainer}>
 										<Text style={styles.accountType}>{getAccountTypeLabel(account.type)}</Text>
-										{address === currentAccount && (
-											<TouchableOpacity
-												style={styles.switchTypeButton}
-												onPress={() => setSwitchTypeModalVisible(true)}
-											>
-												<MaterialIcons name="swap-horiz" size={20} color={theme.colors.primary} />
-											</TouchableOpacity>
-										)}
 									</View>
 								</View>
 							</TouchableOpacity>

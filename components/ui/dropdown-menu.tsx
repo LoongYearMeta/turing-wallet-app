@@ -1,11 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback } from 'react';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import React, { useCallback, useState } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
+import { SwitchTypeModal } from '@/components/modals/switch-type-modal';
 
 interface MenuItem {
 	icon: any;
@@ -25,55 +26,93 @@ export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuP
 	const { t } = useTranslation();
 	const { getCurrentAccountName } = useAccount();
 	const username = getCurrentAccountName();
+	const [switchTypeModalVisible, setSwitchTypeModalVisible] = useState(false);
+	const [dropdownVisible, setDropdownVisible] = useState(visible);
+
+	React.useEffect(() => {
+		setDropdownVisible(visible);
+	}, [visible]);
 
 	const handleClose = useCallback(() => {
+		setDropdownVisible(false);
 		onClose();
 	}, [onClose]);
 
-	if (!visible) {
+	const handleSwitchType = () => {
+		setDropdownVisible(false);
+		setTimeout(() => {
+			setSwitchTypeModalVisible(true);
+		}, 100);
+	};
+
+	const handleSwitchTypeModalClose = () => {
+		setSwitchTypeModalVisible(false);
+	};
+
+	const handleSwitchComplete = () => {
+		setSwitchTypeModalVisible(false);
+		handleClose();
+	};
+
+	if (!dropdownVisible && !switchTypeModalVisible) {
 		return null;
 	}
 
-	const processedItems = items.map(item => {
+	const processedItems = items.map((item) => {
 		const id = item.id || getLabelId(item.label);
 		return {
 			...item,
 			id,
-			label: t(id)
+			label: t(id),
 		};
 	});
 
 	return (
-		<Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
-			<TouchableOpacity style={styles.overlay} onPress={handleClose} activeOpacity={1}>
-				<View style={styles.menuContainer}>
-					<View style={styles.header}>
-						<Text style={styles.username}>{username}</Text>
-						<Text style={styles.address} numberOfLines={1} ellipsizeMode="middle">
-							{address}
-						</Text>
-					</View>
-
-					<View style={styles.divider} />
-
-					{processedItems.map((item, index) => (
-						<TouchableOpacity
-							key={index}
-							style={styles.menuItem}
-							onPress={() => {
-								onClose();
-								item.onPress();
-							}}
-						>
-							<View style={styles.iconContainer}>
-								<Ionicons name={getIconName(item.id || '')} size={20} color="white" />
+		<>
+			{dropdownVisible && !switchTypeModalVisible && (
+				<Modal visible={true} transparent animationType="none" onRequestClose={handleClose}>
+					<TouchableOpacity style={styles.overlay} onPress={handleClose} activeOpacity={1}>
+						<View style={styles.menuContainer}>
+							<View style={styles.header}>
+								<View style={styles.usernameContainer}>
+									<Text style={styles.username}>{username}</Text>
+									<TouchableOpacity style={styles.switchTypeButton} onPress={handleSwitchType}>
+										<MaterialIcons name="swap-horiz" size={20} color="white" />
+									</TouchableOpacity>
+								</View>
+								<Text style={styles.address} numberOfLines={1} ellipsizeMode="middle">
+									{address}
+								</Text>
 							</View>
-							<Text style={[styles.menuItemText]}>{item.label}</Text>
-						</TouchableOpacity>
-					))}
-				</View>
-			</TouchableOpacity>
-		</Modal>
+
+							<View style={styles.divider} />
+
+							{processedItems.map((item, index) => (
+								<TouchableOpacity
+									key={index}
+									style={styles.menuItem}
+									onPress={() => {
+										handleClose();
+										item.onPress();
+									}}
+								>
+									<View style={styles.iconContainer}>
+										<Ionicons name={getIconName(item.id || '')} size={20} color="white" />
+									</View>
+									<Text style={[styles.menuItemText]}>{item.label}</Text>
+								</TouchableOpacity>
+							))}
+						</View>
+					</TouchableOpacity>
+				</Modal>
+			)}
+
+			<SwitchTypeModal
+				visible={switchTypeModalVisible}
+				onClose={handleSwitchTypeModalClose}
+				onSwitchComplete={handleSwitchComplete}
+			/>
+		</>
 	);
 };
 
@@ -141,11 +180,19 @@ const styles = StyleSheet.create({
 	header: {
 		padding: hp(1.5),
 	},
+	usernameContainer: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		marginBottom: hp(0.5),
+	},
 	username: {
 		fontSize: hp(1.8),
 		fontWeight: '600',
 		color: 'white',
-		marginBottom: hp(0.5),
+	},
+	switchTypeButton: {
+		padding: 4,
 	},
 	address: {
 		fontSize: hp(1.4),

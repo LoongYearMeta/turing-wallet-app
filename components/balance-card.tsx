@@ -53,50 +53,50 @@ export const BalanceCard = () => {
 	const isFocused = useIsFocused();
 
 	useEffect(() => {
-		if (isFocused) {
-			const fetchData = async () => {
-				if (isLoading) return;
+		const fetchData = async () => {
+			if (isLoading) return;
 
-				setIsLoading(true);
-				try {
-					const address = getCurrentAccountAddress();
-					if (!address) return;
+			setIsLoading(true);
+			try {
+				const address = getCurrentAccountAddress();
+				if (!address) return;
 
-					if (displayBtc) {
-						const [balanceData, priceInfo] = await Promise.all([
-							get_BTC_AddressBalance(address).catch(() => ({ total: balance?.btc ?? 0 })),
-							getBTCPriceInfo().catch(() => ({
-								currentPrice: rate,
-								priceChangePercent24h: changePercent,
-							})),
-						]);
+				if (displayBtc) {
+					const [balanceData, priceInfo] = await Promise.all([
+						get_BTC_AddressBalance(address).catch(() => ({ total: balance?.btc ?? 0 })),
+						getBTCPriceInfo().catch(() => ({
+							currentPrice: rate,
+							priceChangePercent24h: changePercent,
+						})),
+					]);
 
-						await updateCurrentAccountBtcBalance(balanceData.total);
-						setRate(priceInfo.currentPrice);
-						setChangePercent(priceInfo.priceChangePercent24h);
-					} else {
-						const [balanceData, rateData] = await Promise.all([
-							getTbcBalance(address).catch(() => balance?.tbc ?? 0),
-							getExchangeRate().catch(() => ({
-								rate: rate,
-								changePercent: changePercent,
-							})),
-						]);
+					await updateCurrentAccountBtcBalance(balanceData.total);
+					setRate(priceInfo.currentPrice);
+					setChangePercent(priceInfo.priceChangePercent24h);
+				} else {
+					const [balanceData, rateData] = await Promise.all([
+						getTbcBalance(address).catch(() => balance?.tbc ?? 0),
+						getExchangeRate().catch(() => ({
+							rate: rate,
+							changePercent: changePercent,
+						})),
+					]);
 
-						await updateCurrentAccountTbcBalance(balanceData);
-						setRate(rateData.rate);
-						setChangePercent(rateData.changePercent);
-					}
-				} catch (error) {
-					console.error('Failed to fetch balance data:', error);
-				} finally {
-					setIsLoading(false);
+					await updateCurrentAccountTbcBalance(balanceData);
+					setRate(rateData.rate);
+					setChangePercent(rateData.changePercent);
 				}
-			};
+			} catch (error) {
+				console.error('Failed to fetch balance data:', error);
+			} finally {
+				setIsLoading(false);
+			}
+		};
 
+		if (isFocused) {
 			fetchData();
 		}
-	}, [isFocused, displayBtc]);
+	}, [isFocused, displayBtc, accountType]);
 
 	return (
 		<View style={styles.container}>
