@@ -98,7 +98,7 @@ export default function InitiateMultiSigTransactionPage() {
 				await loadAssets(firstAddress);
 			}
 		} catch (error) {
-			console.error('Failed to load multi-signature addresses:', error);
+			//console.error('Failed to load multi-signature addresses:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -131,7 +131,7 @@ export default function InitiateMultiSigTransactionPage() {
 				setFormData((prev) => ({ ...prev, asset: 'TBC' }));
 			}
 		} catch (error) {
-			console.error('Failed to load assets:', error);
+			//console.error('Failed to load assets:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -286,7 +286,7 @@ export default function InitiateMultiSigTransactionPage() {
 
 			router.back();
 		} catch (error) {
-			console.error('Failed to initiate transaction:', error);
+			//console.error('Failed to initiate transaction:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

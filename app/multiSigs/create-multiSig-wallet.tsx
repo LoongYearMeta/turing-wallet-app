@@ -287,7 +287,7 @@ export default function CreateMultiSigWalletPage() {
 
 			router.back();
 		} catch (error: any) {
-			console.error('Failed to create MultiSig wallet:', error);
+			//console.error('Failed to create MultiSig wallet:', error);
 			Toast.show({
 				type: 'error',
 				text1: 'Error',

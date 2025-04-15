@@ -16,7 +16,6 @@ const languageDetector = {
 			}
 			return callback(I18nManager.getConstants().localeIdentifier?.split('_')[0] || 'en');
 		} catch (error) {
-			console.log('Error detecting language:', error);
 			callback('en');
 		}
 	},
@@ -25,7 +24,6 @@ const languageDetector = {
 		try {
 			await AsyncStorage.setItem('user-language', language);
 		} catch (error) {
-			console.log('Error caching language:', error);
 		}
 	},
 };

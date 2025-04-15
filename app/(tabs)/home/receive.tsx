@@ -72,7 +72,7 @@ export default function ReceivePage() {
 
 			const fileInfo = await FileSystem.getInfoAsync(uri);
 			if (!fileInfo.exists) {
-				console.error('Screenshot file does not exist:', uri);
+				//console.error('Screenshot file does not exist:', uri);
 				throw new Error('Screenshot file does not exist');
 			}
 
@@ -89,7 +89,6 @@ export default function ReceivePage() {
 						mimeType: 'image/png',
 						UTI: 'public.png',
 					});
-					console.log('Shared with expo-sharing');
 				} else {
 					await Share.share(
 						{
@@ -115,7 +114,7 @@ export default function ReceivePage() {
 				);
 			}
 		} catch (error: any) {
-			console.error('Error in sharing process:', error);
+			//console.error('Error in sharing process:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('shareError'),

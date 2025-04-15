@@ -59,7 +59,7 @@ export const SwitchTypeModal = ({ visible, onClose, onSwitchComplete }: SwitchTy
 
 			onClose();
 		} catch (error) {
-			console.error('Failed to switch account type:', error);
+			//console.error('Failed to switch account type:', error);
 		}
 	};
 

@@ -93,7 +93,6 @@ export async function syncNFTHistory(address: string, contract_id?: string): Pro
 			page++;
 		}
 	} catch (error) {
-		console.error('Failed to sync NFT history:', error);
 		throw new Error('Failed to sync NFT history');
 	}
 }

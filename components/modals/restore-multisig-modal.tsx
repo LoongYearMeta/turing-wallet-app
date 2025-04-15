@@ -79,7 +79,7 @@ export const RestoreMultiSigModal = ({
 				setError(t('multiSigAddressNotFound'));
 			}
 		} catch (error) {
-			console.error('Failed to restore MultiSig address:', error);
+			//console.error('Failed to restore MultiSig address:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

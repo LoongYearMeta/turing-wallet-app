@@ -66,7 +66,7 @@ export const RestoreNFTModal = ({
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Failed to restore NFT:', error);
+      //console.error('Failed to restore NFT:', error);
       Toast.show({
         type: 'error',
         text1: t('error'),

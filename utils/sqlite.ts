@@ -210,7 +210,7 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 			);
 		`);
 	} catch (error) {
-		console.error('Error initializing database:', error);
+		//console.error('Error initializing database:', error);
 	}
 };
 
@@ -653,7 +653,7 @@ export async function getTransactionHistoryCount(
 		}
 		return 0;
 	} catch (error) {
-		console.error('Error getting transaction history count:', error);
+		//console.error('Error getting transaction history count:', error);
 		return 0;
 	}
 }
@@ -679,7 +679,7 @@ export async function getCollectionCount(userAddress: string): Promise<number> {
 		}
 		return 0;
 	} catch (error) {
-		console.error('Error getting collection count:', error);
+		//console.error('Error getting collection count:', error);
 		return 0;
 	}
 }
@@ -696,7 +696,7 @@ export async function getNFTCount(userAddress: string): Promise<number> {
 		}
 		return 0;
 	} catch (error) {
-		console.error('Error getting NFT count:', error);
+		//console.error('Error getting NFT count:', error);
 		return 0;
 	}
 }

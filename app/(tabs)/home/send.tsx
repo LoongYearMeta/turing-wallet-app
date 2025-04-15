@@ -150,7 +150,7 @@ export default function SendPage() {
 				}
 			}
 		} catch (error) {
-			console.error('Failed to load assets:', error);
+			//console.error('Failed to load assets:', error);
 		}
 	};
 
@@ -204,7 +204,7 @@ export default function SendPage() {
 			const isValid = verifyPassword(password, passKey, salt);
 			return isValid ? '' : t('incorrectPassword');
 		} catch (error) {
-			console.error('Password validation error:', error);
+			//console.error('Password validation error:', error);
 			return t('incorrectPassword');
 		}
 	};
@@ -508,7 +508,7 @@ export default function SendPage() {
 
 			loadAssets();
 		} catch (error) {
-			console.error('Transaction failed:', error);
+			//console.error('Transaction failed:', error);
 
 			Toast.show({
 				type: 'error',

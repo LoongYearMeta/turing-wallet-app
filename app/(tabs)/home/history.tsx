@@ -85,7 +85,7 @@ const HistoryPage = () => {
 			const data = await getTransactionHistoryByType(activeType, address, dbType);
 			setHistories(data);
 		} catch (error) {
-			console.error('Failed to load histories:', error);
+			//console.error('Failed to load histories:', error);
 		}
 	};
 
@@ -115,7 +115,7 @@ const HistoryPage = () => {
 				visibilityTime: 2000,
 			});
 		} catch (error) {
-			console.error('Failed to refresh history:', error);
+			//console.error('Failed to refresh history:', error);
 
 			Toast.show({
 				type: 'error',

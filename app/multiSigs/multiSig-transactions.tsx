@@ -180,7 +180,7 @@ export default function MultiSigTransactionsPage() {
 				visibilityTime: 2000,
 			});
 		} catch (error) {
-			console.error('Failed to copy address:', error);
+			//console.error('Failed to copy address:', error);
 		}
 	};
 

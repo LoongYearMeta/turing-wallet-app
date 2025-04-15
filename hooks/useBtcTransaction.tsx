@@ -47,7 +47,7 @@ export const useBtcTransaction = () => {
 			try {
 				return await API.fetch();
 			} catch (error) {
-				console.warn(`Failed to fetch UTXOs from ${API.url}:`, error);
+				//console.warn(`Failed to fetch UTXOs from ${API.url}:`, error);
 				continue;
 			}
 		}
@@ -89,7 +89,7 @@ export const useBtcTransaction = () => {
 			try {
 				return await API.fetch();
 			} catch (error) {
-				console.warn(`Failed to fetch fee rates from ${API.url}:`, error);
+				//console.warn(`Failed to fetch fee rates from ${API.url}:`, error);
 				continue;
 			}
 		}
@@ -123,7 +123,7 @@ export const useBtcTransaction = () => {
 			try {
 				return await API.fetch();
 			} catch (error) {
-				console.warn(`Failed to fetch tx hex from ${API.url}:`, error);
+				//console.warn(`Failed to fetch tx hex from ${API.url}:`, error);
 				continue;
 			}
 		}
@@ -260,7 +260,7 @@ export const useBtcTransaction = () => {
 					try {
 						await psbt.signInputAsync(i, tweakedSigner);
 					} catch (error: any) {
-						console.error(`Error signing input ${i}:`, error);
+						//console.error(`Error signing input ${i}:`, error);
 						throw new Error(`Failed to sign input ${i}: ${error.message}`);
 					}
 				}
@@ -268,7 +268,7 @@ export const useBtcTransaction = () => {
 				const tx = psbt.extractTransaction();
 				return tx.toHex();
 			} catch (error: any) {
-				console.error('Tweak error:', error);
+				//console.error('Tweak error:', error);
 				throw new Error(`Failed to tweak signer: ${error.message}`);
 			}
 		},
@@ -410,7 +410,7 @@ export const useBtcTransaction = () => {
 			try {
 				return await API.fetch();
 			} catch (error) {
-				console.warn(`Failed to broadcast tx from ${API.url}:`, error);
+				//console.warn(`Failed to broadcast tx from ${API.url}:`, error);
 				continue;
 			}
 		}

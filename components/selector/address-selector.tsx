@@ -52,7 +52,7 @@ export const AddressSelector = ({
 			const multiSigs = await getAllMultiSigAddresses(userAddress);
 			setMultiSigAddresses(multiSigs);
 		} catch (error) {
-			console.error('Failed to load addresses:', error);
+			//console.error('Failed to load addresses:', error);
 		}
 	};
 

@@ -378,7 +378,7 @@ export default function DAppWebView() {
 
 			return response;
 		} catch (error: any) {
-			console.error('Transaction error:', error);
+			//console.error('Transaction error:', error);
 			return { error: error.message || 'unknown-error' };
 		}
 	};
@@ -436,7 +436,7 @@ export default function DAppWebView() {
 				});
 			}
 		} catch (error) {
-			console.error('Transaction error:', error);
+			//console.error('Transaction error:', error);
 
 			webViewRef.current?.injectJavaScript(`
 				window.dispatchEvent(new CustomEvent('TuringResponse', {
@@ -548,7 +548,7 @@ export default function DAppWebView() {
 					break;
 			}
 		} catch (error) {
-			console.error('Error handling message:', error);
+			//console.error('Error handling message:', error);
 		}
 	};
 
@@ -572,7 +572,7 @@ export default function DAppWebView() {
 					onLoadEnd={() => setIsWebViewLoading(false)}
 					onError={(syntheticEvent) => {
 						const { nativeEvent } = syntheticEvent;
-						console.error('WebView error:', nativeEvent);
+						//console.error('WebView error:', nativeEvent);
 						Toast.show({
 							type: 'error',
 							text1: 'Error loading page',

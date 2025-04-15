@@ -121,7 +121,7 @@ const NFTTransferPage = () => {
 			const isValid = verifyPassword(password, passKey, salt);
 			return isValid ? '' : t('incorrectPassword');
 		} catch (error) {
-			console.error('Password validation error:', error);
+			//console.error('Password validation error:', error);
 			return t('incorrectPassword');
 		}
 	};
@@ -295,7 +295,7 @@ const NFTTransferPage = () => {
 				router.back();
 			}
 		} catch (error) {
-			console.error('Error transferring NFT:', error);
+			//console.error('Error transferring NFT:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

@@ -16,9 +16,6 @@ interface NFTHistoryCardProps {
 export const NFTHistoryCard: React.FC<NFTHistoryCardProps> = ({ history }) => {
 	const { t } = useTranslation();
 
-	// 处理发送地址为空的情况
-	const displaySendAddress = history.send_address || history.receive_address;
-
 	const handleCopyId = async () => {
 		await Clipboard.setStringAsync(history.id);
 		Toast.show({
@@ -52,9 +49,9 @@ export const NFTHistoryCard: React.FC<NFTHistoryCardProps> = ({ history }) => {
 					<Text style={styles.label}>{t('from')}: </Text>
 					<TouchableOpacity
 						style={{ flex: 1, alignSelf: 'center' }}
-						onPress={() => handleCopyAddress(displaySendAddress, t('sender'))}
+						onPress={() => handleCopyAddress(history.send_address, t('sender'))}
 					>
-						<Text style={styles.value}>{displaySendAddress}</Text>
+						<Text style={styles.value}>{history.send_address}</Text>
 					</TouchableOpacity>
 				</View>
 				<View style={styles.row}>

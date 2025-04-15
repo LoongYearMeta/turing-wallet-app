@@ -27,9 +27,7 @@ export default function ScanPage() {
 		})();
 	}, []);
 
-	// 检查账户类型是否兼容
 	const areAccountTypesCompatible = (senderType: AccountType, receiverType: AccountType): boolean => {
-		// TBC 和 TAPROOT_LEGACY 兼容
 		if (
 			(senderType === AccountType.TBC || senderType === AccountType.TAPROOT_LEGACY) &&
 			(receiverType === AccountType.TBC || receiverType === AccountType.TAPROOT_LEGACY)
@@ -37,7 +35,6 @@ export default function ScanPage() {
 			return true;
 		}
 
-		// TAPROOT 和 LEGACY 兼容
 		if (
 			(senderType === AccountType.TAPROOT || senderType === AccountType.LEGACY) &&
 			(receiverType === AccountType.TAPROOT || receiverType === AccountType.LEGACY)
@@ -53,12 +50,10 @@ export default function ScanPage() {
 		setScanned(true);
 
 		try {
-			// 尝试解析 JSON 数据
 			let parsedData;
 			try {
 				parsedData = JSON.parse(data);
 			} catch (e) {
-				// 如果不是 JSON 格式，假设它只是一个地址
 				if (isValidAddress(data)) {
 					router.push({
 						pathname: '/home/send',
@@ -70,17 +65,14 @@ export default function ScanPage() {
 				}
 			}
 
-			// 验证解析后的数据
 			if (!parsedData.address || !parsedData.type) {
 				throw new Error('Invalid QR code data');
 			}
 
-			// 验证地址格式
 			if (!isValidAddress(parsedData.address)) {
 				throw new Error('Invalid address format');
 			}
 
-			// 验证账户类型兼容性
 			const currentAccountType = getCurrentAccountType();
 			if (!areAccountTypesCompatible(currentAccountType, parsedData.type)) {
 				Toast.show({
@@ -93,13 +85,12 @@ export default function ScanPage() {
 				return;
 			}
 
-			// 所有验证通过，导航到发送页面
 			router.push({
 				pathname: '/home/send',
 				params: { scannedAddress: parsedData.address },
 			});
 		} catch (error) {
-			console.error('Error processing QR code:', error);
+			//console.error('Error processing QR code:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('invalidQRCode'),
@@ -143,8 +134,6 @@ export default function ScanPage() {
 
 				if (scannedResults.length > 0) {
 					const { data } = scannedResults[0];
-					
-					// 使用与实时扫描相同的处理逻辑
 					handleBarCodeScanned({ type: 'QR', data });
 				} else {
 					Toast.show({
@@ -155,7 +144,7 @@ export default function ScanPage() {
 					});
 				}
 			} catch (error) {
-				console.error('Error scanning image:', error);
+				//console.error('Error scanning image:', error);
 				Toast.show({
 					type: 'error',
 					text1: t('failedToScanImage'),

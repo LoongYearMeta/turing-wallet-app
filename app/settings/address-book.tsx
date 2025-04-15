@@ -50,7 +50,7 @@ export default function AddressBookScreen() {
 			const multiSigs = await getAllMultiSigAddresses(getCurrentAccountAddress());
 			setMultiSigAddresses(multiSigs);
 		} catch (error) {
-			console.error('Failed to load addresses:', error);
+			//console.error('Failed to load addresses:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -74,7 +74,7 @@ export default function AddressBookScreen() {
 				text2: t('addressRemovedFromBook'),
 			});
 		} catch (error) {
-			console.error('Failed to delete address:', error);
+			//console.error('Failed to delete address:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

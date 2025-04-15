@@ -89,7 +89,7 @@ export default function HomePage() {
 				setOwnedTokens(sorted);
 			}
 		} catch (error) {
-			console.error('Failed to load owned tokens:', error);
+			//console.error('Failed to load owned tokens:', error);
 		}
 	};
 
@@ -105,7 +105,7 @@ export default function HomePage() {
 				setAddedTokens(sorted);
 			}
 		} catch (error) {
-			console.error('Failed to load added tokens:', error);
+			//console.error('Failed to load added tokens:', error);
 		}
 	};
 
@@ -173,7 +173,7 @@ export default function HomePage() {
 				text2: t('tokensRefreshed'),
 			});
 		} catch (error) {
-			console.error('Failed to refresh tokens:', error);
+			//console.error('Failed to refresh tokens:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -256,7 +256,7 @@ export default function HomePage() {
 				});
 			}
 		} catch (error) {
-			console.error('Failed to hide token:', error);
+			//console.error('Failed to hide token:', error);
 			if ('amount' in tokenToDelete) {
 				Toast.show({
 					type: 'error',
@@ -333,7 +333,7 @@ export default function HomePage() {
 				text2: isPinned ? t('tokenUnpinned') : t('tokenPinned'),
 			});
 		} catch (error) {
-			console.error('Failed to toggle pin status:', error);
+			//console.error('Failed to toggle pin status:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

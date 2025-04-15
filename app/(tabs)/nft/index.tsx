@@ -112,7 +112,7 @@ const CollectionsTab = () => {
 				setCollections(userCollections);
 			}
 		} catch (error) {
-			console.error('Failed to load collections:', error);
+			//console.error('Failed to load collections:', error);
 		} finally {
 			setLoading(false);
 		}
@@ -145,7 +145,7 @@ const CollectionsTab = () => {
 				text1: t('collectionsRefreshed'),
 			});
 		} catch (error) {
-			console.error('Failed to refresh collections:', error);
+			//console.error('Failed to refresh collections:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -172,7 +172,7 @@ const CollectionsTab = () => {
 			});
 			loadCollections();
 		} catch (error) {
-			console.error('Failed to hide collection:', error);
+			//console.error('Failed to hide collection:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -340,7 +340,7 @@ const NFTsTab = () => {
 				setNfts(userNFTs);
 			}
 		} catch (error) {
-			console.error('Failed to load NFTs:', error);
+			//console.error('Failed to load NFTs:', error);
 		} finally {
 			setLoading(false);
 		}
@@ -373,7 +373,7 @@ const NFTsTab = () => {
 				text1: t('nftsRefreshed'),
 			});
 		} catch (error) {
-			console.error('Failed to refresh NFTs:', error);
+			//console.error('Failed to refresh NFTs:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -400,7 +400,7 @@ const NFTsTab = () => {
 			});
 			loadNFTs();
 		} catch (error) {
-			console.error('Failed to hide NFT:', error);
+			//console.error('Failed to hide NFT:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

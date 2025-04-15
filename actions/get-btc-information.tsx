@@ -33,7 +33,7 @@ export async function get_BTC_AddressBalance(address: string): Promise<{
 			const total = await API.fetch();
 			return { total };
 		} catch (error) {
-			console.warn(`Failed to fetch balance`, error);
+			//console.warn(`Failed to fetch balance`, error);
 			continue;
 		}
 	}
@@ -185,7 +185,7 @@ export async function getBTCPriceInfo(): Promise<{
 			const priceInfo = await API.fetch();
 			return priceInfo;
 		} catch (error) {
-			console.warn('Failed to fetch price info', error);
+			//console.warn('Failed to fetch price info', error);
 			continue;
 		}
 	}

@@ -30,7 +30,7 @@ export const Navbar = () => {
 			setLogoutModalVisible(false);
 			router.replace('/');
 		} catch (error) {
-			console.error('Failed to sign out:', error);
+			//console.error('Failed to sign out:', error);
 		}
 	};
 

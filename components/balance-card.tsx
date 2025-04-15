@@ -92,7 +92,7 @@ export const BalanceCard = () => {
 					setChangePercent(rateData.changePercent);
 				}
 			} catch (error) {
-				console.error('Failed to fetch balance data:', error);
+				//console.error('Failed to fetch balance data:', error);
 			} finally {
 				setIsLoading(false);
 			}

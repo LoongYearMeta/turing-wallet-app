@@ -75,7 +75,7 @@ export const AddAddressModal = ({ visible, onClose, onAddSuccess }: AddAddressMo
 				text2: t('addressAddedToBook'),
 			});
 		} catch (error) {
-			console.error('Failed to add address:', error);
+			//console.error('Failed to add address:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

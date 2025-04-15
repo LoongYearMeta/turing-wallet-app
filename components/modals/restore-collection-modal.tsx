@@ -66,7 +66,7 @@ export const RestoreCollectionModal = ({
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Failed to restore collection:', error);
+      //console.error('Failed to restore collection:', error);
       Toast.show({
         type: 'error',
         text1: t('error'),

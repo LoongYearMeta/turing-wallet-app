@@ -48,7 +48,7 @@ export function getTaprootAndLegacyAddress(keyPair: any) {
 			legacyAddress,
 		};
 	} catch (error) {
-		console.error('Failed to get taproot address:', error);
+		//console.error('Failed to get taproot address:', error);
 		throw error;
 	}
 }

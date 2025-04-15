@@ -79,7 +79,7 @@ const CreateNFTPage = () => {
 					image: collectionData!.icon,
 				}));
 			} catch (error) {
-				console.error('Failed to load collection:', error);
+				//console.error('Failed to load collection:', error);
 				Toast.show({
 					type: 'error',
 					text1: t('error'),
@@ -133,7 +133,7 @@ const CreateNFTPage = () => {
 			const isValid = verifyPassword(password, passKey, salt);
 			return isValid ? '' : t('incorrectPassword');
 		} catch (error) {
-			console.error('Password validation error:', error);
+			//console.error('Password validation error:', error);
 			return t('incorrectPassword');
 		}
 	};
@@ -269,7 +269,7 @@ const CreateNFTPage = () => {
 				}
 			}
 		} catch (error) {
-			console.error('Error picking image:', error);
+			//console.error('Error picking image:', error);
 			Toast.show({
 				type: 'error',
 				text1: 'Error',
@@ -361,7 +361,7 @@ const CreateNFTPage = () => {
 				router.back();
 			}
 		} catch (error) {
-			console.error('Error creating NFT:', error);
+			//console.error('Error creating NFT:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

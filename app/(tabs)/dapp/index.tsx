@@ -86,7 +86,7 @@ export default function DAppPage() {
 			await syncDApps();
 			await loadDApps();
 		} catch (error) {
-			console.error('Failed to refresh DApps:', error);
+			//console.error('Failed to refresh DApps:', error);
 		} finally {
 			setRefreshing(false);
 		}
@@ -161,7 +161,6 @@ export default function DAppPage() {
 									<Image
 										source={{ uri: dapp.icon }}
 										style={styles.icon}
-										onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
 									/>
 									<View style={styles.dappInfo}>
 										<Text style={styles.name}>{dapp.name}</Text>

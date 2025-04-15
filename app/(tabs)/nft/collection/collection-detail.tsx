@@ -54,11 +54,11 @@ const CollectionDetailPage = () => {
 				const count = await fetchNFTCounts_byCollection(id);
 				setCreatedNFTCount(count);
 			} catch (error) {
-				console.error('Failed to fetch NFT count:', error);
+				//console.error('Failed to fetch NFT count:', error);
 				setCreatedNFTCount(0);
 			}
 		} catch (error) {
-			console.error('Failed to load collection details:', error);
+			//console.error('Failed to load collection details:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -101,7 +101,7 @@ const CollectionDetailPage = () => {
 			});
 			loadCollectionAndNFTs();
 		} catch (error) {
-			console.error('Failed to hide NFT:', error);
+			//console.error('Failed to hide NFT:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

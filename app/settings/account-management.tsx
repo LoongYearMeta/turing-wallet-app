@@ -88,7 +88,7 @@ export default function AccountManagementPage() {
 				await removeAccount(deleteAddress);
 			}
 		} catch (error) {
-			console.error('Failed to delete account:', error);
+			//console.error('Failed to delete account:', error);
 		}
 	};
 

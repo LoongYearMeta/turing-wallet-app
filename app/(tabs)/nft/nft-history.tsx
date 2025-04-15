@@ -38,7 +38,7 @@ const NFTHistoryPage = () => {
 			const data = await getNFTHistoryByContractId(id, address);
 			setHistories(data);
 		} catch (error) {
-			console.error('Failed to load histories:', error);
+			//console.error('Failed to load histories:', error);
 		}
 	};
 
@@ -53,7 +53,7 @@ const NFTHistoryPage = () => {
 				text2: t('historyRefreshedSuccessfully'),
 			});
 		} catch (error) {
-			console.error('Failed to refresh history:', error);
+			//console.error('Failed to refresh history:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

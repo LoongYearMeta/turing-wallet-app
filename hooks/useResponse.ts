@@ -997,7 +997,7 @@ export const useResponse = () => {
 				}
 				return { txid };
 			} catch (error: any) {
-				console.error('Swap failed:', error);
+				//console.error('Swap failed:', error);
 				return { error: error.message ?? 'unknown' };
 			}
 		},

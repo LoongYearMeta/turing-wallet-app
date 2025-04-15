@@ -121,14 +121,12 @@ export default function RootLayout() {
 
 	useEffect(() => {
 		const timeout = setTimeout(() => {
-			SplashScreen.hideAsync().catch((err) =>
-				console.error('Error hiding splash screen after timeout:', err),
-			);
+			SplashScreen.hideAsync();
 		}, 3000);
 
 		if (fontsLoaded) {
 			clearTimeout(timeout);
-			SplashScreen.hideAsync().catch((err) => console.error('Error hiding splash screen:', err));
+			SplashScreen.hideAsync();
 		}
 
 		return () => clearTimeout(timeout);
