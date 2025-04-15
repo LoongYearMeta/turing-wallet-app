@@ -170,22 +170,25 @@ export default function MultiSigTransactionsPage() {
 		}
 	};
 
+	const handleCopyAddress = async (address: string) => {
+		try {
+			await Clipboard.setStringAsync(address);
+			Toast.show({
+				type: 'success',
+				text1: t('addressCopied'),
+				position: 'top',
+				visibilityTime: 2000,
+			});
+		} catch (error) {
+			console.error('Failed to copy address:', error);
+		}
+	};
+
 	const renderTransaction = ({ item }) => {
 		const renderAmount = () => {
 			const amount = formatBalance(Number(item.balance * Math.pow(10, -6)));
 			const suffix = item.ft_contract_id ? 'Token' : 'TBC';
 			return `${amount} ${suffix}`;
-		};
-
-		const handleCopyId = async () => {
-			await Clipboard.setStringAsync(item.txid);
-			Toast.show({
-				type: 'success',
-				text1: 'Success',
-				text2: 'Transaction ID copied to clipboard',
-				position: 'top',
-				visibilityTime: 2000,
-			});
 		};
 
 		if (activeTab === TabType.Completed) {
@@ -195,7 +198,10 @@ export default function MultiSigTransactionsPage() {
 						<View style={styles.idRow}>
 							<Text style={styles.label}>TxID: </Text>
 							<Text style={styles.value}>{formatContractId(item.txid)}</Text>
-							<TouchableOpacity onPress={handleCopyId} style={styles.copyButton}>
+							<TouchableOpacity
+								onPress={() => handleCopyAddress(item.txid)}
+								style={styles.copyButton}
+							>
 								<MaterialIcons name="content-copy" size={16} color="#666" />
 							</TouchableOpacity>
 						</View>
@@ -203,11 +209,21 @@ export default function MultiSigTransactionsPage() {
 					<View style={styles.content}>
 						<View style={styles.row}>
 							<Text style={styles.label}>From: </Text>
-							<Text style={styles.value}>{item.multi_sig_address}</Text>
+							<TouchableOpacity
+								onPress={() => handleCopyAddress(item.multi_sig_address)}
+								style={{ flex: 1 }}
+							>
+								<Text style={styles.value}>{item.multi_sig_address}</Text>
+							</TouchableOpacity>
 						</View>
 						<View style={styles.row}>
 							<Text style={styles.label}>To: </Text>
-							<Text style={styles.value}>{item.json_info.receiver_addresses.join(', ')}</Text>
+							<TouchableOpacity
+								onPress={() => handleCopyAddress(item.json_info.receiver_addresses.join(', '))}
+								style={{ flex: 1 }}
+							>
+								<Text style={styles.value}>{item.json_info.receiver_addresses.join(', ')}</Text>
+							</TouchableOpacity>
 						</View>
 						<View style={styles.row}>
 							<Text style={styles.label}>Amount: </Text>
@@ -231,11 +247,21 @@ export default function MultiSigTransactionsPage() {
 					<View style={[styles.content, styles.contentWithDelete]}>
 						<View style={styles.row}>
 							<Text style={styles.label}>From: </Text>
-							<Text style={styles.value}>{item.multi_sig_address}</Text>
+							<TouchableOpacity
+								onPress={() => handleCopyAddress(item.multi_sig_address)}
+								style={{ flex: 1 }}
+							>
+								<Text style={styles.value}>{item.multi_sig_address}</Text>
+							</TouchableOpacity>
 						</View>
 						<View style={styles.row}>
 							<Text style={styles.label}>To: </Text>
-							<Text style={styles.value}>{item.json_info.receiver_addresses.join(', ')}</Text>
+							<TouchableOpacity
+								onPress={() => handleCopyAddress(item.json_info.receiver_addresses.join(', '))}
+								style={{ flex: 1 }}
+							>
+								<Text style={styles.value}>{item.json_info.receiver_addresses.join(', ')}</Text>
+							</TouchableOpacity>
 						</View>
 						<View style={styles.row}>
 							<Text style={styles.label}>Amount: </Text>
@@ -261,11 +287,21 @@ export default function MultiSigTransactionsPage() {
 				<View style={styles.content}>
 					<View style={styles.row}>
 						<Text style={styles.label}>From: </Text>
-						<Text style={styles.value}>{item.multi_sig_address}</Text>
+						<TouchableOpacity
+							onPress={() => handleCopyAddress(item.multi_sig_address)}
+							style={{ flex: 1 }}
+						>
+							<Text style={styles.value}>{item.multi_sig_address}</Text>
+						</TouchableOpacity>
 					</View>
 					<View style={styles.row}>
 						<Text style={styles.label}>To: </Text>
-						<Text style={styles.value}>{item.json_info.receiver_addresses.join(', ')}</Text>
+						<TouchableOpacity
+							onPress={() => handleCopyAddress(item.json_info.receiver_addresses.join(', '))}
+							style={{ flex: 1 }}
+						>
+							<Text style={styles.value}>{item.json_info.receiver_addresses.join(', ')}</Text>
+						</TouchableOpacity>
 					</View>
 					<View style={styles.row}>
 						<Text style={styles.label}>Amount: </Text>
@@ -321,7 +357,9 @@ export default function MultiSigTransactionsPage() {
 							style={[styles.tab, activeTab === TabType.Completed && styles.activeTab]}
 							onPress={() => setActiveTab(TabType.Completed)}
 						>
-							<Text style={[styles.tabText, activeTab === TabType.Completed && styles.activeTabText]}>
+							<Text
+								style={[styles.tabText, activeTab === TabType.Completed && styles.activeTabText]}
+							>
 								{t('completed')}
 							</Text>
 						</TouchableOpacity>
@@ -329,7 +367,12 @@ export default function MultiSigTransactionsPage() {
 							style={[styles.tab, activeTab === TabType.WaitBroadcasted && styles.activeTab]}
 							onPress={() => setActiveTab(TabType.WaitBroadcasted)}
 						>
-							<Text style={[styles.tabText, activeTab === TabType.WaitBroadcasted && styles.activeTabText]}>
+							<Text
+								style={[
+									styles.tabText,
+									activeTab === TabType.WaitBroadcasted && styles.activeTabText,
+								]}
+							>
 								{t('waitBroadcast')}
 							</Text>
 						</TouchableOpacity>
@@ -337,7 +380,12 @@ export default function MultiSigTransactionsPage() {
 							style={[styles.tab, activeTab === TabType.WaitOtherSign && styles.activeTab]}
 							onPress={() => setActiveTab(TabType.WaitOtherSign)}
 						>
-							<Text style={[styles.tabText, activeTab === TabType.WaitOtherSign && styles.activeTabText]}>
+							<Text
+								style={[
+									styles.tabText,
+									activeTab === TabType.WaitOtherSign && styles.activeTabText,
+								]}
+							>
 								{t('waitOtherSign')}
 							</Text>
 						</TouchableOpacity>
@@ -345,7 +393,9 @@ export default function MultiSigTransactionsPage() {
 							style={[styles.tab, activeTab === TabType.WaitSigned && styles.activeTab]}
 							onPress={() => setActiveTab(TabType.WaitSigned)}
 						>
-							<Text style={[styles.tabText, activeTab === TabType.WaitSigned && styles.activeTabText]}>
+							<Text
+								style={[styles.tabText, activeTab === TabType.WaitSigned && styles.activeTabText]}
+							>
 								{t('waitSigned')}
 							</Text>
 						</TouchableOpacity>
@@ -413,9 +463,7 @@ export default function MultiSigTransactionsPage() {
 
 			<ConfirmModal
 				visible={confirmModalVisible}
-				title={
-					confirmAction?.type === 'broadcast' ? t('confirmBroadcast') : t('confirmWithdraw')
-				}
+				title={confirmAction?.type === 'broadcast' ? t('confirmBroadcast') : t('confirmWithdraw')}
 				message={
 					confirmAction?.type === 'broadcast'
 						? t('confirmBroadcastMessage')

@@ -348,7 +348,7 @@ export default {
 	collectionNotFound: '未找到合集',
 
 	collectionIdCopied: '合集ID已复制到剪贴板',
-	
+
 	confirmHideNFT: '您确定要隐藏此NFT吗？',
 	hideNFT: '隐藏NFT',
 	remainingSupply: '剩余供应量',
@@ -490,7 +490,7 @@ export default {
 
 	balance: '余额',
 
-	derivationPathHelpText: '请按照 x\'/x\'/x/x 格式输入自定义派生路径',
+	derivationPathHelpText: "请按照 x'/x'/x/x 格式输入自定义派生路径",
 
 	noMatchingCollectionsFound: '未找到匹配的集合',
 
@@ -520,7 +520,7 @@ export default {
 	noMatchingAssetsFound: '未找到匹配的资产',
 	noAssetsAvailable: '无可用资产',
 	selectAddress: '选择地址',
-	search:"搜索",
+	search: '搜索',
 	tokenHiddenSuccessfully: 'Token隐藏成功',
 	tokenDeletedSuccessfully: 'Token删除成功',
 	failedToHideToken: '隐藏Token失败',
@@ -565,4 +565,6 @@ export default {
 	shareError: '分享二维码失败',
 
 	incompatibleAccountType: '账户类型不兼容',
+	sender: '发送者',
+	receiver: '接收者',
 };

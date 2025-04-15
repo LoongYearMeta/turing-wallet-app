@@ -38,10 +38,7 @@ export default function HomePage() {
 	const [ownedTokens, setOwnedTokens] = useState<FT[]>([]);
 	const [addedTokens, setAddedTokens] = useState<FTPublic[]>([]);
 	const [searchText, setSearchText] = useState('');
-	const { 
-		getCurrentAccountAddress, 
-		getCurrentAccountType,
-	} = useAccount();
+	const { getCurrentAccountAddress, getCurrentAccountType } = useAccount();
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [tokenToDelete, setTokenToDelete] = useState<FT | FTPublic | null>(null);
 	const [addModalVisible, setAddModalVisible] = useState(false);
@@ -62,7 +59,7 @@ export default function HomePage() {
 				loadAddedTokens();
 			}
 		}
-	}, [disableTokens, accountType, activeTab]); 
+	}, [disableTokens, accountType, activeTab]);
 
 	useFocusEffect(
 		useCallback(() => {
@@ -159,6 +156,8 @@ export default function HomePage() {
 	};
 
 	const handleRefresh = async () => {
+		if (disableTokens) return;
+		
 		try {
 			setRefreshing(true);
 			const address = getCurrentAccountAddress();
@@ -167,7 +166,7 @@ export default function HomePage() {
 			if (activeTab === 'owned') {
 				await loadOwnedTokens();
 			}
-			
+
 			Toast.show({
 				type: 'success',
 				text1: t('success'),
@@ -187,7 +186,7 @@ export default function HomePage() {
 
 	const onRefresh = useCallback(() => {
 		handleRefresh();
-	}, []);
+	}, [disableTokens]);
 
 	const handleTabChange = (tab: TabType) => {
 		setActiveTab(tab);
@@ -352,17 +351,19 @@ export default function HomePage() {
 			<ScrollView
 				style={styles.container}
 				showsVerticalScrollIndicator={false}
-				bounces={true}
+				bounces={!disableTokens}
 				decelerationRate="normal"
 				overScrollMode="never"
 				contentContainerStyle={styles.scrollContent}
 				refreshControl={
-					<RefreshControl
-						refreshing={refreshing}
-						onRefresh={onRefresh}
-						colors={['#4CAF50']}
-						tintColor={'#4CAF50'}
-					/>
+					!disableTokens ? (
+						<RefreshControl
+							refreshing={refreshing}
+							onRefresh={onRefresh}
+							colors={['#4CAF50']}
+							tintColor={'#4CAF50'}
+						/>
+					) : undefined
 				}
 			>
 				<View style={styles.content}>
@@ -419,11 +420,7 @@ export default function HomePage() {
 				title={tokenToPin?.is_pin ? t('unpinToken') : t('pinToken')}
 				message={`${t('areYouSureWantTo')} ${tokenToPin?.is_pin ? t('unpin') : t('pin')} ${
 					tokenToPin?.name || t('thisToken')
-				}? ${
-					tokenToPin?.is_pin
-						? t('thisWillRemoveFromTop')
-						: t('thisWillKeepAtTop')
-				}`}
+				}? ${tokenToPin?.is_pin ? t('thisWillRemoveFromTop') : t('thisWillKeepAtTop')}`}
 				onConfirm={handleConfirmPin}
 				onCancel={() => {
 					setPinModalVisible(false);

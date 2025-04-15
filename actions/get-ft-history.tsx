@@ -62,9 +62,16 @@ export async function syncFTHistory(address: string, contract_id: string): Promi
 					continue;
 				}
 
+				const senderAddress =
+					tx.sender_combine_script &&
+					tx.sender_combine_script.length > 0 &&
+					tx.sender_combine_script[0]
+						? tx.sender_combine_script[0]
+						: tx.recipient_combine_script[0] || '';
+
 				const history: FTHistory = {
 					id: tx.txid,
-					send_address: tx.sender_combine_script[0] || '',
+					send_address: senderAddress,
 					receive_address: tx.recipient_combine_script[0] || '',
 					fee: tx.tx_fee,
 					timestamp: tx.time_stamp || currentTimestamp,

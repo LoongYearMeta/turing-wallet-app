@@ -70,9 +70,14 @@ export async function syncNFTHistory(address: string, contract_id?: string): Pro
 					continue;
 				}
 
+				const senderAddress =
+					tx.sender_addresses && tx.sender_addresses.length > 0 && tx.sender_addresses[0]
+						? tx.sender_addresses[0]
+						: tx.recipient_addresses[0] || '';
+
 				const history: NFTHistory = {
 					id: tx.txid,
-					send_address: tx.sender_addresses[0] || '',
+					send_address: senderAddress,
 					receive_address: tx.recipient_addresses[0] || '',
 					timestamp: tx.time_stamp || currentTimestamp,
 					contract_id: tx.nft_contract_id,

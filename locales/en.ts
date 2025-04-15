@@ -383,7 +383,6 @@ export default {
 	multiSigAddressDeletedSuccessfully: 'MultiSig address deleted successfully',
 	failedToDeleteMultiSig: 'Failed to delete MultiSig address',
 
-
 	tbcAddressDescription:
 		'Use this address to trade TBC, TBC721, TBC20 assets and connect to DApps. You can also create MultiSig wallets with this address for more secure storage of your TBC and TBC20 assets',
 	taprootLegacyAddressDescription:
@@ -413,7 +412,6 @@ export default {
 	yourPubKey: 'Your Public Key',
 	pubKeyCount: 'Public Key Count',
 	requiredSignatures: 'Required Signatures',
-
 
 	initiateMultiSigTransaction: 'Initiate MultiSig Transaction',
 	senderAddress: 'Sender Address',
@@ -494,7 +492,8 @@ export default {
 	enterPubKeyCount: 'Enter public key count (3-10)',
 	enterRequiredSignatures: 'Enter required signatures',
 	pubKeyCountMustBeNumber: 'Public key count must be a number between 3 and 10',
-	requiredSignaturesMustBeNumber: 'Required signatures must be a number between 1 and the public key count',
+	requiredSignaturesMustBeNumber:
+		'Required signatures must be a number between 1 and the public key count',
 	pubKeyRequired: 'Public key cannot be empty',
 	invalidPubKey: 'Invalid public key',
 	pubKeyAlreadyExists: 'This public key already exists',
@@ -506,8 +505,9 @@ export default {
 	restoringWallet: 'Restoring wallet...',
 	passwordVerificationFailed: 'Password verification failed',
 	restoreBlockchainData: 'Restore blockchain data',
-	restoreBlockchainDataDesc: 'This will restore your wallet data from the blockchain, including tokens, NFTs, and MultiSig wallets',
-	
+	restoreBlockchainDataDesc:
+		'This will restore your wallet data from the blockchain, including tokens, NFTs, and MultiSig wallets',
+
 	fee: 'Fee',
 	asset: 'Asset',
 	tokensRefreshed: 'Tokens refreshed successfully',
@@ -560,8 +560,7 @@ export default {
 	failedToCreateCollection: 'Failed to create collection',
 
 	receiveAssets: 'Receive Assets',
-	
-	// 扫描界面相关翻译
+
 	alignQRCodeWithinFrame: 'Align QR code within the frame to scan',
 	scanAgain: 'Scan Again',
 	requestingCameraPermission: 'Requesting camera permission...',
@@ -579,4 +578,6 @@ export default {
 	shareError: 'Failed to share QR code',
 
 	incompatibleAccountType: 'Incompatible account type',
+	sender: 'Sender',
+	receiver: 'Receiver',
 };

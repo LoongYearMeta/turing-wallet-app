@@ -135,7 +135,7 @@ export default function ReceivePage() {
 						{address ? (
 							<QRCode
 								value={qrCodeData}
-								size={wp(80)}
+								size={wp(65)}
 								backgroundColor="#f5f5f5"
 								color="black"
 								getRef={(ref: QRCodeRef) => (qrRef.current = ref)}
@@ -144,7 +144,6 @@ export default function ReceivePage() {
 						) : (
 							<View style={styles.qrPlaceholder} />
 						)}
-						<Text style={styles.accountTypeLabel}>{getAccountTypeLabel()}</Text>
 					</View>
 
 					<View style={styles.addressContainer}>
@@ -155,7 +154,7 @@ export default function ReceivePage() {
 
 						<View style={styles.buttonContainer}>
 							<TouchableOpacity style={styles.actionButton} onPress={handleCopyAddress}>
-								<Ionicons name="copy-outline" size={20} color={theme.colors.primary} />
+								<Ionicons name="copy-outline" size={18} color={theme.colors.primary} />
 								<Text style={styles.buttonText}>{t('copy')}</Text>
 							</TouchableOpacity>
 
@@ -164,7 +163,7 @@ export default function ReceivePage() {
 								onPress={handleSharePage}
 								disabled={isSharing}
 							>
-								<Ionicons name="share-outline" size={20} color={theme.colors.primary} />
+								<Ionicons name="share-outline" size={18} color={theme.colors.primary} />
 								<Text style={styles.buttonText}>{t('share')}</Text>
 							</TouchableOpacity>
 						</View>
@@ -186,76 +185,71 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'flex-start',
 		paddingHorizontal: wp(4),
-		paddingTop: 0,
+		paddingTop: hp(5),
 		backgroundColor: '#f5f5f5',
 	},
 	qrContainer: {
 		alignItems: 'center',
-		marginBottom: hp(4),
-		marginTop: hp(1),
+		marginBottom: hp(6),
+		marginTop: hp(4),
 		backgroundColor: '#f5f5f5',
-		padding: wp(4),
-		borderRadius: 8,
+		padding: wp(3),
+		borderRadius: 10,
 	},
 	qrPlaceholder: {
-		width: wp(80),
-		height: wp(80),
+		width: wp(65),
+		height: wp(65),
 		backgroundColor: '#f0f0f0',
 		borderRadius: 8,
 	},
-	accountTypeLabel: {
-		fontSize: hp(1.8),
-		fontWeight: '500',
-		marginTop: hp(2),
-		color: theme.colors.primary,
-	},
 	addressContainer: {
-		width: '100%',
-		padding: wp(4),
+		width: '80%',
+		padding: wp(3),
 		backgroundColor: '#f0f0f0',
-		borderRadius: 12,
+		borderRadius: 10,
 		alignItems: 'center',
 		shadowColor: '#000',
 		shadowOffset: { width: 0, height: 1 },
 		shadowOpacity: 0.1,
 		shadowRadius: 2,
 		elevation: 2,
+		marginTop: hp(1),
 	},
 	addressLabel: {
-		fontSize: hp(1.6),
+		fontSize: hp(1.5),
 		fontWeight: '500',
-		marginBottom: hp(1),
+		marginBottom: hp(0.8),
 		color: '#666',
 	},
 	addressText: {
-		fontSize: hp(1.6),
+		fontSize: hp(1.5),
 		color: '#000',
-		marginBottom: hp(2),
+		marginBottom: hp(1.5),
 		textAlign: 'center',
-		paddingHorizontal: wp(2),
+		paddingHorizontal: wp(1),
 	},
 	buttonContainer: {
 		flexDirection: 'row',
 		justifyContent: 'space-around',
 		width: '100%',
-		marginTop: hp(1),
+		marginTop: hp(0.5),
 	},
 	actionButton: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
 		backgroundColor: 'white',
-		paddingVertical: hp(1),
-		paddingHorizontal: wp(4),
-		borderRadius: 8,
+		paddingVertical: hp(0.8),
+		paddingHorizontal: wp(3),
+		borderRadius: 6,
 		borderWidth: 1,
 		borderColor: theme.colors.primary,
-		minWidth: wp(30),
+		minWidth: wp(28),
 	},
 	buttonText: {
 		color: theme.colors.primary,
-		fontSize: hp(1.6),
+		fontSize: hp(1.5),
 		fontWeight: '500',
-		marginLeft: wp(2),
+		marginLeft: wp(1.5),
 	},
 });

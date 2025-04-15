@@ -62,7 +62,9 @@ export const AddedTokenCard = ({ token, onDeletePress, onRefresh, onLongPress }:
 					<View style={styles.rightContent}>
 						<Text style={styles.amount}>{formatBalance(token.supply)}</Text>
 						<View style={styles.valueContainer}>
-							<Text style={styles.contractId}>{formatContractId(token.id)}</Text>
+							<TouchableOpacity onPress={handleCopyId} style={{ alignSelf: 'center' }}>
+								<Text style={styles.contractId}>{formatContractId(token.id)}</Text>
+							</TouchableOpacity>
 							<TouchableOpacity onPress={handleCopyId} style={styles.copyButton}>
 								<MaterialIcons name="content-copy" size={16} color="#666" />
 							</TouchableOpacity>

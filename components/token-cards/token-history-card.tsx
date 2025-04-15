@@ -23,6 +23,14 @@ export const HistoryCard = ({ history }: HistoryCardProps) => {
 			text1: t('transactionIdCopied'),
 		});
 	};
+	
+	const handleCopyAddress = async (address: string, type: string) => {
+		await Clipboard.setStringAsync(address);
+		Toast.show({
+			type: 'success',
+			text1: `${type} ${t('addressCopied')}`,
+		});
+	};
 
 	return (
 		<View style={styles.card}>
@@ -52,11 +60,21 @@ export const HistoryCard = ({ history }: HistoryCardProps) => {
 				</View>
 				<View style={styles.row}>
 					<Text style={styles.label}>{t('from')}: </Text>
-					<Text style={styles.value}>{history.send_address}</Text>
+					<TouchableOpacity 
+						style={{flex: 1, alignSelf: 'center'}} 
+						onPress={() => handleCopyAddress(history.send_address, t('sender'))}
+					>
+						<Text style={styles.value}>{history.send_address}</Text>
+					</TouchableOpacity>
 				</View>
 				<View style={styles.row}>
 					<Text style={styles.label}>{t('to')}: </Text>
-					<Text style={styles.value}>{history.receive_address}</Text>
+					<TouchableOpacity 
+						style={{flex: 1, alignSelf: 'center'}} 
+						onPress={() => handleCopyAddress(history.receive_address, t('receiver'))}
+					>
+						<Text style={styles.value}>{history.receive_address}</Text>
+					</TouchableOpacity>
 				</View>
 			</View>
 		</View>

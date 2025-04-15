@@ -15,12 +15,23 @@ interface NFTHistoryCardProps {
 
 export const NFTHistoryCard: React.FC<NFTHistoryCardProps> = ({ history }) => {
 	const { t } = useTranslation();
-	
+
+	// 处理发送地址为空的情况
+	const displaySendAddress = history.send_address || history.receive_address;
+
 	const handleCopyId = async () => {
 		await Clipboard.setStringAsync(history.id);
 		Toast.show({
 			type: 'success',
 			text1: t('transactionIdCopied'),
+		});
+	};
+
+	const handleCopyAddress = async (address: string, type: string) => {
+		await Clipboard.setStringAsync(address);
+		Toast.show({
+			type: 'success',
+			text1: `${type} ${t('addressCopied')}`,
 		});
 	};
 
@@ -39,11 +50,21 @@ export const NFTHistoryCard: React.FC<NFTHistoryCardProps> = ({ history }) => {
 			<View style={styles.content}>
 				<View style={styles.row}>
 					<Text style={styles.label}>{t('from')}: </Text>
-					<Text style={styles.value}>{history.send_address}</Text>
+					<TouchableOpacity
+						style={{ flex: 1, alignSelf: 'center' }}
+						onPress={() => handleCopyAddress(displaySendAddress, t('sender'))}
+					>
+						<Text style={styles.value}>{displaySendAddress}</Text>
+					</TouchableOpacity>
 				</View>
 				<View style={styles.row}>
 					<Text style={styles.label}>{t('to')}: </Text>
-					<Text style={styles.value}>{history.receive_address}</Text>
+					<TouchableOpacity
+						style={{ flex: 1, alignSelf: 'center' }}
+						onPress={() => handleCopyAddress(history.receive_address, t('receiver'))}
+					>
+						<Text style={styles.value}>{history.receive_address}</Text>
+					</TouchableOpacity>
 				</View>
 			</View>
 		</View>

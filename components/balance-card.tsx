@@ -138,10 +138,15 @@ export const BalanceCard = () => {
 				</TouchableOpacity>
 			</View>
 			<View style={styles.addressRow}>
-				<Text style={styles.address} numberOfLines={1} ellipsizeMode="middle">
-					{address}
-				</Text>
-				<TouchableOpacity onPress={handleCopyAddress} style={styles.iconButton}>
+				<TouchableOpacity 
+					style={{flex: 1, alignSelf: 'center'}} 
+					onPress={handleCopyAddress}
+				>
+					<Text style={styles.address} numberOfLines={1} ellipsizeMode="middle">
+						{address}
+					</Text>
+				</TouchableOpacity>
+				<TouchableOpacity onPress={handleCopyAddress} style={[styles.iconButton, {alignSelf: 'center'}]}>
 					<MaterialIcons name="content-copy" size={16} color="#666" />
 				</TouchableOpacity>
 			</View>
