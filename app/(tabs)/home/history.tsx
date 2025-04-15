@@ -115,8 +115,6 @@ const HistoryPage = () => {
 				visibilityTime: 2000,
 			});
 		} catch (error) {
-			//console.error('Failed to refresh history:', error);
-
 			Toast.show({
 				type: 'error',
 				text1: t('refreshFailed'),

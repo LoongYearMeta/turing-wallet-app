@@ -50,10 +50,7 @@ export default function SettingsLayout() {
 					headerBackVisible: true,
 				}}
 			/>
-			<Stack.Screen
-				name="scan"
-				options={{ headerShown: false }} 
-			/>
+			<Stack.Screen name="scan" options={{ headerShown: false }} />
 			<Stack.Screen
 				name="privacy-policy"
 				options={{

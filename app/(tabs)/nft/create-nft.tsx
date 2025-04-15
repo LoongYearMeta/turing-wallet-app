@@ -133,7 +133,6 @@ const CreateNFTPage = () => {
 			const isValid = verifyPassword(password, passKey, salt);
 			return isValid ? '' : t('incorrectPassword');
 		} catch (error) {
-			//console.error('Password validation error:', error);
 			return t('incorrectPassword');
 		}
 	};

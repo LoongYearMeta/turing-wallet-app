@@ -1,5 +1,5 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 

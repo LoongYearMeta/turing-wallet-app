@@ -295,7 +295,6 @@ const NFTTransferPage = () => {
 				router.back();
 			}
 		} catch (error) {
-			//console.error('Error transferring NFT:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

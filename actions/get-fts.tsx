@@ -52,7 +52,7 @@ export async function initFTs(address: string): Promise<void> {
 				id: token.ft_contract_id,
 				name: token.ft_name,
 				decimal: token.ft_decimal,
-				amount: token.ft_balance / Math.pow(10, token.ft_decimal),
+				amount: token.ft_balance,
 				symbol: token.ft_symbol,
 				isDeleted: false,
 			};
@@ -82,7 +82,7 @@ export async function syncFTs(address: string): Promise<void> {
 				id: token.ft_contract_id,
 				name: token.ft_name,
 				decimal: token.ft_decimal,
-				amount: token.ft_balance * Math.pow(10, -token.ft_decimal),
+				amount: token.ft_balance,
 				symbol: token.ft_symbol,
 				isDeleted: false,
 			};

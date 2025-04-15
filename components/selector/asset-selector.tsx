@@ -13,7 +13,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { hp, wp } from '@/lib/common';
-import { formatBalance } from '@/lib/util';
+import { formatBalance, formatBalance_btc } from '@/lib/util';
 
 interface Asset {
 	label: string;
@@ -30,13 +30,7 @@ interface AssetSelectorProps {
 	selectedAsset?: Asset | null;
 }
 
-export const AssetSelector = ({
-	visible,
-	onClose,
-	onSelect,
-	assets,
-	selectedAsset,
-}: AssetSelectorProps) => {
+export const AssetSelector = ({ visible, onClose, onSelect, assets }: AssetSelectorProps) => {
 	const { t } = useTranslation();
 	const [searchText, setSearchText] = useState('');
 	const [filteredAssets, setFilteredAssets] = useState<Asset[]>(assets);
@@ -67,7 +61,13 @@ export const AssetSelector = ({
 		<TouchableOpacity style={styles.assetItem} onPress={() => handleSelect(item)}>
 			<View style={styles.assetInfo}>
 				<Text style={styles.assetName}>{item.label}</Text>
-				<Text style={styles.balance}>{formatBalance(item.balance)}</Text>
+				<Text style={styles.balance}>
+					{item.value === 'BTC' 
+						? formatBalance_btc(item.balance)
+						: item.value === 'TBC' || item.label === 'TBC'
+							? formatBalance(item.balance)
+							: formatBalance(item.balance * 1e-6)}
+				</Text>
 			</View>
 		</TouchableOpacity>
 	);

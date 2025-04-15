@@ -27,7 +27,10 @@ export default function ScanPage() {
 		})();
 	}, []);
 
-	const areAccountTypesCompatible = (senderType: AccountType, receiverType: AccountType): boolean => {
+	const areAccountTypesCompatible = (
+		senderType: AccountType,
+		receiverType: AccountType,
+	): boolean => {
 		if (
 			(senderType === AccountType.TBC || senderType === AccountType.TAPROOT_LEGACY) &&
 			(receiverType === AccountType.TBC || receiverType === AccountType.TAPROOT_LEGACY)

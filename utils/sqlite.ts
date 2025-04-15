@@ -125,7 +125,7 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				id TEXT,
 				name TEXT,
 				decimal INTEGER,
-				amount REAL,
+				amount INTEGER,
 				symbol TEXT,
 				isDeleted INTEGER DEFAULT 0,
 				user_address TEXT,

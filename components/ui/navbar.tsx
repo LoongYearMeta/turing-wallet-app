@@ -24,14 +24,10 @@ export const Navbar = () => {
 	};
 
 	const confirmSignOut = async () => {
-		try {
-			await clearAllData();
-			await clear();
-			setLogoutModalVisible(false);
-			router.replace('/');
-		} catch (error) {
-			//console.error('Failed to sign out:', error);
-		}
+		await clearAllData();
+		await clear();
+		setLogoutModalVisible(false);
+		router.replace('/');
 	};
 
 	const menuItems = [

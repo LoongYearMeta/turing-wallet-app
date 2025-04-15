@@ -19,7 +19,7 @@ import { useFtTransaction } from '@/hooks/useFtTransaction';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
-import { formatFee } from '@/lib/util';
+import { formatBalance, formatFee } from '@/lib/util';
 import { getFT, removeFT, transferFT, upsertFT } from '@/utils/sqlite';
 import { fetchUTXOs } from '@/actions/get-utxos';
 import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
@@ -73,7 +73,7 @@ const TokenTransferPage = () => {
 
 	useEffect(() => {
 		if (amount) {
-			setAvailableAmount(parseFloat(amount));
+			setAvailableAmount(Number(formatBalance(Number(amount) * Math.pow(10, -6))));
 		}
 	}, [amount]);
 
@@ -123,7 +123,6 @@ const TokenTransferPage = () => {
 			const isValid = verifyPassword(password, passKey, salt);
 			return isValid ? '' : t('incorrectPassword');
 		} catch (error) {
-			//console.error('Password validation error:', error);
 			return t('incorrectPassword');
 		}
 	};
@@ -287,26 +286,37 @@ const TokenTransferPage = () => {
 
 			if (txid) {
 				const allAccountAddresses = getAllAccountAddresses();
+				const senderToken = await getFT(contractId, currentAddress);
+				if (formData.addressTo !== currentAddress && senderToken) {
+					setAvailableAmount(
+						Number(
+							formatBalance(
+								(Number(amount) -
+									Math.floor(Number(formData.amount) * Math.pow(10, senderToken.decimal))) *
+									1e-6,
+							),
+						),
+					);
+					if (
+						allAccountAddresses.includes(formData.addressTo) ||
+						getAddresses().tbcAddress === formData.addressTo ||
+						getAddresses().taprootLegacyAddress === formData.addressTo
+					) {
+						const receiverToken = await getFT(contractId, formData.addressTo);
 
-				if (formData.addressTo === currentAddress) {
-				} else if (
-					allAccountAddresses.includes(formData.addressTo) ||
-					getAddresses().tbcAddress === formData.addressTo ||
-					getAddresses().taprootLegacyAddress === formData.addressTo
-				) {
-					const receiverToken = await getFT(contractId, formData.addressTo);
-
-					if (receiverToken) {
-						await transferFT(contractId, Number(formData.amount), formData.addressTo);
-					} else {
-						const senderToken = await getFT(contractId, currentAddress);
-						if (senderToken) {
+						if (receiverToken) {
+							await transferFT(
+								contractId,
+								Math.floor(Number(formData.amount) * Math.pow(10, receiverToken.decimal)),
+								formData.addressTo,
+							);
+						} else {
 							await upsertFT(
 								{
 									id: contractId,
 									name: senderToken.name,
 									decimal: senderToken.decimal,
-									amount: Number(formData.amount),
+									amount: Math.floor(Number(formData.amount) * Math.pow(10, senderToken.decimal)),
 									symbol: senderToken.symbol,
 									isDeleted: false,
 								},
@@ -314,16 +324,16 @@ const TokenTransferPage = () => {
 							);
 						}
 					}
-					await transferFT(contractId, -Number(formData.amount), currentAddress);
-					const updatedSenderToken = await getFT(contractId, currentAddress);
-					if (updatedSenderToken && updatedSenderToken.amount <= 0) {
-						await removeFT(contractId, currentAddress);
-					}
-				} else {
-					await transferFT(contractId, -Number(formData.amount), currentAddress);
-					const updatedSenderToken = await getFT(contractId, currentAddress);
-					if (updatedSenderToken && updatedSenderToken.amount <= 0) {
-						await removeFT(contractId, currentAddress);
+					if (senderToken) {
+						await transferFT(
+							contractId,
+							-Math.floor(Number(formData.amount) * Math.pow(10, senderToken.decimal)),
+							currentAddress,
+						);
+						const updatedSenderToken = await getFT(contractId, currentAddress);
+						if (updatedSenderToken && updatedSenderToken.amount <= 0) {
+							await removeFT(contractId, currentAddress);
+						}
 					}
 				}
 

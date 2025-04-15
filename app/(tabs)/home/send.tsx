@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from 'react-i18next';
-import { useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 import { AddressSelector } from '@/components/selector/address-selector';
 import { AssetSelector } from '@/components/selector/asset-selector';
@@ -60,6 +60,7 @@ const formatDisplayAddress = (address: string) => {
 
 export default function SendPage() {
 	const { t } = useTranslation();
+	const router = useRouter();
 	const {
 		getCurrentAccountAddress,
 		getSalt,
@@ -187,7 +188,15 @@ export default function SendPage() {
 
 		const num = Number(amountStr);
 		if (isNaN(num) || num <= 0) return t('enterValidPositiveNumber');
-		if (num > selectedAsset.balance) return t('amountExceedsBalance');
+
+		if (selectedAsset.value === 'BTC') {
+			if (num > selectedAsset.balance) return t('amountExceedsBalance');
+		} else if (selectedAsset.value === 'TBC' || selectedAsset.label === 'TBC') {
+			if (num > selectedAsset.balance) return t('amountExceedsBalance');
+		} else {
+			if (num * 1e6 > selectedAsset.balance) return t('amountExceedsBalance');
+		}
+
 		return '';
 	};
 
@@ -204,7 +213,6 @@ export default function SendPage() {
 			const isValid = verifyPassword(password, passKey, salt);
 			return isValid ? '' : t('incorrectPassword');
 		} catch (error) {
-			//console.error('Password validation error:', error);
 			return t('incorrectPassword');
 		}
 	};
@@ -315,7 +323,7 @@ export default function SendPage() {
 									selectedUtxos,
 									totalInputAmount,
 									formData.password,
-								)
+							  )
 							: await createTransaction_legacy(
 									formData.addressTo,
 									Number(formData.amount),
@@ -323,7 +331,7 @@ export default function SendPage() {
 									selectedUtxos,
 									totalInputAmount,
 									formData.password,
-								);
+							  );
 					const feeInfo = calculateTransactionFee(txHex, totalInputAmount);
 					setEstimatedFee(feeInfo.fee);
 					setPendingTransaction({ txHex, utxos: selectedUtxos });
@@ -443,49 +451,51 @@ export default function SendPage() {
 					}
 				}
 
-				const allAccountAddresses = getAllAccountAddresses();
-
 				if (selectedAsset.value !== 'TBC') {
-					if (formData.addressTo === currentAddress) {
-					} else if (
-						allAccountAddresses.includes(formData.addressTo) ||
-						getAddresses().tbcAddress === formData.addressTo ||
-						getAddresses().taprootLegacyAddress === formData.addressTo
-					) {
-						const receiverToken = await getFT(selectedAsset.contractId!, formData.addressTo);
+					const allAccountAddresses = getAllAccountAddresses();
+					const senderToken = await getFT(selectedAsset.contractId!, currentAddress);
+					if (formData.addressTo !== currentAddress) {
+						if (
+							allAccountAddresses.includes(formData.addressTo) ||
+							getAddresses().tbcAddress === formData.addressTo ||
+							getAddresses().taprootLegacyAddress === formData.addressTo
+						) {
+							const receiverToken = await getFT(selectedAsset.contractId!, formData.addressTo);
 
-						if (receiverToken) {
-							await transferFT(
-								selectedAsset.contractId!,
-								Number(formData.amount),
-								formData.addressTo,
-							);
-						} else {
-							const senderToken = await getFT(selectedAsset.contractId!, currentAddress);
-							if (senderToken) {
-								await upsertFT(
-									{
-										id: selectedAsset.contractId!,
-										name: senderToken.name,
-										decimal: senderToken.decimal,
-										amount: Number(formData.amount),
-										symbol: senderToken.symbol,
-										isDeleted: false,
-									},
+							if (receiverToken) {
+								await transferFT(
+									selectedAsset.contractId!,
+									Math.floor(Number(formData.amount) * Math.pow(10, receiverToken.decimal)),
 									formData.addressTo,
 								);
+							} else {
+								if (senderToken) {
+									await upsertFT(
+										{
+											id: selectedAsset.contractId!,
+											name: senderToken.name,
+											decimal: senderToken.decimal,
+											amount: Math.floor(
+												Number(formData.amount) * Math.pow(10, senderToken.decimal),
+											),
+											symbol: senderToken.symbol,
+											isDeleted: false,
+										},
+										formData.addressTo,
+									);
+								}
 							}
 						}
-						await transferFT(selectedAsset.contractId!, -Number(formData.amount), currentAddress);
-						const updatedSenderToken = await getFT(selectedAsset.contractId!, currentAddress);
-						if (updatedSenderToken && updatedSenderToken.amount <= 0) {
-							await removeFT(selectedAsset.contractId!, currentAddress);
-						}
-					} else {
-						await transferFT(selectedAsset.contractId!, -Number(formData.amount), currentAddress);
-						const updatedSenderToken = await getFT(selectedAsset.contractId!, currentAddress);
-						if (updatedSenderToken && updatedSenderToken.amount <= 0) {
-							await removeFT(selectedAsset.contractId!, currentAddress);
+						if (senderToken) {
+							await transferFT(
+								selectedAsset.contractId!,
+								-Math.floor(Number(formData.amount) * Math.pow(10, senderToken.decimal)),
+								currentAddress,
+							);
+							const updatedSenderToken = await getFT(selectedAsset.contractId!, currentAddress);
+							if (updatedSenderToken && updatedSenderToken.amount <= 0) {
+								await removeFT(selectedAsset.contractId!, currentAddress);
+							}
 						}
 					}
 				}
@@ -498,18 +508,8 @@ export default function SendPage() {
 				visibilityTime: 2000,
 			});
 
-			setFormData({
-				...formData,
-				amount: '',
-				password: '',
-			});
-			setEstimatedFee(null);
-			setPendingTransaction(null);
-
-			loadAssets();
+			router.back();
 		} catch (error) {
-			//console.error('Transaction failed:', error);
-
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -566,7 +566,9 @@ export default function SendPage() {
 									{selectedAsset.label}:{' '}
 									{selectedAsset.value === 'BTC'
 										? formatBalance_btc(selectedAsset.balance)
-										: formatBalance(selectedAsset.balance)}
+										: selectedAsset.value === 'TBC' || selectedAsset.label === 'TBC'
+										? formatBalance(selectedAsset.balance)
+										: formatBalance(selectedAsset.balance * 1e-6)}
 								</Text>
 							</TouchableOpacity>
 						</View>

@@ -211,7 +211,7 @@ export default function HomePage() {
 	const handleTransferPress = (token: FT) => {
 		router.push({
 			pathname: '/(tabs)/home/token/token-transfer',
-			params: { contractId: token.id, amount: token.amount.toString() },
+			params: { contractId: token.id, amount: token.amount },
 		});
 	};
 

@@ -391,43 +391,47 @@ export const useResponse = () => {
 					return { error: 'broadcast-transaction-failed' };
 				} else {
 					const allAccountAddresses = getAllAccountAddresses();
+					const senderToken = await getFT(contract_id, address_from);
+					if (address_to !== address_from) {
+						if (
+							allAccountAddresses.includes(address_to) ||
+							getAddresses().tbcAddress === address_to ||
+							getAddresses().taprootLegacyAddress === address_to
+						) {
+							const receiverToken = await getFT(contract_id, address_to);
 
-					if (address_to === address_from) {
-					} else if (
-						allAccountAddresses.includes(address_to) ||
-						getAddresses().tbcAddress === address_to ||
-						getAddresses().taprootLegacyAddress === address_to
-					) {
-						const receiverToken = await getFT(contract_id, address_to);
-
-						if (receiverToken) {
-							await transferFT(contract_id, Number(amount), address_to);
-						} else {
-							const senderToken = await getFT(contract_id, address_from);
-							if (senderToken) {
-								await upsertFT(
-									{
-										id: contract_id,
-										name: senderToken.name,
-										decimal: senderToken.decimal,
-										amount: Number(amount),
-										symbol: senderToken.symbol,
-										isDeleted: false,
-									},
+							if (receiverToken) {
+								await transferFT(
+									contract_id,
+									Math.floor(Number(amount) * Math.pow(10, receiverToken.decimal)),
 									address_to,
 								);
+							} else {
+								if (senderToken) {
+									await upsertFT(
+										{
+											id: contract_id,
+											name: senderToken.name,
+											decimal: senderToken.decimal,
+											amount: Math.floor(Number(amount) * Math.pow(10, senderToken.decimal)),
+											symbol: senderToken.symbol,
+											isDeleted: false,
+										},
+										address_to,
+									);
+								}
 							}
 						}
-						await transferFT(contract_id, -Number(amount), address_from);
-						const updatedSenderToken = await getFT(contract_id, address_from);
-						if (updatedSenderToken && updatedSenderToken.amount <= 0) {
-							await removeFT(contract_id, address_from);
-						}
-					} else {
-						await transferFT(contract_id, -Number(amount), address_from);
-						const updatedSenderToken = await getFT(contract_id, address_from);
-						if (updatedSenderToken && updatedSenderToken.amount <= 0) {
-							await removeFT(contract_id, address_from);
+						if (senderToken) {
+							await transferFT(
+								contract_id,
+								-Math.floor(Number(amount) * Math.pow(10, senderToken.decimal)),
+								address_from,
+							);
+							const updatedSenderToken = await getFT(contract_id, address_from);
+							if (updatedSenderToken && updatedSenderToken.amount <= 0) {
+								await removeFT(contract_id, address_from);
+							}
 						}
 					}
 				}
@@ -996,7 +1000,6 @@ export const useResponse = () => {
 				}
 				return { txid };
 			} catch (error: any) {
-				//console.error('Swap failed:', error);
 				return { error: error.message ?? 'unknown' };
 			}
 		},

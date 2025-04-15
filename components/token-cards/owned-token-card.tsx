@@ -25,7 +25,7 @@ export const OwnedTokenCard = ({
 	onLongPress,
 }: OwnedTokenCardProps) => {
 	const { t } = useTranslation();
-	
+
 	const handleCopyId = async () => {
 		await Clipboard.setStringAsync(token.id);
 		Toast.show({
@@ -53,7 +53,7 @@ export const OwnedTokenCard = ({
 						</View>
 					</View>
 					<View style={styles.rightContent}>
-						<Text style={styles.amount}>{formatBalance(token.amount)}</Text>
+						<Text style={styles.amount}>{formatBalance(token.amount * 1e-6)}</Text>
 						<View style={styles.valueContainer}>
 							<TouchableOpacity onPress={handleCopyId} style={{ alignSelf: 'center' }}>
 								<Text style={styles.contractId}>{formatContractId(token.id)}</Text>
@@ -62,7 +62,9 @@ export const OwnedTokenCard = ({
 								<MaterialIcons name="content-copy" size={16} color="#666" />
 							</TouchableOpacity>
 						</View>
-						<Text style={styles.symbol}>{t('symbol')}: {token.symbol}</Text>
+						<Text style={styles.symbol}>
+							{t('symbol')}: {token.symbol}
+						</Text>
 					</View>
 				</View>
 			</View>
