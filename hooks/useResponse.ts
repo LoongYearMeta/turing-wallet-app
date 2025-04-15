@@ -491,7 +491,7 @@ export const useResponse = () => {
 								? ([txSourceRaw, txMintRaw] = await pool.createPoolNftWithLock(
 										privateKey,
 										utxo_new,
-									))
+								  ))
 								: ([txSourceRaw, txMintRaw] = await pool.createPoolNFT(privateKey, utxo_new));
 							txSourceId = await finish_transaction(txSourceRaw, [
 								{ ...utxo_new, height: 0, isSpented: false, address: address_from },
@@ -517,13 +517,13 @@ export const useResponse = () => {
 								utxo,
 								serverProvider_tag,
 								serviceFeeRate,
-							))
+						  ))
 						: ([txSourceRaw, txMintRaw] = await pool.createPoolNFT(
 								privateKey,
 								utxo,
 								serverProvider_tag,
 								serviceFeeRate,
-							));
+						  ));
 					let txSourceId: string | undefined;
 					try {
 						txSourceId = await finish_transaction(txSourceRaw, [
@@ -543,13 +543,13 @@ export const useResponse = () => {
 										utxo_new,
 										serverProvider_tag,
 										serviceFeeRate,
-									))
+								  ))
 								: ([txSourceRaw, txMintRaw] = await pool.createPoolNFT(
 										privateKey,
 										utxo_new,
 										serverProvider_tag,
 										serviceFeeRate,
-									));
+								  ));
 							txSourceId = await finish_transaction(txSourceRaw, [
 								{ ...utxo_new, height: 0, isSpented: false, address: address_from },
 							]);
@@ -598,7 +598,7 @@ export const useResponse = () => {
 					privateKey = tbc.PrivateKey.fromString(walletWif);
 				}
 
-				const utxo = await getUTXO(address_from, 0.01, password);
+				const utxo = await getUTXO(address_from, tbc_amount + 0.01, password);
 				let poolUse;
 				if (poolNFT_version === 1) {
 					poolUse = new contract.poolNFT({
@@ -635,7 +635,7 @@ export const useResponse = () => {
 					) {
 						const newUtxos = await fetchUTXOs(address_from);
 						await updateCurrentAccountUtxos(newUtxos, address_from);
-						const utxo_new = await getUTXO(address_from, 0.01, password);
+						const utxo_new = await getUTXO(address_from, tbc_amount + 0.01, password);
 						await poolUse.initfromContractId();
 						txHex = await poolUse.initPoolNFT(
 							privateKey,
@@ -924,7 +924,6 @@ export const useResponse = () => {
 				} else {
 					privateKey = tbc.PrivateKey.fromString(walletWif);
 				}
-
 
 				let poolUse;
 				if (poolNFT_version === 1) {

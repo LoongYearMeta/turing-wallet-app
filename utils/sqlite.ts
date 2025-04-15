@@ -30,6 +30,7 @@ export interface FT {
 	amount: number;
 	symbol: string;
 	isDeleted: boolean;
+	icon?: string;
 	is_pin?: boolean;
 }
 
@@ -75,6 +76,8 @@ export interface FTPublic {
 	supply: number;
 	holds_count: number;
 	is_pin?: boolean;
+	icon?: string;
+	price?: number;
 }
 
 export interface DApp {
@@ -127,6 +130,7 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				isDeleted INTEGER DEFAULT 0,
 				user_address TEXT,
 				is_pin INTEGER DEFAULT 0,
+				icon TEXT,
 				PRIMARY KEY (id, user_address)
 			);
 			CREATE INDEX IF NOT EXISTS idx_ft_user ON FT(user_address, isDeleted);
@@ -181,7 +185,6 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				user_address TEXT,
 				PRIMARY KEY (multiSig_address, user_address)
 			);
-			
 			CREATE INDEX IF NOT EXISTS idx_multisig_user ON MultiSig(user_address, isDeleted);
 
 			CREATE TABLE IF NOT EXISTS FT_Public (
@@ -191,9 +194,10 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				decimal INTEGER NOT NULL,
 				supply REAL NOT NULL,
 				holds_count INTEGER NOT NULL,
-				is_pin INTEGER DEFAULT 0
+				is_pin INTEGER DEFAULT 0,
+				icon TEXT,
+				price REAL
 			);
-			CREATE INDEX IF NOT EXISTS idx_ft_public_name ON FT_Public(name);
 			CREATE INDEX IF NOT EXISTS idx_ft_public_pin ON FT_Public(is_pin);
 
 			CREATE TABLE IF NOT EXISTS AddressBook (
@@ -210,7 +214,7 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 			);
 		`);
 	} catch (error) {
-		//console.error('Error initializing database:', error);
+		throw new Error('Error initializing database');
 	}
 };
 
@@ -380,8 +384,8 @@ export async function upsertFT(ft: FT, userAddress: string): Promise<void> {
 	const isPinned = existingFT ? Boolean(existingFT.is_pin) : false;
 
 	await db.runAsync(
-		`INSERT OR REPLACE INTO FT (id, name, decimal, amount, symbol, isDeleted, user_address, is_pin)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT OR REPLACE INTO FT (id, name, decimal, amount, symbol, isDeleted, user_address, is_pin, icon)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		[
 			ft.id,
 			ft.name,
@@ -391,6 +395,7 @@ export async function upsertFT(ft: FT, userAddress: string): Promise<void> {
 			ft.isDeleted ? 1 : 0,
 			userAddress,
 			isPinned ? 1 : 0,
+			ft.icon || null,
 		],
 	);
 }
@@ -590,12 +595,15 @@ export async function addMultiSig(multiSig: MultiSig, userAddress: string): Prom
 	);
 }
 
-export async function softDeleteMultiSig(multiSigAddress: string, userAddress: string): Promise<void> {
+export async function softDeleteMultiSig(
+	multiSigAddress: string,
+	userAddress: string,
+): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-	await db.runAsync('UPDATE MultiSig SET isDeleted = 1 WHERE multiSig_address = ? AND user_address = ?;', [
-		multiSigAddress,
-		userAddress,
-	]);
+	await db.runAsync(
+		'UPDATE MultiSig SET isDeleted = 1 WHERE multiSig_address = ? AND user_address = ?;',
+		[multiSigAddress, userAddress],
+	);
 }
 
 export async function getActiveMultiSigs(userAddress: string) {
@@ -653,7 +661,6 @@ export async function getTransactionHistoryCount(
 		}
 		return 0;
 	} catch (error) {
-		//console.error('Error getting transaction history count:', error);
 		return 0;
 	}
 }
@@ -679,7 +686,6 @@ export async function getCollectionCount(userAddress: string): Promise<number> {
 		}
 		return 0;
 	} catch (error) {
-		//console.error('Error getting collection count:', error);
 		return 0;
 	}
 }
@@ -696,7 +702,6 @@ export async function getNFTCount(userAddress: string): Promise<number> {
 		}
 		return 0;
 	} catch (error) {
-		//console.error('Error getting NFT count:', error);
 		return 0;
 	}
 }
@@ -721,7 +726,7 @@ export async function getAllNFTs(userAddress: string): Promise<NFT[]> {
 export async function getActiveFTs(userAddress: string): Promise<FT[]> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	const results = await db.getAllAsync<FT>(
-		`SELECT id, name, decimal, amount, symbol, isDeleted, is_pin 
+		`SELECT id, name, decimal, amount, symbol, isDeleted, is_pin, icon
 		 FROM FT 
 		 WHERE user_address = ? AND isDeleted = 0
 		 ORDER BY is_pin DESC, name ASC`,
@@ -750,9 +755,19 @@ export async function addFTPublic(ft: FTPublic): Promise<void> {
 	const isPinned = existingFT ? Boolean(existingFT.is_pin) : false;
 
 	await db.runAsync(
-		`INSERT OR REPLACE INTO FT_Public (id, name, symbol, decimal, supply, holds_count, is_pin)
-		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		[ft.id, ft.name, ft.symbol, ft.decimal, ft.supply, ft.holds_count, isPinned ? 1 : 0],
+		`INSERT OR REPLACE INTO FT_Public (id, name, symbol, decimal, supply, holds_count, is_pin, icon, price)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		[
+			ft.id,
+			ft.name,
+			ft.symbol,
+			ft.decimal,
+			ft.supply,
+			ft.holds_count,
+			isPinned ? 1 : 0,
+			ft.icon || null,
+			ft.price || null,
+		],
 	);
 }
 
@@ -764,7 +779,7 @@ export async function removeFTPublic(id: string): Promise<void> {
 export async function getAllFTPublics(): Promise<FTPublic[]> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	const results = await db.getAllAsync<FTPublic>(
-		`SELECT id, name, symbol, decimal, supply, holds_count, is_pin 
+		`SELECT id, name, symbol, decimal, supply, holds_count, is_pin, icon, price
 		 FROM FT_Public
 		 ORDER BY is_pin DESC, name ASC`,
 	);

@@ -569,4 +569,17 @@ export default {
 	receiver: '接收者',
 
 	scanToTransferToMe: '扫一扫向我转账',
+
+	updateAvailable: '有可用更新',
+	newVersionAvailable: '有新版本可用',
+	update: '更新',
+	upToDate: '已是最新版本',
+	appIsUpToDate: '您的应用已是最新版本',
+	updateDownloaded: '更新已下载',
+	updateReadyToInstall: '更新已准备好安装',
+	restart: '重启',
+	updateFailed: '更新失败',
+	couldNotDownloadUpdate: '无法下载更新',
+	failedToCheckForUpdates: '检查更新失败',
+	ok: '确定',
 };

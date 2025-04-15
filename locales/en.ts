@@ -582,4 +582,17 @@ export default {
 	receiver: 'Receiver',
 
 	scanToTransferToMe: 'Scan to transfer to me',
+
+	updateAvailable: 'Update Available',
+	newVersionAvailable: 'A new version is available',
+	update: 'Update',
+	upToDate: 'Up to Date',
+	appIsUpToDate: 'Your app is up to date',
+	updateDownloaded: 'Update Downloaded',
+	updateReadyToInstall: 'Update is ready to install',
+	restart: 'Restart',
+	updateFailed: 'Update Failed',
+	couldNotDownloadUpdate: 'Could not download the update',
+	failedToCheckForUpdates: 'Failed to check for updates',
+	ok: 'OK',
 };
