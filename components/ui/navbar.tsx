@@ -36,6 +36,13 @@ export const Navbar = () => {
 
 	const menuItems = [
 		{
+			label: 'Scan QR Code',
+			onPress: () => {
+				setMenuVisible(false);
+				router.push('/settings/scan');
+			},
+		},
+		{
 			label: 'Information Management',
 			onPress: () => {
 				setMenuVisible(false);

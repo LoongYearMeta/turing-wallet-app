@@ -51,6 +51,10 @@ export default function SettingsLayout() {
 				}}
 			/>
 			<Stack.Screen
+				name="scan"
+				options={{ headerShown: false }} 
+			/>
+			<Stack.Screen
 				name="privacy-policy"
 				options={{
 					headerTitle: 'Privacy Policy',

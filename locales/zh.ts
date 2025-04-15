@@ -98,6 +98,7 @@ export default {
 	passwordValidationError: '密码验证错误',
 	recipientAddress: '接收地址',
 	amount: '金额',
+	quantity: '数量',
 	max: '最大',
 	estimatedFee: '预估手续费',
 	calculatingFee: '计算手续费中...',
@@ -395,7 +396,7 @@ export default {
 	failedToCreateMultiSigWallet: '创建多签钱包失败',
 	yourPubKey: '您的公钥',
 	enterPubKey: '输入公钥',
-	scanQRCode: '扫描二维码',
+	scanQRCode: '扫一扫',
 
 	verifyingPassword: '验证密码中...',
 	creatingWallet: '创建钱包中...',
@@ -543,4 +544,25 @@ export default {
 	failedToCreateNFT: '创建NFT失败',
 	failedToTransferNFT: '转移NFT失败',
 	failedToCreateCollection: '创建合集失败',
+
+	receiveAssets: '接收资产',
+
+	copy: '复制',
+	share: '分享',
+
+	alignQRCodeWithinFrame: '将二维码放入框内，即可自动扫描',
+	scanAgain: '再次扫描',
+	requestingCameraPermission: '请求相机权限中...',
+	noCameraPermission: '没有相机权限',
+	close: '关闭',
+	invalidQRCode: '无效的二维码',
+	noQRCodeFound: '未找到二维码',
+	failedToScanImage: '扫描图片失败',
+	galleryPermissionDenied: '相册权限被拒绝',
+
+	shareAddress: '分享地址',
+	myAddress: '我的地址',
+	shareError: '分享二维码失败',
+
+	incompatibleAccountType: '账户类型不兼容',
 };

@@ -1,5 +1,5 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -25,21 +25,14 @@ interface DropdownMenuProps {
 export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuProps) => {
 	const { t } = useTranslation();
 	const { getCurrentAccountName } = useAccount();
-	const username = getCurrentAccountName();
 	const [switchTypeModalVisible, setSwitchTypeModalVisible] = useState(false);
-	const [dropdownVisible, setDropdownVisible] = useState(visible);
-
-	React.useEffect(() => {
-		setDropdownVisible(visible);
-	}, [visible]);
 
 	const handleClose = useCallback(() => {
-		setDropdownVisible(false);
 		onClose();
 	}, [onClose]);
 
 	const handleSwitchType = () => {
-		setDropdownVisible(false);
+		onClose();
 		setTimeout(() => {
 			setSwitchTypeModalVisible(true);
 		}, 100);
@@ -51,12 +44,13 @@ export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuP
 
 	const handleSwitchComplete = () => {
 		setSwitchTypeModalVisible(false);
-		handleClose();
 	};
 
-	if (!dropdownVisible && !switchTypeModalVisible) {
+	if (!visible && !switchTypeModalVisible) {
 		return null;
 	}
+
+	const username = getCurrentAccountName();
 
 	const processedItems = items.map((item) => {
 		const id = item.id || getLabelId(item.label);
@@ -69,7 +63,7 @@ export const DropdownMenu = ({ visible, onClose, items, address }: DropdownMenuP
 
 	return (
 		<>
-			{dropdownVisible && !switchTypeModalVisible && (
+			{visible && !switchTypeModalVisible && (
 				<Modal visible={true} transparent animationType="none" onRequestClose={handleClose}>
 					<TouchableOpacity style={styles.overlay} onPress={handleClose} activeOpacity={1}>
 						<View style={styles.menuContainer}>
@@ -140,7 +134,7 @@ const getLabelId = (label: string): string => {
 const getIconName = (id: string): any => {
 	switch (id) {
 		case 'scanQRCode':
-			return 'qr-code-outline';
+			return 'scan-outline';
 		case 'informationManagement':
 			return 'information-circle-outline';
 		case 'accountManagement':
@@ -225,7 +219,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		fontSize: hp(1.4),
 		color: 'white',
-		marginLeft: wp(1.5),
+		marginLeft: wp(3),
 		textAlignVertical: 'center',
 	},
 	dangerText: {

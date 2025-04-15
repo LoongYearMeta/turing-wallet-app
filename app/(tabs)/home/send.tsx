@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from 'react-i18next';
+import { useLocalSearchParams } from 'expo-router';
 
 import { AddressSelector } from '@/components/selector/address-selector';
 import { AssetSelector } from '@/components/selector/asset-selector';
@@ -98,6 +99,7 @@ export default function SendPage() {
 		utxos: any[];
 	} | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const { scannedAddress } = useLocalSearchParams<{ scannedAddress?: string }>();
 
 	const currentAddress = getCurrentAccountAddress();
 	const accountType = getCurrentAccountType();
@@ -107,6 +109,12 @@ export default function SendPage() {
 	useEffect(() => {
 		loadAssets();
 	}, []);
+
+	useEffect(() => {
+		if (scannedAddress) {
+			handleInputChange('addressTo', scannedAddress);
+		}
+	}, [scannedAddress]);
 
 	const loadAssets = async () => {
 		try {
@@ -352,6 +360,7 @@ export default function SendPage() {
 						type: 'error',
 						text1: t('error'),
 						text2: error.message,
+						visibilityTime: 2000,
 					});
 				}
 				setEstimatedFee(null);
@@ -376,6 +385,8 @@ export default function SendPage() {
 				type: 'error',
 				text1: t('error'),
 				text2: t('pleaseWaitForTransaction'),
+
+				visibilityTime: 2000,
 			});
 			return;
 		}
@@ -484,11 +495,11 @@ export default function SendPage() {
 				type: 'success',
 				text1: t('success'),
 				text2: t('transactionSentSuccessfully'),
+				visibilityTime: 2000,
 			});
 
 			setFormData({
-				asset: '',
-				addressTo: '',
+				...formData,
 				amount: '',
 				password: '',
 			});
@@ -503,6 +514,7 @@ export default function SendPage() {
 				type: 'error',
 				text1: t('error'),
 				text2: error instanceof Error ? error.message : t('transactionFailed'),
+				visibilityTime: 2000,
 			});
 			setFormData({
 				asset: '',

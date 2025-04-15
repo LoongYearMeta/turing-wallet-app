@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function HomeLayout() {
 	const { t } = useTranslation();
-	
+
 	return (
 		<Stack>
 			<Stack.Screen name="index" options={{ headerShown: false }} />
@@ -20,6 +20,13 @@ export default function HomeLayout() {
 				name="send"
 				options={{
 					headerTitle: t('sendAssets'),
+					headerShown: true,
+				}}
+			/>
+			<Stack.Screen
+				name="receive"
+				options={{
+					headerTitle: t('receiveAssets'),
 					headerShown: true,
 				}}
 			/>

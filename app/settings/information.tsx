@@ -65,7 +65,7 @@ export default function InformationPage() {
 
 	useLayoutEffect(() => {
 		navigation.setOptions({
-			headerTitle: t('informationManagement')
+			headerTitle: t('informationManagement'),
 		});
 	}, [navigation, t]);
 
@@ -242,15 +242,13 @@ export default function InformationPage() {
 										<MaterialIcons name="content-copy" size={16} color={theme.colors.primary} />
 									</TouchableOpacity>
 								</View>
-								<Text style={styles.addressDescription}>
-									{t('tbcAddressDescription')}
-								</Text>
+								<Text style={styles.addressDescription}>{t('tbcAddressDescription')}</Text>
 							</View>
 						</View>
 					</>
 				)}
 
-{addresses?.taprootLegacyAddress && (
+				{addresses?.taprootLegacyAddress && (
 					<>
 						<View style={styles.addressItem}>
 							<View style={styles.itemLeft}>
@@ -292,9 +290,7 @@ export default function InformationPage() {
 										<MaterialIcons name="content-copy" size={16} color={theme.colors.primary} />
 									</TouchableOpacity>
 								</View>
-								<Text style={styles.addressDescription}>
-									{t('taprootAddressDescription')}
-								</Text>
+								<Text style={styles.addressDescription}>{t('taprootAddressDescription')}</Text>
 							</View>
 						</View>
 					</>
@@ -316,15 +312,11 @@ export default function InformationPage() {
 										<MaterialIcons name="content-copy" size={16} color={theme.colors.primary} />
 									</TouchableOpacity>
 								</View>
-								<Text style={styles.addressDescription}>
-									{t('legacyAddressDescription')}
-								</Text>
+								<Text style={styles.addressDescription}>{t('legacyAddressDescription')}</Text>
 							</View>
 						</View>
 					</>
 				)}
-
-				
 
 				<View style={styles.separator} />
 
@@ -361,18 +353,17 @@ export default function InformationPage() {
 						/>
 					</TouchableOpacity>
 					<TouchableOpacity
-						style={[styles.actionButton, (refreshingMultiSigs || disableMultiSig) && styles.disabledButton]}
+						style={[
+							styles.actionButton,
+							(refreshingMultiSigs || disableMultiSig) && styles.disabledButton,
+						]}
 						onPress={handleRefreshMultiSigs}
 						disabled={refreshingMultiSigs || disableMultiSig}
 					>
 						{refreshingMultiSigs ? (
 							<ActivityIndicator size="small" color="#333" />
 						) : (
-							<MaterialIcons 
-								name="refresh" 
-								size={24} 
-								color={disableMultiSig ? '#999' : '#333'} 
-							/>
+							<MaterialIcons name="refresh" size={24} color={disableMultiSig ? '#999' : '#333'} />
 						)}
 					</TouchableOpacity>
 					<TouchableOpacity

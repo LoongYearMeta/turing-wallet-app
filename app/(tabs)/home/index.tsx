@@ -2,7 +2,7 @@ import '@/shim';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import React, { useCallback, useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from 'react-i18next';
 
@@ -49,8 +49,8 @@ export default function HomePage() {
 	const disableTokens = accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY;
 	const [pinModalVisible, setPinModalVisible] = useState(false);
 	const [tokenToPin, setTokenToPin] = useState<FT | FTPublic | null>(null);
+	const [refreshing, setRefreshing] = useState(false);
 
-	// 当账户类型变化时，更新 token 列表
 	useEffect(() => {
 		if (disableTokens) {
 			setOwnedTokens([]);
@@ -160,6 +160,7 @@ export default function HomePage() {
 
 	const handleRefresh = async () => {
 		try {
+			setRefreshing(true);
 			const address = getCurrentAccountAddress();
 			await syncFTs(address);
 
@@ -179,8 +180,14 @@ export default function HomePage() {
 				text1: t('error'),
 				text2: t('failedToRefreshTokens'),
 			});
+		} finally {
+			setRefreshing(false);
 		}
 	};
+
+	const onRefresh = useCallback(() => {
+		handleRefresh();
+	}, []);
 
 	const handleTabChange = (tab: TabType) => {
 		setActiveTab(tab);
@@ -349,6 +356,14 @@ export default function HomePage() {
 				decelerationRate="normal"
 				overScrollMode="never"
 				contentContainerStyle={styles.scrollContent}
+				refreshControl={
+					<RefreshControl
+						refreshing={refreshing}
+						onRefresh={onRefresh}
+						colors={['#4CAF50']}
+						tintColor={'#4CAF50'}
+					/>
+				}
 			>
 				<View style={styles.content}>
 					<BalanceCard />

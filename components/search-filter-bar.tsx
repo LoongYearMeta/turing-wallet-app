@@ -134,13 +134,13 @@ export const SearchFilterBar = ({
 						</MenuItem>
 						<MenuItem onPress={() => handleSort('amountLowToHigh')} textStyle={styles.menuItemText}>
 							<View style={styles.menuItem}>
-								<Text style={styles.menuItemText}>{t('amount')}</Text>
+								<Text style={styles.menuItemText}>{t('quantity')}</Text>
 								<MaterialIcons name="arrow-upward" size={16} color="#333" />
 							</View>
 						</MenuItem>
 						<MenuItem onPress={() => handleSort('amountHighToLow')} textStyle={styles.menuItemText}>
 							<View style={styles.menuItem}>
-								<Text style={styles.menuItemText}>{t('amount')}</Text>
+								<Text style={styles.menuItemText}>{t('quantity')}</Text>
 								<MaterialIcons name="arrow-downward" size={16} color="#333" />
 							</View>
 						</MenuItem>

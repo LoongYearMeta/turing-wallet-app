@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
@@ -24,6 +24,7 @@ export const BalanceCard = () => {
 		updateCurrentAccountBtcBalance,
 		getCurrentAccountType,
 	} = useAccount();
+	const router = useRouter();
 
 	const balance = getCurrentAccountBalance();
 	const address = getCurrentAccountAddress();
@@ -48,6 +49,10 @@ export const BalanceCard = () => {
 				text1: t('addressCopied'),
 			});
 		}
+	};
+
+	const handleShowQRCode = () => {
+		router.push('/(tabs)/home/receive');
 	};
 
 	const isFocused = useIsFocused();
@@ -128,6 +133,9 @@ export const BalanceCard = () => {
 						<Text style={styles.totalAssetsValue}>${totalAssets.toFixed(2)}</Text>
 					</View>
 				</View>
+				<TouchableOpacity onPress={handleShowQRCode} style={styles.qrCodeButton}>
+					<MaterialIcons name="qr-code" size={24} color="#666" />
+				</TouchableOpacity>
 			</View>
 			<View style={styles.addressRow}>
 				<Text style={styles.address} numberOfLines={1} ellipsizeMode="middle">
@@ -238,7 +246,7 @@ const styles = StyleSheet.create({
 	},
 	iconButton: {
 		padding: 4,
-		flexShrink: 0,
+		marginLeft: 8,
 	},
 	buttonGroup: {
 		flexDirection: 'row',
@@ -248,5 +256,10 @@ const styles = StyleSheet.create({
 	},
 	disabledButton: {
 		opacity: 0.5,
+	},
+	qrCodeButton: {
+		padding: 8,
+		alignSelf: 'center',
+		marginTop: 24,
 	},
 });

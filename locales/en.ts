@@ -533,7 +533,7 @@ export default {
 	noAssetsAvailable: 'No assets available',
 	selectAddress: 'Select Address',
 	search: 'Search',
-
+	quantity: 'Quantity',
 
 	tokenHiddenSuccessfully: 'Token hidden successfully',
 	tokenDeletedSuccessfully: 'Token deleted successfully',
@@ -558,4 +558,25 @@ export default {
 	failedToCreateNFT: 'Failed to create NFT',
 	failedToTransferNFT: 'Failed to transfer NFT',
 	failedToCreateCollection: 'Failed to create collection',
+
+	receiveAssets: 'Receive Assets',
+	
+	// 扫描界面相关翻译
+	alignQRCodeWithinFrame: 'Align QR code within the frame to scan',
+	scanAgain: 'Scan Again',
+	requestingCameraPermission: 'Requesting camera permission...',
+	noCameraPermission: 'No camera permission',
+	close: 'Close',
+	invalidQRCode: 'Invalid QR code',
+	noQRCodeFound: 'No QR code found',
+	failedToScanImage: 'Failed to scan image',
+	galleryPermissionDenied: 'Gallery permission denied',
+
+	copy: 'Copy',
+	share: 'Share',
+	shareAddress: 'Share Address',
+	myAddress: 'My Address',
+	shareError: 'Failed to share QR code',
+
+	incompatibleAccountType: 'Incompatible account type',
 };
