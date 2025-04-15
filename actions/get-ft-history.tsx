@@ -76,7 +76,7 @@ export async function syncFTHistory(address: string, contract_id: string): Promi
 					fee: tx.tx_fee,
 					timestamp: tx.time_stamp || currentTimestamp,
 					contract_id: tx.ft_contract_id,
-					balance_change: tx.ft_balance_change * Math.pow(10, -6),
+					balance_change: tx.ft_balance_change,
 				};
 
 				await addFTHistory(history, address);

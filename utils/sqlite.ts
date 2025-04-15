@@ -171,7 +171,7 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
 				fee REAL,
 				timestamp INTEGER,
 				contract_id TEXT,
-				balance_change REAL,
+				balance_change INTEGER,
 				user_address TEXT,
 				PRIMARY KEY (id, user_address)
 			);

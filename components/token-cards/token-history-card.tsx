@@ -15,7 +15,7 @@ interface HistoryCardProps {
 
 export const HistoryCard = ({ history }: HistoryCardProps) => {
 	const { t } = useTranslation();
-	
+
 	const handleCopyId = async () => {
 		await Clipboard.setStringAsync(history.id);
 		Toast.show({
@@ -23,7 +23,7 @@ export const HistoryCard = ({ history }: HistoryCardProps) => {
 			text1: t('transactionIdCopied'),
 		});
 	};
-	
+
 	const handleCopyAddress = async (address: string, type: string) => {
 		await Clipboard.setStringAsync(address);
 		Toast.show({
@@ -51,7 +51,7 @@ export const HistoryCard = ({ history }: HistoryCardProps) => {
 						style={[styles.value, history.balance_change > 0 ? styles.positive : styles.negative]}
 					>
 						{history.balance_change > 0 ? '+' : ''}
-						{formatBalance(history.balance_change)}
+						{formatBalance(Number(history.balance_change * 1e-6))}
 					</Text>
 				</View>
 				<View style={styles.row}>
@@ -60,8 +60,8 @@ export const HistoryCard = ({ history }: HistoryCardProps) => {
 				</View>
 				<View style={styles.row}>
 					<Text style={styles.label}>{t('from')}: </Text>
-					<TouchableOpacity 
-						style={{flex: 1, alignSelf: 'center'}} 
+					<TouchableOpacity
+						style={{ flex: 1, alignSelf: 'center' }}
 						onPress={() => handleCopyAddress(history.send_address, t('sender'))}
 					>
 						<Text style={styles.value}>{history.send_address}</Text>
@@ -69,8 +69,8 @@ export const HistoryCard = ({ history }: HistoryCardProps) => {
 				</View>
 				<View style={styles.row}>
 					<Text style={styles.label}>{t('to')}: </Text>
-					<TouchableOpacity 
-						style={{flex: 1, alignSelf: 'center'}} 
+					<TouchableOpacity
+						style={{ flex: 1, alignSelf: 'center' }}
 						onPress={() => handleCopyAddress(history.receive_address, t('receiver'))}
 					>
 						<Text style={styles.value}>{history.receive_address}</Text>

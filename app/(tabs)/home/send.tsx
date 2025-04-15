@@ -118,40 +118,36 @@ export default function SendPage() {
 	}, [scannedAddress]);
 
 	const loadAssets = async () => {
-		try {
-			if (accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY) {
-				const btcBalance = getCurrentAccountBalance();
-				const assetList: Asset[] = [
-					{
-						label: 'BTC',
-						value: 'BTC',
-						balance: Number(btcBalance?.btc || 0),
-					},
-				];
-				setAssets(assetList);
-				setSelectedAsset(assetList[0]);
-				setFormData((prev) => ({ ...prev, asset: 'BTC' }));
-			} else {
-				const tbcBalance = getCurrentAccountBalance();
-				const tokens = await getActiveFTs(currentAddress);
-				const assetList: Asset[] = [
-					{ label: 'TBC', value: 'TBC', balance: tbcBalance?.tbc || 0 },
-					...tokens.map((token: FT) => ({
-						label: token.name,
-						value: token.id,
-						balance: token.amount,
-						contractId: token.id,
-					})),
-				];
-				setAssets(assetList);
-				const tbcAsset = assetList.find((asset) => asset.value === 'TBC');
-				if (tbcAsset) {
-					setSelectedAsset(tbcAsset);
-					setFormData((prev) => ({ ...prev, asset: 'TBC' }));
-				}
+		if (accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY) {
+			const btcBalance = getCurrentAccountBalance();
+			const assetList: Asset[] = [
+				{
+					label: 'BTC',
+					value: 'BTC',
+					balance: Number(btcBalance?.btc || 0),
+				},
+			];
+			setAssets(assetList);
+			setSelectedAsset(assetList[0]);
+			setFormData((prev) => ({ ...prev, asset: 'BTC' }));
+		} else {
+			const tbcBalance = getCurrentAccountBalance();
+			const tokens = await getActiveFTs(currentAddress);
+			const assetList: Asset[] = [
+				{ label: 'TBC', value: 'TBC', balance: tbcBalance?.tbc || 0 },
+				...tokens.map((token: FT) => ({
+					label: token.name,
+					value: token.id,
+					balance: token.amount,
+					contractId: token.id,
+				})),
+			];
+			setAssets(assetList);
+			const tbcAsset = assetList.find((asset) => asset.value === 'TBC');
+			if (tbcAsset) {
+				setSelectedAsset(tbcAsset);
+				setFormData((prev) => ({ ...prev, asset: 'TBC' }));
 			}
-		} catch (error) {
-			//console.error('Failed to load assets:', error);
 		}
 	};
 

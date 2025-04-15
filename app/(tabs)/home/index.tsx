@@ -78,34 +78,26 @@ export default function HomePage() {
 	);
 
 	const loadOwnedTokens = async () => {
-		try {
-			if (!disableTokens) {
-				const tokens = await getActiveFTs(getCurrentAccountAddress());
-				const sorted = tokens.sort((a, b) => {
-					if (a.is_pin && !b.is_pin) return -1;
-					if (!a.is_pin && b.is_pin) return 1;
-					return a.name.localeCompare(b.name);
-				});
-				setOwnedTokens(sorted);
-			}
-		} catch (error) {
-			//console.error('Failed to load owned tokens:', error);
+		if (!disableTokens) {
+			const tokens = await getActiveFTs(getCurrentAccountAddress());
+			const sorted = tokens.sort((a, b) => {
+				if (a.is_pin && !b.is_pin) return -1;
+				if (!a.is_pin && b.is_pin) return 1;
+				return a.name.localeCompare(b.name);
+			});
+			setOwnedTokens(sorted);
 		}
 	};
 
 	const loadAddedTokens = async () => {
-		try {
-			if (!disableTokens) {
-				const tokens = await getAllFTPublics();
-				const sorted = tokens.sort((a, b) => {
-					if (a.is_pin && !b.is_pin) return -1;
-					if (!a.is_pin && b.is_pin) return 1;
-					return a.name.localeCompare(b.name);
-				});
-				setAddedTokens(sorted);
-			}
-		} catch (error) {
-			//console.error('Failed to load added tokens:', error);
+		if (!disableTokens) {
+			const tokens = await getAllFTPublics();
+			const sorted = tokens.sort((a, b) => {
+				if (a.is_pin && !b.is_pin) return -1;
+				if (!a.is_pin && b.is_pin) return 1;
+				return a.name.localeCompare(b.name);
+			});
+			setAddedTokens(sorted);
 		}
 	};
 
@@ -157,7 +149,7 @@ export default function HomePage() {
 
 	const handleRefresh = async () => {
 		if (disableTokens) return;
-		
+
 		try {
 			setRefreshing(true);
 			const address = getCurrentAccountAddress();
@@ -173,7 +165,6 @@ export default function HomePage() {
 				text2: t('tokensRefreshed'),
 			});
 		} catch (error) {
-			//console.error('Failed to refresh tokens:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -211,7 +202,7 @@ export default function HomePage() {
 	const handleTransferPress = (token: FT) => {
 		router.push({
 			pathname: '/(tabs)/home/token/token-transfer',
-			params: { contractId: token.id, amount: token.amount },
+			params: { contractId: token.id, amount: token.amount.toString() },
 		});
 	};
 
@@ -387,7 +378,7 @@ export default function HomePage() {
 									onDeletePress={handleOwnedTokenDelete}
 									onLongPress={handleTokenLongPress}
 								/>
-							))
+						  ))
 						: filteredAddedTokens.map((token) => (
 								<AddedTokenCard
 									key={token.id}
@@ -396,15 +387,15 @@ export default function HomePage() {
 									onRefresh={loadAddedTokens}
 									onLongPress={handleTokenLongPress}
 								/>
-							))}
+						  ))}
 				</View>
 			</ScrollView>
 			<ConfirmModal
 				visible={deleteModalVisible}
 				title={'amount' in (tokenToDelete || {}) ? t('hideToken') : t('deleteToken')}
-				message={`${t('areYouSureWantTo')} ${'amount' in (tokenToDelete || {}) ? t('hide') : t('delete')} ${
-					tokenToDelete?.name || t('thisToken')
-				}? ${
+				message={`${t('areYouSureWantTo')} ${
+					'amount' in (tokenToDelete || {}) ? t('hide') : t('delete')
+				} ${tokenToDelete?.name || t('thisToken')}? ${
 					'amount' in (tokenToDelete || {})
 						? t('youCanRestoreAnytime')
 						: t('thisWillRemoveFromList')

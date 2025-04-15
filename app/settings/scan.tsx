@@ -58,7 +58,7 @@ export default function ScanPage() {
 				parsedData = JSON.parse(data);
 			} catch (e) {
 				if (isValidAddress(data)) {
-					router.push({
+					router.replace({
 						pathname: '/home/send',
 						params: { scannedAddress: data },
 					});
