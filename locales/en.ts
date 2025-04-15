@@ -580,4 +580,6 @@ export default {
 	incompatibleAccountType: 'Incompatible account type',
 	sender: 'Sender',
 	receiver: 'Receiver',
+
+	scanToTransferToMe: 'Scan to transfer to me',
 };

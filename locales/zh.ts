@@ -567,4 +567,6 @@ export default {
 	incompatibleAccountType: '账户类型不兼容',
 	sender: '发送者',
 	receiver: '接收者',
+
+	scanToTransferToMe: '扫一扫向我转账',
 };

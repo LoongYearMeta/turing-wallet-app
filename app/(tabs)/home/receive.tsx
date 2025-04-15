@@ -128,49 +128,51 @@ export default function ReceivePage() {
 	};
 
 	return (
-		<ScreenWrapper bg="#f5f5f5" disableTopPadding>
+		<ScreenWrapper bg="#e0e0e0" disableTopPadding>
 			<View style={styles.container}>
 				<ViewShot ref={contentRef} options={{ format: 'png', quality: 1.0 }} style={styles.content}>
-					<View style={styles.qrContainer}>
-						{address ? (
-							<QRCode
-								value={qrCodeData}
-								size={wp(65)}
-								backgroundColor="#f5f5f5"
-								color="black"
-								getRef={(ref: QRCodeRef) => (qrRef.current = ref)}
-								ecl="H"
-							/>
-						) : (
-							<View style={styles.qrPlaceholder} />
-						)}
-					</View>
+					<View style={styles.cardContainer}>
+						<Text style={styles.scanTitle}>{t('scanToTransferToMe')}</Text>
+						<View style={styles.qrContainer}>
+							{address ? (
+								<QRCode
+									value={qrCodeData}
+									size={wp(65)}
+									backgroundColor="white"
+									color="black"
+									getRef={(ref: QRCodeRef) => (qrRef.current = ref)}
+									ecl="H"
+								/>
+							) : (
+								<View style={styles.qrPlaceholder} />
+							)}
+						</View>
 
-					<View style={styles.addressContainer}>
-						<Text style={styles.addressLabel}>{t('recipientAddress')}</Text>
-						<Text style={styles.addressText} selectable>
-							{address}
-						</Text>
+						<View style={styles.addressContainer}>
+							<Text style={styles.addressLabel}>{t('recipientAddress')}</Text>
+							<Text style={styles.addressText} selectable>
+								{address}
+							</Text>
 
-						<View style={styles.buttonContainer}>
-							<TouchableOpacity style={styles.actionButton} onPress={handleCopyAddress}>
-								<Ionicons name="copy-outline" size={18} color={theme.colors.primary} />
-								<Text style={styles.buttonText}>{t('copy')}</Text>
-							</TouchableOpacity>
+							<View style={styles.buttonContainer}>
+								<TouchableOpacity style={styles.actionButton} onPress={handleCopyAddress}>
+									<Ionicons name="copy-outline" size={18} color={theme.colors.primary} />
+									<Text style={styles.buttonText}>{t('copy')}</Text>
+								</TouchableOpacity>
 
-							<TouchableOpacity
-								style={styles.actionButton}
-								onPress={handleSharePage}
-								disabled={isSharing}
-							>
-								<Ionicons name="share-outline" size={18} color={theme.colors.primary} />
-								<Text style={styles.buttonText}>{t('share')}</Text>
-							</TouchableOpacity>
+								<TouchableOpacity
+									style={styles.actionButton}
+									onPress={handleSharePage}
+									disabled={isSharing}
+								>
+									<Ionicons name="share-outline" size={18} color={theme.colors.primary} />
+									<Text style={styles.buttonText}>{t('share')}</Text>
+								</TouchableOpacity>
+							</View>
 						</View>
 					</View>
 				</ViewShot>
 			</View>
-			<Toast />
 		</ScreenWrapper>
 	);
 }
@@ -178,23 +180,34 @@ export default function ReceivePage() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#f5f5f5',
+		backgroundColor: '#e0e0e0',
 	},
 	content: {
 		flex: 1,
 		alignItems: 'center',
 		justifyContent: 'flex-start',
 		paddingHorizontal: wp(4),
-		paddingTop: hp(5),
-		backgroundColor: '#f5f5f5',
+		paddingTop: hp(10),
+		backgroundColor: '#e0e0e0',
+	},
+	cardContainer: {
+		backgroundColor: '#d0d0d0',
+		borderRadius: 16,
+		padding: wp(5),
+		width: '90%',
+		alignItems: 'center',
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 3,
 	},
 	qrContainer: {
 		alignItems: 'center',
-		marginBottom: hp(6),
-		marginTop: hp(4),
-		backgroundColor: '#f5f5f5',
-		padding: wp(3),
+		marginBottom: hp(3),
+		padding: wp(2),
 		borderRadius: 10,
+		backgroundColor: 'white',
 	},
 	qrPlaceholder: {
 		width: wp(65),
@@ -203,17 +216,11 @@ const styles = StyleSheet.create({
 		borderRadius: 8,
 	},
 	addressContainer: {
-		width: '80%',
-		padding: wp(3),
-		backgroundColor: '#f0f0f0',
-		borderRadius: 10,
+		width: '100%',
 		alignItems: 'center',
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.1,
-		shadowRadius: 2,
-		elevation: 2,
-		marginTop: hp(1),
+		borderTopWidth: 1,
+		borderTopColor: '#c0c0c0',
+		paddingTop: hp(2),
 	},
 	addressLabel: {
 		fontSize: hp(1.5),
@@ -251,5 +258,12 @@ const styles = StyleSheet.create({
 		fontSize: hp(1.5),
 		fontWeight: '500',
 		marginLeft: wp(1.5),
+	},
+	scanTitle: {
+		fontSize: hp(2),
+		fontWeight: '600',
+		color: '#333',
+		marginBottom: hp(2),
+		textAlign: 'center',
 	},
 });
