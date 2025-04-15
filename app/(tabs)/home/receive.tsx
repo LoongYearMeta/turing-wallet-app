@@ -140,10 +140,6 @@ export default function ReceivePage() {
 								color="black"
 								getRef={(ref: QRCodeRef) => (qrRef.current = ref)}
 								ecl="H"
-								logo={require('@/assets/images/tbc-logo.png')}
-								logoSize={wp(15)}
-								logoBackgroundColor="white"
-								logoBorderRadius={wp(7.5)}
 							/>
 						) : (
 							<View style={styles.qrPlaceholder} />
