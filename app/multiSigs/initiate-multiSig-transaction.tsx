@@ -25,9 +25,10 @@ import { useFtTransaction } from '@/hooks/useFtTransaction';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
 import { theme } from '@/lib/theme';
-import { formatBalance } from '@/lib/util';
+import { formatBalance_tbc, formatBalance_token } from '@/lib/util';
 import { getActiveMultiSigs } from '@/utils/sqlite';
 import { fetchFTs_multiSig } from '@/actions/get-fts';
+import { Asset } from '@/types';
 
 interface FormData {
 	senderAddress: string;
@@ -43,13 +44,6 @@ interface FormErrors {
 	receiverAddress?: string;
 	amount?: string;
 	password?: string;
-}
-
-interface Asset {
-	label: string;
-	value: string;
-	balance: number;
-	contractId?: string;
 }
 
 interface MultiSigAddress {
@@ -333,7 +327,7 @@ export default function InitiateMultiSigTransactionPage() {
 					{selectedAsset && (
 						<View style={styles.selectedAssetWrapper}>
 							<Text style={styles.selectedAssetText}>
-								{selectedAsset.label}: {formatBalance(selectedAsset.balance)}
+								{selectedAsset.label}: {selectedAsset.value === 'TBC' ? formatBalance_tbc(selectedAsset.balance) : formatBalance_token(selectedAsset.balance)}
 							</Text>
 						</View>
 					)}

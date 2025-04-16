@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 import { syncFTInfo } from '@/actions/get-ft';
 import { hp, wp } from '@/lib/common';
-import { formatBalance, formatContractId } from '@/lib/util';
+import { formatBalance_token, formatLongString } from '@/lib/util';
 import type { FTPublic } from '@/utils/sqlite';
 
 interface AddedTokenCardProps {
@@ -65,12 +65,11 @@ export const AddedTokenCard = ({
 						</View>
 					</View>
 					<View style={styles.rightContent}>
-						<Text style={styles.amount}>{formatBalance(token.supply)}</Text>
+						<Text style={styles.amount}>{formatBalance_token(token.supply)}</Text>
 						<View style={styles.valueContainer}>
 							<TouchableOpacity onPress={handleCopyId} style={{ alignSelf: 'center' }}>
-								<Text style={styles.contractId}>{formatContractId(token.id)}</Text>
+								<Text style={styles.contractId}>{formatLongString(token.id, 10)}</Text>
 							</TouchableOpacity>
-							
 						</View>
 						<View style={styles.infoRow}>
 							<Text style={styles.info}>

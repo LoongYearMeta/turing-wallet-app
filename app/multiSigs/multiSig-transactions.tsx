@@ -20,7 +20,7 @@ import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
 import useMultiSigTransaction, { MultiSigTransaction } from '@/hooks/useMultiSigTransaction';
 import { useAccount } from '@/hooks/useAccount';
-import { formatBalance, formatContractId } from '@/lib/util';
+import { formatFee_tbc, formatBalance_token,  formatLongString } from '@/lib/util';
 import { useFtTransaction } from '@/hooks/useFtTransaction';
 import { ConfirmModal } from '@/components/modals/confirm-modal';
 import { PasswordModal } from '@/components/modals/password-modal';
@@ -192,7 +192,9 @@ export default function MultiSigTransactionsPage() {
 
 	const renderTransaction = ({ item }) => {
 		const renderAmount = () => {
-			const amount = formatBalance(Number(item.balance * Math.pow(10, -6)));
+			const amount = item.ft_contract_id
+				? formatBalance_token(item.balance)
+				: formatFee_tbc(item.balance);
 			const suffix = item.ft_contract_id ? 'Token' : 'TBC';
 			return `${amount} ${suffix}`;
 		};
@@ -204,7 +206,7 @@ export default function MultiSigTransactionsPage() {
 						<View style={styles.idRow}>
 							<Text style={styles.label}>TxID: </Text>
 							<TouchableOpacity onPress={() => handleCopyTxId(item.txid)} style={{ flex: 1 }}>
-								<Text style={styles.value}>{formatContractId(item.txid,15)}</Text>
+								<Text style={styles.value}>{formatLongString(item.txid, 15)}</Text>
 							</TouchableOpacity>
 						</View>
 					</View>
@@ -457,7 +459,6 @@ export default function MultiSigTransactionsPage() {
 			<PasswordModal
 				visible={passwordModalVisible}
 				title={t('signTransaction')}
-				message={t('enterPasswordToSign')}
 				onSubmit={handlePasswordSubmit}
 				onCancel={() => setPasswordModalVisible(false)}
 				loading={passwordLoading}

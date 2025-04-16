@@ -1,9 +1,10 @@
 import {
 	addTransactionHistory,
-	getTransactionHistoryById,
+	getTransactionHistoryByTxId,
 	updateTransactionHistory,
 } from '@/utils/sqlite';
 import { api } from '@/lib/axios';
+import { formatFee_btc } from '@/lib/util';
 
 export async function get_BTC_AddressBalance(address: string): Promise<{
 	total: number;
@@ -17,13 +18,13 @@ export async function get_BTC_AddressBalance(address: string): Promise<{
 				const mempoolStats = stats.mempool_stats;
 				const spendableBalance = chainStats.funded_txo_sum - chainStats.spent_txo_sum;
 				const unconfirmedBalance = mempoolStats.funded_txo_sum - mempoolStats.spent_txo_sum;
-				return (spendableBalance + unconfirmedBalance) * Math.pow(10, -8);
+				return Number(formatFee_btc(spendableBalance + unconfirmedBalance));
 			},
 		},
 		{
 			fetch: async () => {
 				const response = await api.get(`https://mempool.space/api/address/${address}`);
-				return response.data.chain_stats.funded_txo_sum * Math.pow(10, -8);
+				return Number(formatFee_btc(response.data.chain_stats.funded_txo_sum));
 			},
 		},
 	];
@@ -197,7 +198,7 @@ export async function sync_Taproot_TransactionHistory(address: string): Promise<
 		const currentTimestamp = Math.floor(Date.now() / 1000);
 
 		for (const tx of transactions) {
-			const existingTx = await getTransactionHistoryById(tx.txid, address);
+			const existingTx = await getTransactionHistoryByTxId(tx.txid, address);
 
 			if (existingTx && existingTx.timestamp === tx.timestamp) {
 				break;
@@ -218,10 +219,10 @@ export async function sync_Taproot_TransactionHistory(address: string): Promise<
 				id: tx.txid,
 				send_address: tx.senders[0],
 				receive_address: tx.recipients[0],
-				fee: tx.fee * Math.pow(10, -8),
+				fee: Number(formatFee_btc(tx.fee)),
 				timestamp: tx.timestamp || currentTimestamp,
 				type: 'P2TR',
-				balance_change: tx.amount * Math.pow(10, -8),
+				balance_change: Number(formatFee_btc(tx.amount)),
 			};
 
 			await addTransactionHistory(history, address, 'taproot');
@@ -237,7 +238,7 @@ export async function sync_Legacy_TransactionHistory(address: string): Promise<v
 		const currentTimestamp = Math.floor(Date.now() / 1000);
 
 		for (const tx of transactions) {
-			const existingTx = await getTransactionHistoryById(tx.txid, address);
+			const existingTx = await getTransactionHistoryByTxId(tx.txid, address);
 
 			if (existingTx && existingTx.timestamp === tx.timestamp) {
 				break;
@@ -258,10 +259,10 @@ export async function sync_Legacy_TransactionHistory(address: string): Promise<v
 				id: tx.txid,
 				send_address: tx.senders[0],
 				receive_address: tx.recipients[0],
-				fee: tx.fee * Math.pow(10, -8),
+				fee: Number(formatFee_btc(tx.fee)),
 				timestamp: tx.timestamp || currentTimestamp,
 				type: 'P2PKH',
-				balance_change: tx.amount * Math.pow(10, -8),
+				balance_change: Number(formatFee_btc(tx.amount)),
 			};
 
 			await addTransactionHistory(history, address, 'legacy');

@@ -12,7 +12,7 @@ import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
 import type { FTHistory } from '@/utils/sqlite';
-import { getFTHistoryByContractId } from '@/utils/sqlite';
+import { getAllFTHistoryByContractId } from '@/utils/sqlite';
 
 type SortOption = 'timeAsc' | 'timeDesc' | 'changeAsc' | 'changeDesc' | 'feeAsc' | 'feeDesc';
 type FilterType = 'all' | 'positive' | 'negative';
@@ -39,7 +39,7 @@ const TokenHistoryPage = () => {
 
 	const loadHistories = async () => {
 		try {
-			const data = await getFTHistoryByContractId(contractId, address);
+			const data = await getAllFTHistoryByContractId(contractId, address);
 			setHistories(data);
 		} catch (error) {
 			throw new Error('Failed to load histories');

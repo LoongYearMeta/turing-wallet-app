@@ -17,7 +17,7 @@ import { useTbcTransaction } from '@/hooks/useTbcTransaction';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword, verifyPubKey } from '@/lib/key';
 import { theme } from '@/lib/theme';
-import { formatPubKey } from '@/lib/util';
+import { formatLongString } from '@/lib/util';
 import { addMultiSig } from '@/utils/sqlite';
 import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
 
@@ -65,7 +65,7 @@ export default function CreateMultiSigWalletPage() {
 			}));
 
 			const newDisplayPubKeys = [...displayPubKeys];
-			newDisplayPubKeys[0] = formatPubKey(currentPubKey);
+			newDisplayPubKeys[0] = formatLongString(currentPubKey, 20);
 			setDisplayPubKeys(newDisplayPubKeys);
 		}
 	}, []);
@@ -96,10 +96,10 @@ export default function CreateMultiSigWalletPage() {
 
 				if (newPubKeys.length === 0) {
 					newPubKeys.push(currentPubKey);
-					newDisplayPubKeys.push(formatPubKey(currentPubKey));
+					newDisplayPubKeys.push(formatLongString(currentPubKey, 20));
 				} else {
 					newPubKeys[0] = currentPubKey;
-					newDisplayPubKeys[0] = formatPubKey(currentPubKey);
+					newDisplayPubKeys[0] = formatLongString(currentPubKey, 20);
 				}
 
 				if (count > newPubKeys.length) {
@@ -149,7 +149,7 @@ export default function CreateMultiSigWalletPage() {
 		setFormData((prev) => ({ ...prev, pubKeys: newPubKeys }));
 
 		const newDisplayPubKeys = [...displayPubKeys];
-		newDisplayPubKeys[index] = value ? formatPubKey(value) : '';
+		newDisplayPubKeys[index] = value ? formatLongString(value, 20) : '';
 		setDisplayPubKeys(newDisplayPubKeys);
 
 		if (formErrors.pubKeys?.[index]) {
@@ -300,9 +300,7 @@ export default function CreateMultiSigWalletPage() {
 	return (
 		<View style={styles.container}>
 			<KeyboardAvoidingWrapper contentContainerStyle={styles.content} backgroundColor="#fff">
-				<Text style={styles.description}>
-					{t('createMultiSigWalletDesc')}
-				</Text>
+				<Text style={styles.description}>{t('createMultiSigWalletDesc')}</Text>
 
 				<View style={styles.inputGroup}>
 					<Text style={styles.label}>{t('pubKeyCount')}</Text>

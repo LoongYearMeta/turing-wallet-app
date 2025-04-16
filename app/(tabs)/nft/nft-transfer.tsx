@@ -19,7 +19,7 @@ import { useNftTransaction } from '@/hooks/useNftTransaction';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
-import { formatFee } from '@/lib/util';
+import { formatFee_tbc } from '@/lib/util';
 import { updateNFTTransferTimes, updateNFTUserAddress, removeNFT } from '@/utils/sqlite';
 import { fetchUTXOs } from '@/actions/get-utxos';
 import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
@@ -369,7 +369,7 @@ const NFTTransferPage = () => {
 					{isCalculatingFee ? (
 						<ActivityIndicator size="small" color="#666" />
 					) : estimatedFee !== null ? (
-						<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
+						<Text style={styles.feeAmount}>{formatFee_tbc(estimatedFee)} TBC</Text>
 					) : (
 						<Text style={styles.feeAmount}>-</Text>
 					)}

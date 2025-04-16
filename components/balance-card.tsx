@@ -12,7 +12,7 @@ import { get_BTC_AddressBalance, getBTCPriceInfo } from '@/actions/get-btc-infor
 import { RoundButton } from '@/components/ui/round-button';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
-import { formatBalance, formatBalance_btc } from '@/lib/util';
+import { formatBalance_tbc, formatBalance_btc } from '@/lib/util';
 import { AccountType } from '@/types';
 
 export const BalanceCard = () => {
@@ -38,7 +38,7 @@ export const BalanceCard = () => {
 		accountType === AccountType.TAPROOT_LEGACY ||
 		accountType === AccountType.LEGACY;
 	const displayBtc = accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY;
-	const displayBalance = displayBtc ? (balance?.btc ?? 0) : (balance?.tbc ?? 0);
+	const displayBalance = displayBtc ? balance?.btc ?? 0 : balance?.tbc ?? 0;
 	const totalAssets = displayBalance * rate;
 
 	const handleCopyAddress = async () => {
@@ -108,7 +108,7 @@ export const BalanceCard = () => {
 				<View style={styles.leftContent}>
 					<Text style={styles.title}>{displayBtc ? t('btcBalance') : t('tbcBalance')}</Text>
 					<Text style={styles.balance}>
-						{displayBtc ? formatBalance_btc(displayBalance) : formatBalance(displayBalance)}{' '}
+						{displayBtc ? formatBalance_btc(displayBalance) : formatBalance_tbc(displayBalance)}{' '}
 						{displayBtc ? 'BTC' : 'TBC'}
 					</Text>
 					<View style={styles.rateContainer}>
@@ -137,10 +137,7 @@ export const BalanceCard = () => {
 				</TouchableOpacity>
 			</View>
 			<View style={styles.addressRow}>
-				<TouchableOpacity 
-					style={{flex: 1}} 
-					onPress={handleCopyAddress}
-				>
+				<TouchableOpacity style={{ flex: 1 }} onPress={handleCopyAddress}>
 					<Text style={styles.address} numberOfLines={1} ellipsizeMode="middle">
 						{address}
 					</Text>

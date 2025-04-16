@@ -20,7 +20,7 @@ import { useNftTransaction } from '@/hooks/useNftTransaction';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
-import { formatFee } from '@/lib/util';
+import { formatFee_tbc } from '@/lib/util';
 import { addNFT, getCollection } from '@/utils/sqlite';
 import { theme } from '@/lib/theme';
 import { fetchNFTCounts_byCollection } from '@/actions/get-nfts';
@@ -475,7 +475,7 @@ const CreateNFTPage = () => {
 						{isCalculatingFee ? (
 							<ActivityIndicator size="small" color="#000" />
 						) : estimatedFee !== null ? (
-							<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
+							<Text style={styles.feeAmount}>{formatFee_tbc(estimatedFee)} TBC</Text>
 						) : (
 							<Text style={styles.feeAmount}>-</Text>
 						)}

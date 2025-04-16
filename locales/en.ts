@@ -599,4 +599,5 @@ export default {
 	noMatchingAddressesFound: 'No matching addresses found',
 	txIdCopied: 'Transaction ID copied to clipboard',
 	type: 'Type',
+	signTransaction:'Sign Transaction',
 };

@@ -11,7 +11,7 @@ import { NFTHistoryCard } from '@/components/nft-cards/nft-history-card';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import type { NFTHistory } from '@/utils/sqlite';
-import { getNFTHistoryByContractId } from '@/utils/sqlite';
+import { getAllNFTHistoryByContractId } from '@/utils/sqlite';
 
 type SortOption = 'timeAsc' | 'timeDesc';
 
@@ -35,7 +35,7 @@ const NFTHistoryPage = () => {
 
 	const loadHistories = async () => {
 		try {
-			const data = await getNFTHistoryByContractId(id, address);
+			const data = await getAllNFTHistoryByContractId(id, address);
 			setHistories(data);
 		} catch (error) {
 			throw new Error('Failed to load histories');

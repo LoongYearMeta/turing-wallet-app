@@ -6,7 +6,7 @@ import Toast from 'react-native-toast-message';
 import { useTranslation } from 'react-i18next';
 
 import { hp, wp } from '@/lib/common';
-import { formatBalance, formatContractId } from '@/lib/util';
+import { formatBalance_token, formatLongString } from '@/lib/util';
 import type { FT } from '@/utils/sqlite';
 
 interface OwnedTokenCardProps {
@@ -53,12 +53,11 @@ export const OwnedTokenCard = ({
 						</View>
 					</View>
 					<View style={styles.rightContent}>
-						<Text style={styles.amount}>{formatBalance(token.amount * 1e-6)}</Text>
+						<Text style={styles.amount}>{formatBalance_token(token.amount)}</Text>
 						<View style={styles.valueContainer}>
 							<TouchableOpacity onPress={handleCopyId} style={{ alignSelf: 'center' }}>
-								<Text style={styles.contractId}>{formatContractId(token.id)}</Text>
+								<Text style={styles.contractId}>{formatLongString(token.id)}</Text>
 							</TouchableOpacity>
-							
 						</View>
 						<Text style={styles.symbol}>
 							{t('symbol')}: {token.symbol}

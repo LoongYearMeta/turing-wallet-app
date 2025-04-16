@@ -1,6 +1,6 @@
 import {
 	addTransactionHistory,
-	getTransactionHistoryById,
+	getTransactionHistoryByTxId,
 	getTransactionHistoryCount,
 	updateTransactionHistory,
 } from '@/utils/sqlite';
@@ -90,7 +90,7 @@ export async function syncTransactionHistory(address: string): Promise<void> {
 			const response = await fetchTransactionHistory(address, page);
 			let foundExistingWithSameTimestamp = false;
 			for (const tx of response.result) {
-				const existingTx = await getTransactionHistoryById(tx.tx_hash, address);
+				const existingTx = await getTransactionHistoryByTxId(tx.tx_hash, address);
 				if (existingTx && existingTx.timestamp && existingTx.timestamp === tx.time_stamp) {
 					foundExistingWithSameTimestamp = true;
 					break;

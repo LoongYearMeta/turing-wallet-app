@@ -1,6 +1,6 @@
 import {
 	addNFTHistory,
-	getNFTHistoryById,
+	getNFTHistoryByTxId,
 	updateNFTHistory,
 	type NFTHistory,
 } from '@/utils/sqlite';
@@ -48,7 +48,7 @@ export async function syncNFTHistory(address: string, contract_id?: string): Pro
 					continue;
 				}
 
-				const existingHistory = await getNFTHistoryById(tx.txid, address);
+				const existingHistory = await getNFTHistoryByTxId(tx.txid, address);
 
 				if (
 					existingHistory &&

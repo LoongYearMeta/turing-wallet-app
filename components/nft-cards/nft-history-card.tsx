@@ -6,7 +6,7 @@ import Toast from 'react-native-toast-message';
 import { useTranslation } from 'react-i18next';
 
 import { hp, wp } from '@/lib/common';
-import { formatContractId, formatDate } from '@/lib/util';
+import { formatLongString, formatDate } from '@/lib/util';
 import type { NFTHistory } from '@/utils/sqlite';
 
 interface NFTHistoryCardProps {
@@ -38,7 +38,7 @@ export const NFTHistoryCard: React.FC<NFTHistoryCardProps> = ({ history }) => {
 				<View style={styles.idRow}>
 					<Text style={styles.label}>{t('txId')}: </Text>
 					<TouchableOpacity onPress={handleCopyId} style={{ flex: 1 }}>
-						<Text style={styles.value}>{formatContractId(history.id, 15)}</Text>
+						<Text style={styles.value}>{formatLongString(history.id, 15)}</Text>
 					</TouchableOpacity>
 				</View>
 				<Text style={styles.timestamp}>{formatDate(history.timestamp)}</Text>

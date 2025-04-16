@@ -6,7 +6,7 @@ import Toast from 'react-native-toast-message';
 import { useTranslation } from 'react-i18next';
 
 import { hp, wp } from '@/lib/common';
-import { formatBalance, formatContractId, formatDate } from '@/lib/util';
+import { formatBalance_tbc, formatLongString, formatDate } from '@/lib/util';
 import type { TransactionHistory } from '@/utils/sqlite';
 
 interface TransactionHistoryCardProps {
@@ -38,7 +38,7 @@ export const TransactionHistoryCard = ({ history }: TransactionHistoryCardProps)
                 <View style={styles.idRow}>
                     <Text style={styles.label}>{t('txId')}: </Text>
                     <TouchableOpacity onPress={handleCopyId} style={{ flex: 1 }}>
-                        <Text style={styles.value}>{formatContractId(history.id, 15)}</Text>
+                        <Text style={styles.value}>{formatLongString(history.id, 15)}</Text>
                     </TouchableOpacity>
                 </View>
                 <Text style={styles.timestamp}>{formatDate(history.timestamp)}</Text>
@@ -53,12 +53,12 @@ export const TransactionHistoryCard = ({ history }: TransactionHistoryCardProps)
                         ]}
                     >
                         {history.balance_change > 0 ? '+' : ''}
-                        {formatBalance(history.balance_change)}
+                        {formatBalance_tbc(history.balance_change)}
                     </Text>
                 </View>
                 <View style={styles.row}>
                     <Text style={styles.label}>{t('fee')}: </Text>
-                    <Text style={styles.value}>{formatBalance(history.fee)}</Text>
+                    <Text style={styles.value}>{formatBalance_tbc(history.fee)}</Text>
                 </View>
                 <View style={styles.row}>
                     <Text style={styles.label}>{t('from')}: </Text>

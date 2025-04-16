@@ -58,3 +58,10 @@ export interface Transaction {
 	utxos?: StoredUtxo[];
 	satoshis?: number;
 }
+
+export interface Asset {
+	label: string;
+	value: string;
+	balance: number;
+	contractId?: string;
+}

@@ -17,7 +17,6 @@ import { theme } from '@/lib/theme';
 interface PasswordModalProps {
 	visible: boolean;
 	title: string;
-	message?: string;
 	onSubmit: (password: string) => Promise<void>;
 	onCancel: () => void;
 	loading?: boolean;
@@ -26,7 +25,6 @@ interface PasswordModalProps {
 export const PasswordModal = ({
 	visible,
 	title,
-	message,
 	onSubmit,
 	onCancel,
 	loading = false,
@@ -65,8 +63,6 @@ export const PasswordModal = ({
 		<Modal visible={visible} onClose={handleCancel}>
 			<View style={styles.container}>
 				<Text style={styles.title}>{title}</Text>
-				{message && <Text style={styles.message}>{message}</Text>}
-
 				<View style={styles.inputWrapper}>
 					<TextInput
 						style={styles.input}
@@ -123,14 +119,8 @@ const styles = StyleSheet.create({
 	title: {
 		fontSize: hp(2),
 		fontWeight: '600',
-		marginBottom: hp(2),
+		marginBottom: hp(1.5),
 		textAlign: 'center',
-	},
-	message: {
-		fontSize: hp(1.6),
-		color: '#666',
-		textAlign: 'center',
-		marginBottom: hp(2),
 	},
 	inputWrapper: {
 		width: '100%',

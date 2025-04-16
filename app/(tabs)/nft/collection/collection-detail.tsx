@@ -22,7 +22,7 @@ import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
 import { Collection, NFT, getCollection, getNFTsByCollection, softDeleteNFT } from '@/utils/sqlite';
-import { formatContractId } from '@/lib/util';
+import { formatLongString } from '@/lib/util';
 import { fetchNFTCounts_byCollection } from '@/actions/get-nfts';
 
 const CollectionDetailPage = () => {
@@ -155,7 +155,7 @@ const CollectionDetailPage = () => {
 						<Text style={styles.collectionName}>{collection.name}</Text>
 						<View style={styles.idContainer}>
 							<Text style={styles.collectionId} numberOfLines={1} ellipsizeMode="middle">
-								{t('collectionId')}: {formatContractId(collection.id, 10)}
+								{t('collectionId')}: {formatLongString(collection.id, 10)}
 							</Text>
 							<TouchableOpacity style={styles.copyButton} onPress={handleCopyId}>
 								<Ionicons name="copy-outline" size={20} color="#666" />

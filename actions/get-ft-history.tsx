@@ -1,5 +1,5 @@
 import { api } from '@/lib/axios';
-import { addFTHistory, getFTHistoryById, updateFTHistory, type FTHistory } from '@/utils/sqlite';
+import { addFTHistory, getFTHistoryByTxId, updateFTHistory, type FTHistory } from '@/utils/sqlite';
 
 interface FTHistoryResponse {
 	address: string;
@@ -40,7 +40,7 @@ export async function syncFTHistory(address: string, contract_id: string): Promi
 			let foundExistingWithSameTimestamp = false;
 
 			for (const tx of response.result) {
-				const existingHistory = await getFTHistoryById(tx.txid, address);
+				const existingHistory = await getFTHistoryByTxId(tx.txid, address);
 
 				if (
 					existingHistory &&

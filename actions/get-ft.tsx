@@ -35,7 +35,7 @@ export async function syncFTInfo(contractId: string): Promise<void> {
 			name: response.ftName,
 			symbol: response.ftSymbol,
 			decimal: response.ftDecimal,
-			supply: response.ftSupply,
+			supply: Math.floor(response.ftSupply * 1e6),
 			holds_count: response.ftHoldersCount,
 		};
 

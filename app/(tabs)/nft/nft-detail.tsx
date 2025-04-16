@@ -19,7 +19,7 @@ import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
-import { formatContractId } from '@/lib/util';
+import { formatLongString } from '@/lib/util';
 import { Collection, NFT, getCollection, getNFT } from '@/utils/sqlite';
 
 const NFTDetailPage = () => {
@@ -121,7 +121,7 @@ const NFTDetailPage = () => {
 						<Text style={styles.nftName}>{nft.name}</Text>
 						<View style={styles.idContainer}>
 							<Text style={styles.nftId} numberOfLines={1} ellipsizeMode="middle">
-								{t('nftId')}: {formatContractId(nft.id, 10)}
+								{t('nftId')}: {formatLongString(nft.id, 10)}
 							</Text>
 							<TouchableOpacity style={styles.copyButton} onPress={handleCopyId}>
 								<Ionicons name="copy-outline" size={20} color="#666" />
@@ -131,7 +131,7 @@ const NFTDetailPage = () => {
 						{nft.collection_id && (
 							<View style={styles.idContainer}>
 								<Text style={styles.nftId} numberOfLines={1} ellipsizeMode="middle">
-									{t('collectionId')}: {formatContractId(nft.collection_id, 10)}
+									{t('collectionId')}: {formatLongString(nft.collection_id, 10)}
 								</Text>
 								<TouchableOpacity style={styles.copyButton} onPress={handleCopyCollectionId}>
 									<Ionicons name="copy-outline" size={20} color="#666" />

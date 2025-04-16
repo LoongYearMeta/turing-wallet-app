@@ -13,14 +13,8 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { hp, wp } from '@/lib/common';
-import { formatBalance, formatBalance_btc } from '@/lib/util';
-
-interface Asset {
-	label: string;
-	value: string;
-	balance: number;
-	contractId?: string;
-}
+import { formatBalance_token, formatBalance_btc, formatBalance_tbc } from '@/lib/util';
+import { Asset } from '@/types';
 
 interface AssetSelectorProps {
 	visible: boolean;
@@ -65,8 +59,8 @@ export const AssetSelector = ({ visible, onClose, onSelect, assets }: AssetSelec
 					{item.value === 'BTC' 
 						? formatBalance_btc(item.balance)
 						: item.value === 'TBC' || item.label === 'TBC'
-							? formatBalance(item.balance)
-							: formatBalance(item.balance * 1e-6)}
+							? formatBalance_tbc(item.balance)
+							: formatBalance_token(item.balance)}
 				</Text>
 			</View>
 		</TouchableOpacity>

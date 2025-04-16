@@ -24,10 +24,16 @@ import { useTbcTransaction } from '@/hooks/useTbcTransaction';
 import { useBtcTransaction } from '@/hooks/useBtcTransaction';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
-import { formatBalance, formatFee, formatFee_btc, formatBalance_btc } from '@/lib/util';
+import {
+	formatBalance_token,
+	formatFee_tbc,
+	formatFee_btc,
+	formatBalance_btc,
+	formatBalance_tbc,
+} from '@/lib/util';
 import { getActiveFTs, getFT, removeFT, transferFT, upsertFT, type FT } from '@/utils/sqlite';
 import { fetchUTXOs } from '@/actions/get-utxos';
-import { AccountType } from '@/types';
+import { AccountType, Asset } from '@/types';
 import { theme } from '@/lib/theme';
 
 interface FormData {
@@ -42,13 +48,6 @@ interface FormErrors {
 	addressTo?: string;
 	amount?: string;
 	password?: string;
-}
-
-interface Asset {
-	label: string;
-	value: string;
-	balance: number;
-	contractId?: string;
 }
 
 const formatDisplayAddress = (address: string) => {
@@ -504,16 +503,7 @@ export default function SendPage() {
 				visibilityTime: 2000,
 			});
 
-			setFormData({
-				asset: '',
-				addressTo: '',
-				amount: '',
-				password: '',
-			});
-			setEstimatedFee(null);
-			setPendingTransaction(null);
-
-			loadAssets();
+			router.back();
 		} catch (error) {
 			Toast.show({
 				type: 'error',
@@ -572,8 +562,8 @@ export default function SendPage() {
 									{selectedAsset.value === 'BTC'
 										? formatBalance_btc(selectedAsset.balance)
 										: selectedAsset.value === 'TBC' || selectedAsset.label === 'TBC'
-										? formatBalance(selectedAsset.balance)
-										: formatBalance(selectedAsset.balance * 1e-6)}
+										? formatBalance_tbc(selectedAsset.balance)
+										: formatBalance_token(selectedAsset.balance)}
 								</Text>
 							</TouchableOpacity>
 						</View>
@@ -680,7 +670,7 @@ export default function SendPage() {
 								<Text style={styles.feeAmount}>
 									{accountType === AccountType.TAPROOT || accountType === AccountType.LEGACY
 										? `${formatFee_btc(estimatedFee)} BTC`
-										: `${formatFee(estimatedFee)} TBC`}
+										: `${formatFee_tbc(estimatedFee)} TBC`}
 								</Text>
 							)
 						)}

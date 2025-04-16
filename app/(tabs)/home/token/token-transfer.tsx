@@ -1,5 +1,5 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams,useRouter } from 'expo-router';
 import { debounce } from 'lodash';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -19,7 +19,7 @@ import { useFtTransaction } from '@/hooks/useFtTransaction';
 import { useTbcTransaction } from '@/hooks/useTbcTransaction';
 import { hp, wp } from '@/lib/common';
 import { verifyPassword } from '@/lib/key';
-import { formatBalance, formatFee } from '@/lib/util';
+import { formatBalance_token, formatFee_tbc } from '@/lib/util';
 import { getFT, removeFT, transferFT, upsertFT } from '@/utils/sqlite';
 import { fetchUTXOs } from '@/actions/get-utxos';
 import { KeyboardAvoidingWrapper } from '@/components/ui/keyboard-avoiding-wrapper';
@@ -70,10 +70,11 @@ const TokenTransferPage = () => {
 	const passKey = getPassKey();
 	const salt = getSalt();
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const router = useRouter();
 
 	useEffect(() => {
 		if (amount) {
-			setAvailableAmount(Number(formatBalance(Number(amount) * Math.pow(10, -6))));
+			setAvailableAmount(Number(formatBalance_token(amount)));
 		}
 	}, [amount]);
 
@@ -290,10 +291,9 @@ const TokenTransferPage = () => {
 				if (formData.addressTo !== currentAddress && senderToken) {
 					setAvailableAmount(
 						Number(
-							formatBalance(
-								(Number(amount) -
-									Math.floor(Number(formData.amount) * Math.pow(10, senderToken.decimal))) *
-									1e-6,
+							formatBalance_token(
+								Number(amount) -
+									Math.floor(Number(formData.amount) * Math.pow(10, senderToken.decimal)),
 							),
 						),
 					);
@@ -343,13 +343,7 @@ const TokenTransferPage = () => {
 					text2: t('transactionSentSuccessfully'),
 				});
 
-				setFormData({
-					addressTo: '',
-					amount: '',
-					password: '',
-				});
-				setEstimatedFee(null);
-				setPendingTransaction(null);
+				router.back();
 			}
 		} catch (error) {
 			Toast.show({
@@ -462,7 +456,7 @@ const TokenTransferPage = () => {
 							<ActivityIndicator size="small" color="#999" />
 						) : (
 							estimatedFee !== null && (
-								<Text style={styles.feeAmount}>{formatFee(estimatedFee)} TBC</Text>
+								<Text style={styles.feeAmount}>{formatFee_tbc(estimatedFee)} TBC</Text>
 							)
 						)}
 					</View>

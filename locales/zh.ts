@@ -586,4 +586,5 @@ export default {
 	noMatchingAddressesFound: '未找到匹配的地址',
 	txIdCopied: '交易ID已复制到剪贴板',
 	type: '类型',
+	signTransaction:'签名交易',
 };

@@ -3,6 +3,7 @@ import * as contract from 'tbc-contract';
 import * as tbc from 'tbc-lib-js';
 
 import { api } from '@/lib/axios';
+import { formatFee_tbc } from '@/lib/util';
 
 interface BalanceResponse {
 	status: number;
@@ -21,13 +22,6 @@ interface UnspentOutput {
 	value: number;
 }
 
-interface FTBalanceResponse {
-	combineScript: string;
-	ftContractId: string;
-	ftDecimal: number;
-	ftBalance: number;
-}
-
 export async function getTbcBalance(address: string): Promise<number> {
 	const response = await api.get<BalanceResponse>(
 		`https://turingwallet.xyz/v1/tbc/main/address/${address}/get/balance`,
@@ -37,7 +31,7 @@ export async function getTbcBalance(address: string): Promise<number> {
 		throw new Error('Failed to get balance');
 	}
 
-	return response.data.data.balance * 1e-6;
+	return Number(formatFee_tbc(response.data.data.balance));
 }
 
 export const getExchangeRate = async () => {
@@ -64,7 +58,7 @@ export async function getTbcBalance_byMultiSigAddress(address: string): Promise<
 	try {
 		const response = await api.get<UnspentOutput[]>(url);
 		const totalValue = response.data.reduce((sum, utxo) => sum + utxo.value, 0);
-		return totalValue * 1e-6;
+		return Number(formatFee_tbc(totalValue));
 	} catch (error) {
 		throw new Error('Failed to get TBC balance');
 	}
