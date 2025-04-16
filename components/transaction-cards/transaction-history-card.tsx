@@ -37,9 +37,8 @@ export const TransactionHistoryCard = ({ history }: TransactionHistoryCardProps)
             <View style={styles.header}>
                 <View style={styles.idRow}>
                     <Text style={styles.label}>{t('txId')}: </Text>
-                    <Text style={styles.value}>{formatContractId(history.id)}</Text>
-                    <TouchableOpacity onPress={handleCopyId} style={styles.copyButton}>
-                        <MaterialIcons name="content-copy" size={16} color="#666" />
+                    <TouchableOpacity onPress={handleCopyId} style={{ flex: 1 }}>
+                        <Text style={styles.value}>{formatContractId(history.id, 15)}</Text>
                     </TouchableOpacity>
                 </View>
                 <Text style={styles.timestamp}>{formatDate(history.timestamp)}</Text>

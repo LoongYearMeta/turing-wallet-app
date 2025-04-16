@@ -17,9 +17,14 @@ interface AddedTokenCardProps {
 	onLongPress: (token: FTPublic) => void;
 }
 
-export const AddedTokenCard = ({ token, onDeletePress, onRefresh, onLongPress }: AddedTokenCardProps) => {
+export const AddedTokenCard = ({
+	token,
+	onDeletePress,
+	onRefresh,
+	onLongPress,
+}: AddedTokenCardProps) => {
 	const { t } = useTranslation();
-	
+
 	const handleCopyId = async () => {
 		await Clipboard.setStringAsync(token.id);
 		Toast.show({
@@ -65,13 +70,15 @@ export const AddedTokenCard = ({ token, onDeletePress, onRefresh, onLongPress }:
 							<TouchableOpacity onPress={handleCopyId} style={{ alignSelf: 'center' }}>
 								<Text style={styles.contractId}>{formatContractId(token.id)}</Text>
 							</TouchableOpacity>
-							<TouchableOpacity onPress={handleCopyId} style={styles.copyButton}>
-								<MaterialIcons name="content-copy" size={16} color="#666" />
-							</TouchableOpacity>
+							
 						</View>
 						<View style={styles.infoRow}>
-							<Text style={styles.info}>{t('symbol')}: {token.symbol}</Text>
-							<Text style={styles.info}>{t('holders')}: {token.holds_count}</Text>
+							<Text style={styles.info}>
+								{t('symbol')}: {token.symbol}
+							</Text>
+							<Text style={styles.info}>
+								{t('holders')}: {token.holds_count}
+							</Text>
 						</View>
 					</View>
 				</View>
@@ -105,7 +112,7 @@ const styles = StyleSheet.create({
 	title: {
 		fontSize: hp(2.2),
 		fontWeight: '600',
-		marginBottom: hp(1),
+		marginBottom: hp(1.5),
 	},
 	actions: {
 		flexDirection: 'row',
@@ -113,7 +120,7 @@ const styles = StyleSheet.create({
 	},
 	rightContent: {
 		alignItems: 'flex-end',
-		gap: hp(0.5),
+		gap: hp(1.2),
 	},
 	valueContainer: {
 		flexDirection: 'row',

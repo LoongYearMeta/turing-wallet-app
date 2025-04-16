@@ -14,6 +14,8 @@ import {
 import Toast from 'react-native-toast-message';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import '@/shim';
+import * as tbc from 'tbc-lib-js';
 
 import { Input } from '@/components/ui/input';
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
@@ -119,7 +121,11 @@ const RestoreByPriKeyPage = () => {
 			setLoading(true);
 
 			if (hasExistingAccount) {
-				const result = generateKeysEncrypted_wif(confirmPassword, privateKey.trim(), salt);
+				const result = generateKeysEncrypted_wif(
+					confirmPassword,
+					tbc.PrivateKey.fromString(privateKey).toWIF(),
+					salt,
+				);
 				if (!result) {
 					throw new Error(t('privateKeyInvalid'));
 				}
@@ -183,7 +189,10 @@ const RestoreByPriKeyPage = () => {
 				await addAccount(newAccount);
 				await setCurrentAccount(tbcAddress);
 			} else {
-				const result = generateKeysEncrypted_wif(password, privateKey.trim());
+				const result = generateKeysEncrypted_wif(
+					password,
+					tbc.PrivateKey.fromString(privateKey).toWIF(),
+				);
 				if (!result) {
 					throw new Error(t('privateKeyInvalid'));
 				}
@@ -277,9 +286,7 @@ const RestoreByPriKeyPage = () => {
 			{loading ? (
 				<View style={styles.loadingContent}>
 					<ActivityIndicator size="large" color={theme.colors.primary} />
-					<Text style={styles.loadingText}>
-						{t('restoringData')}
-					</Text>
+					<Text style={styles.loadingText}>{t('restoringData')}</Text>
 				</View>
 			) : (
 				<KeyboardAvoidingWrapper>
@@ -295,9 +302,7 @@ const RestoreByPriKeyPage = () => {
 
 							<View style={styles.form}>
 								{!hasExistingAccount && (
-									<Text style={styles.description}>
-										{t('passwordRequirements')}
-									</Text>
+									<Text style={styles.description}>{t('passwordRequirements')}</Text>
 								)}
 
 								<View style={styles.inputGroup}>
@@ -305,7 +310,7 @@ const RestoreByPriKeyPage = () => {
 										<Text style={styles.label}>{t('privateKey')}</Text>
 									</View>
 									<Input
-										value={formatLongString(privateKey, 18)}
+										value={formatLongString(privateKey, 12)}
 										onChangeText={handlePrivateKeyChange}
 										editable={!isButtonDisabled}
 										placeholder={t('pleaseEnterPrivateKey')}
@@ -335,9 +340,7 @@ const RestoreByPriKeyPage = () => {
 									<Input
 										icon={<MaterialIcons name="lock" size={26} color={theme.colors.text} />}
 										secureTextEntry
-										placeholder={
-											hasExistingAccount ? t('enterPassword') : t('confirmYourPassword')
-										}
+										placeholder={hasExistingAccount ? t('enterPassword') : t('confirmYourPassword')}
 										value={confirmPassword}
 										onChangeText={setConfirmPassword}
 										editable={!isButtonDisabled}

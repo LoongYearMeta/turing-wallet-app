@@ -59,7 +59,7 @@ export default function ScanPage() {
 			} catch (e) {
 				if (isValidAddress(data)) {
 					router.replace({
-						pathname: '/home/send',
+						pathname: '/(tabs)/home/send',
 						params: { scannedAddress: data },
 					});
 					return;
@@ -88,8 +88,8 @@ export default function ScanPage() {
 				return;
 			}
 
-			router.push({
-				pathname: '/home/send',
+			router.replace({
+				pathname: '/(tabs)/home/send',
 				params: { scannedAddress: parsedData.address },
 			});
 		} catch (error) {

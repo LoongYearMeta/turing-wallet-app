@@ -504,7 +504,16 @@ export default function SendPage() {
 				visibilityTime: 2000,
 			});
 
-			router.back();
+			setFormData({
+				asset: '',
+				addressTo: '',
+				amount: '',
+				password: '',
+			});
+			setEstimatedFee(null);
+			setPendingTransaction(null);
+
+			loadAssets();
 		} catch (error) {
 			Toast.show({
 				type: 'error',

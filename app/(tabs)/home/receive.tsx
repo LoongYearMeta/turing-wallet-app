@@ -72,7 +72,6 @@ export default function ReceivePage() {
 
 			const fileInfo = await FileSystem.getInfoAsync(uri);
 			if (!fileInfo.exists) {
-				//console.error('Screenshot file does not exist:', uri);
 				throw new Error('Screenshot file does not exist');
 			}
 
@@ -114,7 +113,6 @@ export default function ReceivePage() {
 				);
 			}
 		} catch (error: any) {
-			//console.error('Error in sharing process:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('shareError'),
@@ -179,7 +177,7 @@ export default function ReceivePage() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#e0e0e0',
+		backgroundColor: '#000',
 	},
 	content: {
 		flex: 1,
@@ -187,7 +185,7 @@ const styles = StyleSheet.create({
 		justifyContent: 'flex-start',
 		paddingHorizontal: wp(4),
 		paddingTop: hp(10),
-		backgroundColor: '#e0e0e0',
+		backgroundColor: '#000',
 	},
 	cardContainer: {
 		backgroundColor: '#d0d0d0',

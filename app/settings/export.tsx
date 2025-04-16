@@ -157,44 +157,35 @@ export default function ExportPage() {
 					{keys.mnemonic && (
 						<View style={styles.keyGroup}>
 							<Text style={styles.keyLabel}>{t('mnemonic')}</Text>
-							<View style={styles.keyWrapper}>
+							<TouchableOpacity 
+								style={styles.keyWrapper}
+								onPress={() => handleCopy(keys.mnemonic!, t('mnemonic'))}
+							>
 								<Text style={styles.keyValue}>{keys.mnemonic}</Text>
-								<TouchableOpacity
-									style={styles.copyButton}
-									onPress={() => handleCopy(keys.mnemonic!, t('mnemonic'))}
-								>
-									<MaterialIcons name="content-copy" size={20} color="#666" />
-								</TouchableOpacity>
-							</View>
+							</TouchableOpacity>
 						</View>
 					)}
 
 					{keys.walletDerivationPath && (
 						<View style={styles.keyGroup}>
 							<Text style={styles.keyLabel}>{t('derivationPath')}</Text>
-							<View style={styles.keyWrapper}>
+							<TouchableOpacity 
+								style={styles.keyWrapper}
+								onPress={() => handleCopy(keys.walletDerivationPath!, t('derivationPath'))}
+							>
 								<Text style={styles.keyValue}>{keys.walletDerivationPath}</Text>
-								<TouchableOpacity
-									style={styles.copyButton}
-									onPress={() => handleCopy(keys.walletDerivationPath!, t('derivationPath'))}
-								>
-									<MaterialIcons name="content-copy" size={20} color="#666" />
-								</TouchableOpacity>
-							</View>
+							</TouchableOpacity>
 						</View>
 					)}
 
 					<View style={styles.keyGroup}>
 						<Text style={styles.keyLabel}>{t('privateKey')}</Text>
-						<View style={styles.keyWrapper}>
+						<TouchableOpacity 
+							style={styles.keyWrapper}
+							onPress={() => handleCopy(keys.walletWif, t('privateKey'))}
+						>
 							<Text style={styles.keyValue}>{keys.walletWif}</Text>
-							<TouchableOpacity
-								style={styles.copyButton}
-								onPress={() => handleCopy(keys.walletWif, t('privateKey'))}
-							>
-								<MaterialIcons name="content-copy" size={20} color="#666" />
-							</TouchableOpacity>
-						</View>
+						</TouchableOpacity>
 					</View>
 				</View>
 			)}
@@ -289,9 +280,6 @@ const styles = StyleSheet.create({
 		fontSize: hp(1.6),
 		color: '#333',
 		paddingRight: wp(2),
-	},
-	copyButton: {
-		padding: wp(2),
 	},
 	loadingContainer: {
 		flexDirection: 'row',

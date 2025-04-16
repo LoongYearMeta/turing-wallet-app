@@ -76,8 +76,8 @@ export const useAccount = create(
 
 			addAccount: async (data: Account) => {
 				const currentAccounts = get().accounts;
-				if (Object.keys(currentAccounts).length >= 5) {
-					throw new Error('You can only have up to 5 accounts.');
+				if (Object.keys(currentAccounts).length >= 50) {
+					throw new Error('You can only have up to 50 accounts.');
 				}
 
 				const addressToCheck =

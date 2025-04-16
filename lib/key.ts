@@ -83,8 +83,8 @@ export const generateKeysEncrypted_wif = (password: string, wif: string, salt?: 
 	}
 	const passKey = deriveKey(password, salt);
 	const encryptedKeys = encrypt(JSON.stringify(keys), password);
-	const pubKey = tbc.PrivateKey.fromWIF(keys.walletWif).toPublicKey().toString();
-	const tbcAddress = tbc.PrivateKey.fromWIF(keys.walletWif).toAddress().toString();
+	const pubKey = tbc.PrivateKey.fromString(keys.walletWif).toPublicKey().toString();
+	const tbcAddress = tbc.PrivateKey.fromString(keys.walletWif).toAddress().toString();
 	const { legacyAddress, taprootAddress } = getTaprootAndLegacyAddress(
 		createFromWIF(keys.walletWif),
 	);

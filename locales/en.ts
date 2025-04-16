@@ -595,4 +595,8 @@ export default {
 	couldNotDownloadUpdate: 'Could not download the update',
 	failedToCheckForUpdates: 'Failed to check for updates',
 	ok: 'OK',
+	searchAddresses: 'Search addresses',
+	noMatchingAddressesFound: 'No matching addresses found',
+	txIdCopied: 'Transaction ID copied to clipboard',
+	type: 'Type',
 };

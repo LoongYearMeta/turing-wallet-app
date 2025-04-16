@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import React, { useEffect, useState, useLayoutEffect } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View, ScrollView } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -15,6 +15,7 @@ import {
 	getAllMultiSigAddresses,
 	removeAddressFromBook,
 } from '@/utils/sqlite';
+import { formatLongString } from '@/lib/util';
 
 export default function AddressBookScreen() {
 	const { t } = useTranslation();
@@ -28,7 +29,7 @@ export default function AddressBookScreen() {
 
 	useLayoutEffect(() => {
 		navigation.setOptions({
-			headerTitle: t('addressBook')
+			headerTitle: t('addressBook'),
 		});
 	}, [navigation, t]);
 
@@ -50,7 +51,6 @@ export default function AddressBookScreen() {
 			const multiSigs = await getAllMultiSigAddresses(getCurrentAccountAddress());
 			setMultiSigAddresses(multiSigs);
 		} catch (error) {
-			//console.error('Failed to load addresses:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -74,7 +74,6 @@ export default function AddressBookScreen() {
 				text2: t('addressRemovedFromBook'),
 			});
 		} catch (error) {
-			//console.error('Failed to delete address:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -94,45 +93,12 @@ export default function AddressBookScreen() {
 		});
 	};
 
-	const renderAddressItem = ({ item }: { item: string }) => (
-		<View style={styles.addressItem}>
-			<View style={{ flex: 1 }}>
-				<Text style={styles.addressText} numberOfLines={1} ellipsizeMode="middle">
-					{item}
-				</Text>
-				{item === getCurrentAccountAddress() && (
-					<Text style={styles.currentAddressLabel}>{t('currentAccount')}</Text>
-				)}
-			</View>
-			<View style={styles.actionButtons}>
-				<TouchableOpacity style={styles.actionButton} onPress={() => handleCopy(item, 'Address')}>
-					<Ionicons name="copy-outline" size={20} color="#666" />
-				</TouchableOpacity>
-				{item !== getCurrentAccountAddress() && (
-					<TouchableOpacity style={styles.actionButton} onPress={() => handleDeleteAddress(item)}>
-						<Ionicons name="trash-outline" size={20} color="#666" />
-					</TouchableOpacity>
-				)}
-			</View>
-		</View>
-	);
-
-	const renderMultiSigItem = ({ item }: { item: string }) => (
-		<View style={styles.addressItem}>
-			<Text style={styles.addressText} numberOfLines={1} ellipsizeMode="middle">
-				{item}
-			</Text>
-			<TouchableOpacity
-				style={styles.actionButton}
-				onPress={() => handleCopy(item, 'MultiSig Address')}
-			>
-				<Ionicons name="copy-outline" size={20} color="#666" />
-			</TouchableOpacity>
-		</View>
-	);
-
 	return (
-		<View style={styles.container}>
+		<ScrollView 
+			style={styles.container}
+			contentContainerStyle={styles.contentContainer}
+			showsVerticalScrollIndicator={false}
+		>
 			<View style={styles.section}>
 				<View style={styles.sectionHeader}>
 					<Text style={styles.sectionTitle}>{t('addresses')}</Text>
@@ -142,13 +108,26 @@ export default function AddressBookScreen() {
 				</View>
 
 				{addresses.length > 0 ? (
-					<FlatList
-						data={addresses}
-						renderItem={renderAddressItem}
-						keyExtractor={(item) => item}
-						style={styles.list}
-						ItemSeparatorComponent={() => <View style={styles.separator} />}
-					/>
+					addresses.map((item, index) => (
+						<React.Fragment key={item}>
+							{index > 0 && <View style={styles.separator} />}
+							<View style={styles.addressItem}>
+								<TouchableOpacity onPress={() => handleCopy(item, 'Address')} style={{ flex: 1 }}>
+									<Text style={styles.addressText} numberOfLines={1} ellipsizeMode="middle">
+										{formatLongString(item, 12)}
+									</Text>
+									{item === getCurrentAccountAddress() && (
+										<Text style={styles.currentAddressLabel}>{t('currentAccount')}</Text>
+									)}
+								</TouchableOpacity>
+								{item !== getCurrentAccountAddress() && (
+									<TouchableOpacity style={styles.actionButton} onPress={() => handleDeleteAddress(item)}>
+										<Ionicons name="trash-outline" size={20} color="#666" />
+									</TouchableOpacity>
+								)}
+							</View>
+						</React.Fragment>
+					))
 				) : (
 					<Text style={styles.emptyText}>{t('noAddressesInBook')}</Text>
 				)}
@@ -160,13 +139,18 @@ export default function AddressBookScreen() {
 				</View>
 
 				{multiSigAddresses.length > 0 ? (
-					<FlatList
-						data={multiSigAddresses}
-						renderItem={renderMultiSigItem}
-						keyExtractor={(item) => item}
-						style={styles.list}
-						ItemSeparatorComponent={() => <View style={styles.separator} />}
-					/>
+					multiSigAddresses.map((item, index) => (
+						<React.Fragment key={item}>
+							{index > 0 && <View style={styles.separator} />}
+							<View style={styles.addressItem}>
+								<TouchableOpacity onPress={() => handleCopy(item, 'MultiSig Address')} style={{ flex: 1 }}>
+									<Text style={styles.addressText} numberOfLines={1} ellipsizeMode="middle">
+										{item}
+									</Text>
+								</TouchableOpacity>
+							</View>
+						</React.Fragment>
+					))
 				) : (
 					<Text style={styles.emptyText}>{t('noAssociatedMultiSigAddresses')}</Text>
 				)}
@@ -185,7 +169,7 @@ export default function AddressBookScreen() {
 				onConfirm={confirmDeleteAddress}
 				onCancel={() => setShowDeleteModal(false)}
 			/>
-		</View>
+		</ScrollView>
 	);
 }
 
@@ -193,7 +177,10 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: '#fff',
+	},
+	contentContainer: {
 		padding: wp(4),
+		paddingBottom: hp(4),
 	},
 	section: {
 		marginBottom: hp(3),
@@ -211,9 +198,6 @@ const styles = StyleSheet.create({
 	},
 	addButton: {
 		padding: wp(1),
-	},
-	list: {
-		maxHeight: hp(25),
 	},
 	addressItem: {
 		flexDirection: 'row',

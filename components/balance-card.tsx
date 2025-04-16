@@ -92,7 +92,6 @@ export const BalanceCard = () => {
 					setChangePercent(rateData.changePercent);
 				}
 			} catch (error) {
-				//console.error('Failed to fetch balance data:', error);
 			} finally {
 				setIsLoading(false);
 			}
@@ -139,15 +138,12 @@ export const BalanceCard = () => {
 			</View>
 			<View style={styles.addressRow}>
 				<TouchableOpacity 
-					style={{flex: 1, alignSelf: 'center'}} 
+					style={{flex: 1}} 
 					onPress={handleCopyAddress}
 				>
 					<Text style={styles.address} numberOfLines={1} ellipsizeMode="middle">
 						{address}
 					</Text>
-				</TouchableOpacity>
-				<TouchableOpacity onPress={handleCopyAddress} style={[styles.iconButton, {alignSelf: 'center'}]}>
-					<MaterialIcons name="content-copy" size={16} color="#666" />
 				</TouchableOpacity>
 			</View>
 			<View style={styles.buttonGroup}>

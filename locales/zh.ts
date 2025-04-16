@@ -580,6 +580,10 @@ export default {
 	restart: '重启',
 	updateFailed: '更新失败',
 	couldNotDownloadUpdate: '无法下载更新',
-	failedToCheckForUpdates: '检查更新失败',
+	failedToCheckForUpdates: '检查更新失败', 
 	ok: '确定',
+	searchAddresses: '搜索地址',
+	noMatchingAddressesFound: '未找到匹配的地址',
+	txIdCopied: '交易ID已复制到剪贴板',
+	type: '类型',
 };

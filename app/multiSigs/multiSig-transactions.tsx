@@ -171,17 +171,23 @@ export default function MultiSigTransactionsPage() {
 	};
 
 	const handleCopyAddress = async (address: string) => {
-		try {
-			await Clipboard.setStringAsync(address);
-			Toast.show({
-				type: 'success',
-				text1: t('addressCopied'),
-				position: 'top',
-				visibilityTime: 2000,
-			});
-		} catch (error) {
-			//console.error('Failed to copy address:', error);
-		}
+		await Clipboard.setStringAsync(address);
+		Toast.show({
+			type: 'success',
+			text1: t('addressCopied'),
+			position: 'top',
+			visibilityTime: 2000,
+		});
+	};
+
+	const handleCopyTxId = async (txid: string) => {
+		await Clipboard.setStringAsync(txid);
+		Toast.show({
+			type: 'success',
+			text1: t('txIdCopied'),
+			position: 'top',
+			visibilityTime: 2000,
+		});
 	};
 
 	const renderTransaction = ({ item }) => {
@@ -197,12 +203,8 @@ export default function MultiSigTransactionsPage() {
 					<View style={styles.header}>
 						<View style={styles.idRow}>
 							<Text style={styles.label}>TxID: </Text>
-							<Text style={styles.value}>{formatContractId(item.txid)}</Text>
-							<TouchableOpacity
-								onPress={() => handleCopyAddress(item.txid)}
-								style={styles.copyButton}
-							>
-								<MaterialIcons name="content-copy" size={16} color="#666" />
+							<TouchableOpacity onPress={() => handleCopyTxId(item.txid)} style={{ flex: 1 }}>
+								<Text style={styles.value}>{formatContractId(item.txid,15)}</Text>
 							</TouchableOpacity>
 						</View>
 					</View>

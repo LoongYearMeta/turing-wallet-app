@@ -417,12 +417,12 @@ export default function InformationPage() {
 						{expandedMultiSig === item.multiSig_address && (
 							<View style={styles.pubKeysContainer}>
 								<View style={styles.multiSigTypeContainer}>
-									<Text style={styles.multiSigTypeLabel}>Type:</Text>
+									<Text style={styles.multiSigTypeLabel}>{t('type')}:</Text>
 									<Text style={styles.multiSigTypeValue}>
 										{getMultiSigType(item.multiSig_address)}
 									</Text>
 								</View>
-								<Text style={styles.pubKeysTitle}>Public Keys:</Text>
+								<Text style={styles.pubKeysTitle}>{t('publicKeys')}:</Text>
 								{item.pubKeys.map((pubKey, index) => (
 									<View key={index} style={styles.pubKeyItem}>
 										<Text style={styles.pubKeyText} numberOfLines={1} ellipsizeMode="middle">
