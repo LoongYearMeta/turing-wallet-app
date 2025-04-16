@@ -75,7 +75,6 @@ export const AddAddressModal = ({ visible, onClose, onAddSuccess }: AddAddressMo
 				text2: t('addressAddedToBook'),
 			});
 		} catch (error) {
-			//console.error('Failed to add address:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -114,7 +113,9 @@ export const AddAddressModal = ({ visible, onClose, onAddSuccess }: AddAddressMo
 					<Text style={styles.errorText}>{error}</Text>
 				) : (
 					address.trim() && (
-						<Text style={styles.preview}>{t('preview')}: {formatLongString(address.trim(), 12)}</Text>
+						<Text style={styles.preview}>
+							{t('preview')}: {formatLongString(address.trim(), 12)}
+						</Text>
 					)
 				)}
 				<TouchableOpacity style={styles.button} onPress={handleAddAddress}>

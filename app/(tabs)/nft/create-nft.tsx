@@ -79,7 +79,6 @@ const CreateNFTPage = () => {
 					image: collectionData!.icon,
 				}));
 			} catch (error) {
-				//console.error('Failed to load collection:', error);
 				Toast.show({
 					type: 'error',
 					text1: t('error'),
@@ -268,7 +267,6 @@ const CreateNFTPage = () => {
 				}
 			}
 		} catch (error) {
-			//console.error('Error picking image:', error);
 			Toast.show({
 				type: 'error',
 				text1: 'Error',
@@ -360,7 +358,6 @@ const CreateNFTPage = () => {
 				router.back();
 			}
 		} catch (error) {
-			//console.error('Error creating NFT:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

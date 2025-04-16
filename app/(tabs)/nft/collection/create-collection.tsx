@@ -117,7 +117,6 @@ const CreateCollectionPage = () => {
 			const isValid = verifyPassword(password, passKey, salt);
 			return isValid ? '' : t('incorrectPassword');
 		} catch (error) {
-			//console.error('Password validation error:', error);
 			return t('incorrectPassword');
 		}
 	};
@@ -261,7 +260,6 @@ const CreateCollectionPage = () => {
 				}
 			}
 		} catch (error) {
-			//console.error('Error picking image:', error);
 			Toast.show({
 				type: 'error',
 				text1: 'Error',
@@ -345,7 +343,6 @@ const CreateCollectionPage = () => {
 				router.back();
 			}
 		} catch (error) {
-			//console.error('Error creating collection:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

@@ -66,7 +66,6 @@ export const RestoreCollectionModal = ({
       onSuccess();
       onClose();
     } catch (error) {
-      //console.error('Failed to restore collection:', error);
       Toast.show({
         type: 'error',
         text1: t('error'),
@@ -84,7 +83,6 @@ export const RestoreCollectionModal = ({
         <Text style={styles.title}>{t('restoreCollection')}</Text>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>{t('collectionId')}</Text>
           <TextInput
             style={[styles.input, error && styles.inputError]}
             value={collectionId}
@@ -129,11 +127,6 @@ const styles = StyleSheet.create({
   formGroup: {
     width: '100%',
     marginBottom: hp(2),
-  },
-  label: {
-    fontSize: hp(1.6),
-    marginBottom: hp(0.5),
-    color: '#333',
   },
   input: {
     width: '100%',

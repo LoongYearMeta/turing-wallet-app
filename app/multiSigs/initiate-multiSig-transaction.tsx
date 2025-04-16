@@ -98,12 +98,11 @@ export default function InitiateMultiSigTransactionPage() {
 				await loadAssets(firstAddress);
 			}
 		} catch (error) {
-			//console.error('Failed to load multi-signature addresses:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
 				text2: t('failedToLoadMultiSigAddresses'),
-				visibilityTime: 3000,
+				visibilityTime: 2000,
 			});
 		}
 	};
@@ -118,7 +117,7 @@ export default function InitiateMultiSigTransactionPage() {
 				assetList.push({
 					label: token.ft_symbol || token.ft_name,
 					value: token.ft_contract_id,
-					balance: token.ft_balance * Math.pow(10, -token.ft_decimal),
+					balance: token.ft_balance,
 					contractId: token.ft_contract_id,
 				});
 			}
@@ -131,12 +130,11 @@ export default function InitiateMultiSigTransactionPage() {
 				setFormData((prev) => ({ ...prev, asset: 'TBC' }));
 			}
 		} catch (error) {
-			//console.error('Failed to load assets:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
 				text2: t('failedToLoadAssets'),
-				visibilityTime: 3000,
+				visibilityTime: 2000,
 			});
 		}
 	};
@@ -281,17 +279,16 @@ export default function InitiateMultiSigTransactionPage() {
 				type: 'success',
 				text1: t('success'),
 				text2: t('transactionInitiatedSuccessfully'),
-				visibilityTime: 3000,
+				visibilityTime: 2000,
 			});
 
 			router.back();
 		} catch (error) {
-			//console.error('Failed to initiate transaction:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
 				text2: error instanceof Error ? error.message : t('failedToInitiateTransaction'),
-				visibilityTime: 3000,
+				visibilityTime: 2000,
 			});
 		} finally {
 			setIsLoading(false);
@@ -304,7 +301,7 @@ export default function InitiateMultiSigTransactionPage() {
 			behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 			keyboardVerticalOffset={100}
 		>
-			<ScrollView 
+			<ScrollView
 				style={{ flex: 1 }}
 				contentContainerStyle={{ padding: wp(4), paddingTop: hp(3) }}
 				keyboardShouldPersistTaps="handled"
@@ -440,7 +437,7 @@ export default function InitiateMultiSigTransactionPage() {
 					)}
 				</TouchableOpacity>
 			</ScrollView>
-			
+
 			<MultiSigAddressSelector
 				visible={showMultiSigAddressSelector}
 				onClose={() => setShowMultiSigAddressSelector(false)}

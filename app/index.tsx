@@ -94,7 +94,6 @@ const WelcomePage = () => {
 					router.replace('/login');
 				}
 			} catch (error) {
-				//console.error('Navigation error:', error);
 				router.replace('/login');
 			}
 		}, AUTO_NAVIGATE_DELAY);

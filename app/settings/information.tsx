@@ -84,7 +84,6 @@ export default function InformationPage() {
 				setMultiSigAddresses(multiSigs);
 			}
 		} catch (error) {
-			//console.error('Failed to load MultiSig addresses:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -143,7 +142,6 @@ export default function InformationPage() {
 				text1: 'MultiSig wallets synced successfully',
 			});
 		} catch (error) {
-			//console.error('Failed to sync MultiSig wallets:', error);
 			Toast.show({
 				type: 'error',
 				text1: 'Error',
@@ -177,7 +175,6 @@ export default function InformationPage() {
 				text1: t('multiSigAddressDeletedSuccessfully'),
 			});
 		} catch (error) {
-			//console.error('Failed to delete MultiSig address:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

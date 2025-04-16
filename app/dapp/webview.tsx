@@ -435,8 +435,6 @@ export default function DAppWebView() {
 				});
 			}
 		} catch (error) {
-			//console.error('Transaction error:', error);
-
 			webViewRef.current?.injectJavaScript(`
 				window.dispatchEvent(new CustomEvent('TuringResponse', {
 					detail: { 

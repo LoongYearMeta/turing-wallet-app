@@ -247,7 +247,6 @@ export default function HomePage() {
 				});
 			}
 		} catch (error) {
-			//console.error('Failed to hide token:', error);
 			if ('amount' in tokenToDelete) {
 				Toast.show({
 					type: 'error',
@@ -324,7 +323,6 @@ export default function HomePage() {
 				text2: isPinned ? t('tokenUnpinned') : t('tokenPinned'),
 			});
 		} catch (error) {
-			//console.error('Failed to toggle pin status:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

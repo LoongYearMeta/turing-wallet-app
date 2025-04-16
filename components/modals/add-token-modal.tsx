@@ -108,7 +108,6 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 			onRefreshLists();
 			onClose();
 		} catch (error) {
-			//console.error('Failed to add token:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

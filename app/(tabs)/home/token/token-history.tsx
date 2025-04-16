@@ -42,7 +42,7 @@ const TokenHistoryPage = () => {
 			const data = await getFTHistoryByContractId(contractId, address);
 			setHistories(data);
 		} catch (error) {
-			//console.error('Failed to load histories:', error);
+			throw new Error('Failed to load histories');
 		}
 	};
 
@@ -57,7 +57,6 @@ const TokenHistoryPage = () => {
 				text2: t('historyRefreshedSuccessfully'),
 			});
 		} catch (error) {
-			//console.error('Failed to refresh history:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

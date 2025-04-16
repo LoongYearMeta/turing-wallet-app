@@ -86,7 +86,7 @@ export default function DAppPage() {
 			await syncDApps();
 			await loadDApps();
 		} catch (error) {
-			//console.error('Failed to refresh DApps:', error);
+			throw new Error('Failed to refresh DApps');
 		} finally {
 			setRefreshing(false);
 		}

@@ -147,7 +147,6 @@ export const retrieveKeys = (password: string, encryptedKeys: string): Keys => {
 		}
 		return JSON.parse(decrypted);
 	} catch (error) {
-		console.debug('Key retrieval warning:', error);
 		return { walletWif: '' };
 	}
 };

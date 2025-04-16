@@ -164,7 +164,7 @@ export default function MultiSigTransactionsPage() {
 			setPasswordModalVisible(false);
 			setSelectedTransaction(null);
 		} catch (error) {
-			throw error;
+			throw new Error('Failed to sign transaction');
 		} finally {
 			setPasswordLoading(false);
 		}

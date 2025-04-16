@@ -85,7 +85,7 @@ const HistoryPage = () => {
 			const data = await getTransactionHistoryByType(activeType, address, dbType);
 			setHistories(data);
 		} catch (error) {
-			//console.error('Failed to load histories:', error);
+			throw new Error('Failed to load histories');
 		}
 	};
 
@@ -176,7 +176,6 @@ const HistoryPage = () => {
 
 	return (
 		<View style={styles.container}>
-	
 			<View style={styles.tabContainer}>
 				<ScrollView horizontal showsHorizontalScrollIndicator={false}>
 					{availableTypes.map((type) => (

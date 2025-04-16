@@ -69,19 +69,3 @@ export async function getTbcBalance_byMultiSigAddress(address: string): Promise<
 		throw new Error('Failed to get TBC balance');
 	}
 }
-
-export async function getFTBalance_byMultiSigAddress(
-	contract_id: string,
-	address: string,
-): Promise<number> {
-	try {
-		const combine_script = contract.MultiSig.getCombineHash(address);
-		const response = await api.get<FTBalanceResponse>(
-			`https://turingwallet.xyz/v1/tbc/main/ft/balance/combine/script/${combine_script}/contract/${contract_id}`,
-		);
-
-		return response.data.ftBalance * Math.pow(10, -response.data.ftDecimal);
-	} catch (error) {
-		throw new Error('Failed to get FT balance');
-	}
-}

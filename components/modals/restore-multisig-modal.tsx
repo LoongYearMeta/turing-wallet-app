@@ -79,7 +79,6 @@ export const RestoreMultiSigModal = ({
 				setError(t('multiSigAddressNotFound'));
 			}
 		} catch (error) {
-			//console.error('Failed to restore MultiSig address:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
@@ -96,7 +95,6 @@ export const RestoreMultiSigModal = ({
 				<Text style={styles.title}>{t('restoreMultiSigAddress')}</Text>
 
 				<View style={styles.formGroup}>
-					<Text style={styles.label}>{t('multiSigAddress')}</Text>
 					<TextInput
 						style={[styles.input, error && styles.inputError]}
 						value={multiSigAddress}
@@ -141,11 +139,6 @@ const styles = StyleSheet.create({
 	formGroup: {
 		width: '100%',
 		marginBottom: hp(2),
-	},
-	label: {
-		fontSize: hp(1.6),
-		marginBottom: hp(0.5),
-		color: '#333',
 	},
 	input: {
 		width: '100%',

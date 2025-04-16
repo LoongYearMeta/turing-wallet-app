@@ -44,7 +44,6 @@ const NFTDetailPage = () => {
 				setCollection(collectionData);
 			}
 		} catch (error) {
-			//console.error('Failed to load NFT details:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),

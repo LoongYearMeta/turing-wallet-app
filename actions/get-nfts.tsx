@@ -48,7 +48,6 @@ export async function fetchNFTCounts_byCollection(collection_id: string): Promis
 
 		return response.data.nftTotalCount;
 	} catch (error) {
-		//console.error('Failed to fetch NFT counts:', error);
 		throw new Error('Failed to fetch NFT counts in collection');
 	}
 }

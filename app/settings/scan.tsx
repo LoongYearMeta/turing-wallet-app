@@ -93,7 +93,6 @@ export default function ScanPage() {
 				params: { scannedAddress: parsedData.address },
 			});
 		} catch (error) {
-			//console.error('Error processing QR code:', error);
 			Toast.show({
 				type: 'error',
 				text1: t('invalidQRCode'),
@@ -147,7 +146,6 @@ export default function ScanPage() {
 					});
 				}
 			} catch (error) {
-				//console.error('Error scanning image:', error);
 				Toast.show({
 					type: 'error',
 					text1: t('failedToScanImage'),
