@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
 	title: {
 		fontSize: hp(2),
 		fontWeight: '600',
-		marginBottom: hp(2),
+		marginBottom: hp(1.5),
 	},
 	formGroup: {
 		width: '100%',
