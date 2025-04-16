@@ -2,7 +2,7 @@
   "expo": {
     "name": "Turing Wallet",
     "slug": "Turing Wallet",
-    "version": "3.0.0",
+    "version": "2.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "Turing Wallet",
