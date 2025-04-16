@@ -18,7 +18,7 @@ import Toast from 'react-native-toast-message';
 
 import { hp, wp } from '@/lib/common';
 
-const appVersion = Constants.expoConfig?.version || '1.0.0';
+const appVersion = Constants.expoConfig?.version || '3.0.0';
 
 const STORE_URLS = {
 	ios: 'https://apps.apple.com/us/app/turingwallet/id6739019122',
