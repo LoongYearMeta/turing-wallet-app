@@ -53,7 +53,7 @@ const RestorePage = () => {
 	const [loading, setLoading] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isPickerVisible, setPickerVisible] = useState(false);
-	const [shouldRestore, setShouldRestore] = useState(true);
+	const [shouldRestore, setShouldRestore] = useState(false);
 	const [derivationPathTab, setDerivationPathTab] = useState<DerivationPathTab>(
 		DerivationPathTab.Common,
 	);
@@ -200,12 +200,12 @@ const RestorePage = () => {
 				setIsSubmitting(false);
 				return;
 			}
-			
+
 			const parts = customDerivationPath.split('/');
 			for (let i = 0; i < parts.length; i++) {
 				const numStr = parts[i].replace(/'/g, '');
 				const num = parseInt(numStr, 10);
-				
+
 				if (isNaN(num) || num < 0 || num > 255) {
 					showToast('error', t('derivationPathNumberRange'));
 					setIsSubmitting(false);
@@ -432,9 +432,7 @@ const RestorePage = () => {
 				)}
 
 				{derivationPathTab === DerivationPathTab.Custom && (
-					<Text style={styles.pathHelpText}>
-						{t('derivationPathHelpText')}
-					</Text>
+					<Text style={styles.pathHelpText}>{t('derivationPathHelpText')}</Text>
 				)}
 			</View>
 		);
@@ -446,9 +444,7 @@ const RestorePage = () => {
 			{loading ? (
 				<View style={styles.loadingContent}>
 					<ActivityIndicator size="large" color={theme.colors.primary} />
-					<Text style={styles.loadingText}>
-						{t('restoringData')}
-					</Text>
+					<Text style={styles.loadingText}>{t('restoringData')}</Text>
 				</View>
 			) : (
 				<KeyboardAvoidingView
@@ -511,7 +507,7 @@ const RestorePage = () => {
 												editable={!isButtonDisabled}
 											/>
 										</View>
-										
+
 										<View style={styles.inputGroup}>
 											<Text style={styles.label}>{t('confirmPassword')}</Text>
 											<Input

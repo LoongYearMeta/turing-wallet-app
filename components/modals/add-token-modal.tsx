@@ -16,6 +16,7 @@ import { Modal } from '@/components/ui/modal';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
 import { getFT, getFTPublic, restoreFT } from '@/utils/sqlite';
+import { formatLongString } from '@/lib/util';
 
 interface AddContractModalProps {
 	visible: boolean;
@@ -118,11 +119,6 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 		}
 	};
 
-	const displayContractId =
-		contractId.length > 41
-			? `${contractId.substring(0, 12)}...${contractId.substring(contractId.length - 12)}`
-			: contractId;
-
 	return (
 		<Modal visible={visible} onClose={handleClose}>
 			<View style={styles.container}>
@@ -131,7 +127,7 @@ export const AddContractModal = ({ visible, onClose, onRefreshLists }: AddContra
 					<TextInput
 						style={styles.input}
 						placeholder={t('enterContractId')}
-						value={displayContractId}
+						value={formatLongString(contractId, 10)}
 						onChangeText={handleContractIdChange}
 						autoCapitalize="none"
 						autoCorrect={false}

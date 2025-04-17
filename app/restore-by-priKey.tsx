@@ -37,7 +37,7 @@ const RestoreByPriKeyPage = () => {
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [shouldRestore, setShouldRestore] = useState(true);
+	const [shouldRestore, setShouldRestore] = useState(false);
 	const {
 		addAccount,
 		setCurrentAccount,

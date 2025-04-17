@@ -139,13 +139,13 @@ export default function InformationPage() {
 			await loadMultiSigAddresses();
 			Toast.show({
 				type: 'success',
-				text1: 'MultiSig wallets synced successfully',
+				text1: t('multiSigWalletsSyncedSuccessfully'),
 			});
 		} catch (error) {
 			Toast.show({
 				type: 'error',
 				text1: 'Error',
-				text2: 'Failed to sync MultiSig wallets',
+				text2: t('failedToSyncMultiSigWallets'),
 			});
 		} finally {
 			setRefreshingMultiSigs(false);
