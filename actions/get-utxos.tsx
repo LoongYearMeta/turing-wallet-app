@@ -1,5 +1,5 @@
 import { StoredUtxo } from '@/types';
-import { api } from '@/lib/axios';
+import axios from 'axios';
 
 interface UTXOResponse {
 	tx_hash: string;
@@ -12,9 +12,9 @@ export async function fetchUTXOs(address: string): Promise<StoredUtxo[]> {
 	const url = `https://turingwallet.xyz/v1/tbc/main/address/${address}/unspent/`;
 
 	try {
-		const response = await api.get<UTXOResponse[]>(url);
+		const response = await axios.get<UTXOResponse[]>(url);
 		const data = response.data;
-		
+
 		if (data.length === 0) {
 			throw new Error('The balance in the account is zero.');
 		}

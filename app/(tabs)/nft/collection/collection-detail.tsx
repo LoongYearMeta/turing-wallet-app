@@ -1,5 +1,5 @@
 import * as Clipboard from 'expo-clipboard';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
@@ -154,11 +154,10 @@ const CollectionDetailPage = () => {
 					<View style={styles.collectionInfo}>
 						<Text style={styles.collectionName}>{collection.name}</Text>
 						<View style={styles.idContainer}>
-							<Text style={styles.collectionId} numberOfLines={1} ellipsizeMode="middle">
-								{t('collectionId')}: {formatLongString(collection.id, 10)}
-							</Text>
-							<TouchableOpacity style={styles.copyButton} onPress={handleCopyId}>
-								<Ionicons name="copy-outline" size={20} color="#666" />
+							<TouchableOpacity onPress={handleCopyId} style={styles.idTouchable}>
+								<Text style={styles.collectionId} numberOfLines={1} ellipsizeMode="middle">
+									{t('collectionId')}: {formatLongString(collection.id, 15)}
+								</Text>
 							</TouchableOpacity>
 						</View>
 						<View style={styles.supplyContainer}>
@@ -414,6 +413,10 @@ const styles = StyleSheet.create({
 	},
 	disabledButton: {
 		opacity: 0.5,
+	},
+	idTouchable: {
+		flex: 1,
+		paddingVertical: hp(0.5),
 	},
 });
 

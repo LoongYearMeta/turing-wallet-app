@@ -318,6 +318,8 @@ const RestoreByPriKeyPage = () => {
 										autoCapitalize="none"
 										autoCorrect={false}
 										contextMenuHidden={false}
+										textContentType="oneTimeCode"
+										autoComplete="off"
 									/>
 								</View>
 
@@ -331,6 +333,8 @@ const RestoreByPriKeyPage = () => {
 											value={password}
 											onChangeText={setPassword}
 											editable={!isButtonDisabled}
+											textContentType="oneTimeCode"
+											autoComplete="off"
 										/>
 									</View>
 								)}
@@ -344,6 +348,8 @@ const RestoreByPriKeyPage = () => {
 										value={confirmPassword}
 										onChangeText={setConfirmPassword}
 										editable={!isButtonDisabled}
+										textContentType="oneTimeCode"
+										autoComplete="off"
 									/>
 								</View>
 

@@ -120,34 +120,29 @@ const NFTDetailPage = () => {
 					<View style={styles.nftInfo}>
 						<Text style={styles.nftName}>{nft.name}</Text>
 						<View style={styles.idContainer}>
-							<Text style={styles.nftId} numberOfLines={1} ellipsizeMode="middle">
-								{t('nftId')}: {formatLongString(nft.id, 10)}
-							</Text>
-							<TouchableOpacity style={styles.copyButton} onPress={handleCopyId}>
-								<Ionicons name="copy-outline" size={20} color="#666" />
+							<TouchableOpacity onPress={handleCopyId} style={styles.idTouchable}>
+								<Text style={styles.nftId} numberOfLines={1} ellipsizeMode="middle">
+									{t('nftId')}: {formatLongString(nft.id, 15)}
+								</Text>
 							</TouchableOpacity>
 						</View>
 
 						{nft.collection_id && (
 							<View style={styles.idContainer}>
-								<Text style={styles.nftId} numberOfLines={1} ellipsizeMode="middle">
-									{t('collectionId')}: {formatLongString(nft.collection_id, 10)}
-								</Text>
-								<TouchableOpacity style={styles.copyButton} onPress={handleCopyCollectionId}>
-									<Ionicons name="copy-outline" size={20} color="#666" />
+								<TouchableOpacity onPress={handleCopyCollectionId} style={styles.idTouchable}>
+									<Text style={styles.nftId} numberOfLines={1} ellipsizeMode="middle">
+										{t('collectionId')}: {formatLongString(nft.collection_id, 15)}
+									</Text>
 								</TouchableOpacity>
 							</View>
 						)}
 
 						<View style={styles.infoContainer}>
 							<Text style={styles.infoText}>
-								{t('transferTimes')}: {nft.transfer_times || '0'}
-							</Text>
-							<Text style={styles.infoText}>
 								{t('collectionName')}: {collection ? collection.name : 'Unknown'}
 							</Text>
 							<Text style={styles.infoText}>
-								{t('collectionIndex')}: {nft.collection_index || 'N/A'}
+								{t('collectionIndex')}: {nft.collection_index || 'N/A'} {t('transferTimes')}: {nft.transfer_times || '0'}
 							</Text>
 						</View>
 
@@ -234,8 +229,9 @@ const styles = StyleSheet.create({
 		color: '#666',
 		flex: 1,
 	},
-	copyButton: {
-		padding: wp(1),
+	idTouchable: {
+		flex: 1,
+		paddingVertical: hp(0.5),
 	},
 	infoContainer: {
 		marginBottom: hp(2),

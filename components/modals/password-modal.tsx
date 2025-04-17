@@ -91,9 +91,6 @@ export const PasswordModal = ({
 				{error && <Text style={styles.errorText}>{error}</Text>}
 
 				<View style={styles.buttonContainer}>
-					<TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-						<Text style={styles.cancelButtonText}>{t('cancel')}</Text>
-					</TouchableOpacity>
 					<TouchableOpacity
 						style={[styles.confirmButton, loading && styles.buttonDisabled]}
 						onPress={handleSubmit}
@@ -154,18 +151,9 @@ const styles = StyleSheet.create({
 	buttonContainer: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
-		width: '100%',
+		width: '50%',
 		marginTop: hp(1),
 		gap: wp(3),
-	},
-	cancelButton: {
-		flex: 1,
-		backgroundColor: '#f5f5f5',
-		paddingVertical: hp(1.5),
-		borderRadius: 8,
-		alignItems: 'center',
-		borderWidth: 1,
-		borderColor: '#e0e0e0',
 	},
 	confirmButton: {
 		flex: 1,
@@ -176,11 +164,6 @@ const styles = StyleSheet.create({
 	},
 	buttonDisabled: {
 		opacity: 0.6,
-	},
-	cancelButtonText: {
-		color: '#333',
-		fontSize: hp(1.6),
-		fontWeight: '500',
 	},
 	confirmButtonText: {
 		color: '#fff',

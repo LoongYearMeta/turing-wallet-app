@@ -338,7 +338,7 @@ export default {
 	noNFTsInCollection: 'No NFTs in this collection',
 	createNewNFT: 'Create New NFT',
 	createMultiSigWalletDesc:
-		'Creating a MultiSig wallet will deposit 0.005 TBC to the MultiSig address. The MultiSig address and the list of public keys will be stored on the blockchain.',
+		'Creating a MultiSig wallet will deposit 0.5 TBC to the MultiSig address. The MultiSig address and the list of public keys will be stored on the blockchain.',
 
 	createOrRestoreWallet: 'Create or Restore Wallet',
 	chooseOption: 'Choose an option to get started',
@@ -599,5 +599,11 @@ export default {
 	noMatchingAddressesFound: 'No matching addresses found',
 	txIdCopied: 'Transaction ID copied to clipboard',
 	type: 'Type',
-	signTransaction:'Sign Transaction',
+	signTransaction: 'Sign Transaction',
+	confirmWithdraw: 'Confirm Withdraw',
+	confirmBroadcast: 'Confirm Broadcast',
+	confirmBroadcastMessage: 'Are you sure you want to broadcast this transaction?',
+	confirmWithdrawMessage: 'Are you sure you want to withdraw this transaction?',
+	failedToLoadAssets: 'Failed to load assets',
+	nftIdCopied: 'NFT ID copied to clipboard',
 };

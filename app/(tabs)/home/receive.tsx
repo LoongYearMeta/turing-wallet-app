@@ -177,7 +177,7 @@ export default function ReceivePage() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#000',
+		backgroundColor: '#f0f0f0',
 	},
 	content: {
 		flex: 1,
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
 		justifyContent: 'flex-start',
 		paddingHorizontal: wp(4),
 		paddingTop: hp(10),
-		backgroundColor: '#000',
+		backgroundColor: '#f0f0f0',
 	},
 	cardContainer: {
 		backgroundColor: '#d0d0d0',

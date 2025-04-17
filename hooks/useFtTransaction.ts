@@ -211,7 +211,7 @@ export const useFtTransaction = () => {
 						throw new Error('Failed to merge FT UTXO!');
 					}
 					if (i < 9) {
-						await new Promise((resolve) => setTimeout(resolve, 3000));
+						await new Promise((resolve) => setTimeout(resolve, 5000));
 					}
 				}
 			} catch (error: any) {
@@ -250,6 +250,7 @@ export const useFtTransaction = () => {
 				const ftutxo_codeScript = contract.FT.buildFTtransferCode(Token.codeScript, hash_from)
 					.toBuffer()
 					.toString('hex');
+
 				const ftutxos = await contract.API.fetchFtUTXOS_multiSig(
 					Token.contractTxid,
 					hash_from,

@@ -12,7 +12,7 @@ import { get_BTC_AddressBalance, getBTCPriceInfo } from '@/actions/get-btc-infor
 import { RoundButton } from '@/components/ui/round-button';
 import { useAccount } from '@/hooks/useAccount';
 import { hp, wp } from '@/lib/common';
-import { formatBalance_tbc, formatBalance_btc } from '@/lib/util';
+import { formatBalance_tbc, formatBalance_btc, formatLongString } from '@/lib/util';
 import { AccountType } from '@/types';
 
 export const BalanceCard = () => {
@@ -139,7 +139,7 @@ export const BalanceCard = () => {
 			<View style={styles.addressRow}>
 				<TouchableOpacity style={{ flex: 1 }} onPress={handleCopyAddress}>
 					<Text style={styles.address} numberOfLines={1} ellipsizeMode="middle">
-						{address}
+						{formatLongString(address, 20)}
 					</Text>
 				</TouchableOpacity>
 			</View>

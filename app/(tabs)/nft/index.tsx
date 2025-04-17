@@ -274,25 +274,27 @@ const CollectionsTab = () => {
 				</View>
 			</View>
 
-			{filteredCollections.length > 0 ? (
-				<FlatList
-					data={filteredCollections}
-					renderItem={renderCollectionItem}
-					keyExtractor={(item) => item.id}
-					numColumns={2}
-					columnWrapperStyle={styles.columnWrapper}
-					contentContainerStyle={styles.listContent}
-					showsVerticalScrollIndicator={false}
-					refreshing={refreshing}
-					onRefresh={handleRefresh}
-				/>
-			) : (
-				<View style={styles.emptyContainer}>
-					<Text style={styles.emptyText}>
-						{searchText ? t('noMatchingCollectionsFound') : t('noCollectionsFound')}
-					</Text>
-				</View>
-			)}
+			<FlatList
+				data={filteredCollections}
+				renderItem={renderCollectionItem}
+				keyExtractor={(item) => item.id}
+				numColumns={2}
+				columnWrapperStyle={styles.columnWrapper}
+				contentContainerStyle={[
+					styles.listContent,
+					filteredCollections.length === 0 && styles.emptyListContent
+				]}
+				showsVerticalScrollIndicator={false}
+				refreshing={refreshing}
+				onRefresh={handleRefresh}
+				ListEmptyComponent={
+					<View style={styles.emptyContainer}>
+						<Text style={styles.emptyText}>
+							{searchText ? t('noMatchingCollectionsFound') : t('noCollectionsFound')}
+						</Text>
+					</View>
+				}
+			/>
 
 			<ConfirmModal
 				visible={deleteModalVisible}
@@ -482,25 +484,27 @@ const NFTsTab = () => {
 				</View>
 			</View>
 
-			{filteredNFTs.length > 0 ? (
-				<FlatList
-					data={filteredNFTs}
-					renderItem={renderNFTItem}
-					keyExtractor={(item) => item.id}
-					numColumns={2}
-					columnWrapperStyle={styles.columnWrapper}
-					contentContainerStyle={styles.listContent}
-					showsVerticalScrollIndicator={false}
-					refreshing={refreshing}
-					onRefresh={handleRefresh}
-				/>
-			) : (
-				<View style={styles.emptyContainer}>
-					<Text style={styles.emptyText}>
-						{searchText ? t('noMatchingNFTsFound') : t('noNFTsFound')}
-					</Text>
-				</View>
-			)}
+			<FlatList
+				data={filteredNFTs}
+				renderItem={renderNFTItem}
+				keyExtractor={(item) => item.id}
+				numColumns={2}
+				columnWrapperStyle={styles.columnWrapper}
+				contentContainerStyle={[
+					styles.listContent,
+					filteredNFTs.length === 0 && styles.emptyListContent
+				]}
+				showsVerticalScrollIndicator={false}
+				refreshing={refreshing}
+				onRefresh={handleRefresh}
+				ListEmptyComponent={
+					<View style={styles.emptyContainer}>
+						<Text style={styles.emptyText}>
+							{searchText ? t('noMatchingNFTsFound') : t('noNFTsFound')}
+						</Text>
+					</View>
+				}
+			/>
 
 			<RestoreNFTModal
 				visible={restoreModalVisible}
@@ -608,7 +612,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		justifyContent: 'center',
 		alignItems: 'center',
-		paddingBottom: hp(10),
+		paddingTop: hp(10),
 	},
 	emptyText: {
 		fontSize: hp(1.8),
@@ -661,6 +665,9 @@ const styles = StyleSheet.create({
 	},
 	disabledButton: {
 		opacity: 0.5,
+	},
+	emptyListContent: {
+		flexGrow: 1,
 	},
 });
 

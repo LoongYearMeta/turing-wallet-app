@@ -391,7 +391,7 @@ export default {
 	invalidPubKey: '无效的公钥',
 	pubKeyAlreadyExists: '此公钥已存在',
 	createMultiSigWalletDesc:
-		'创建多签钱包将向多签地址存入0.005 TBC。多签地址和公钥列表将存储在区块链上。',
+		'创建多签钱包将向多签地址存入0.5 TBC。多签地址和公钥列表将存储在区块链上。',
 	multiSigWalletCreatedSuccessfully: '多签钱包创建成功',
 	failedToCreateMultiSigWallet: '创建多签钱包失败',
 	yourPubKey: '您的公钥',
@@ -587,4 +587,10 @@ export default {
 	txIdCopied: '交易ID已复制到剪贴板',
 	type: '类型',
 	signTransaction:'签名交易',
+	confirmWithdraw: '确认提现',
+	confirmBroadcast: '确认广播',
+	confirmBroadcastMessage: '您确定要广播此交易吗？',
+	confirmWithdrawMessage: '您确定要提现此交易吗？',
+	failedToLoadAssets: '加载资产失败',
+	nftIdCopied: 'NFT ID已复制到剪贴板',
 };

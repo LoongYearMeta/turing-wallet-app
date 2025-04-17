@@ -56,7 +56,7 @@ export const OwnedTokenCard = ({
 						<Text style={styles.amount}>{formatBalance_token(token.amount)}</Text>
 						<View style={styles.valueContainer}>
 							<TouchableOpacity onPress={handleCopyId} style={{ alignSelf: 'center' }}>
-								<Text style={styles.contractId}>{formatLongString(token.id)}</Text>
+								<Text style={styles.contractId}>{formatLongString(token.id,10)}</Text>
 							</TouchableOpacity>
 						</View>
 						<Text style={styles.symbol}>

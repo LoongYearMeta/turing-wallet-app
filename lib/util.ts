@@ -51,7 +51,7 @@ export function calculateFee(txHex: string) {
 }
 
 export const formatLongString = (str: string, showLength: number = 8): string => {
-	if (!str || str.length <= 15) return str;
+	if (!str || str.length <= showLength * 2) return str;
 	return `${str.slice(0, showLength)}...${str.slice(-showLength)}`;
 };
 
@@ -65,10 +65,8 @@ export function selectAddress(addresses: string[]): string {
 }
 
 export function getMultiSigType(multiSigAddress: string): string {
-	const { signatureCount, publicKeyCount } = contract.MultiSig.getSignatureAndPublicKeyCount(
-		multiSigAddress,
-	);
+	const { signatureCount, publicKeyCount } =
+		contract.MultiSig.getSignatureAndPublicKeyCount(multiSigAddress);
 
 	return `${signatureCount}/${publicKeyCount}`;
 }
-

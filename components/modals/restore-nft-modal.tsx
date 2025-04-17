@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
 		borderRadius: 8,
 		alignItems: 'center',
 		marginTop: hp(1),
-		width: '100%',
+		width: '50%',
 	},
 	buttonDisabled: {
 		backgroundColor: '#666',

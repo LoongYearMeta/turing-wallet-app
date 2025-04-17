@@ -20,7 +20,7 @@ import { hp, wp } from '@/lib/common';
 import { theme } from '@/lib/theme';
 import useMultiSigTransaction, { MultiSigTransaction } from '@/hooks/useMultiSigTransaction';
 import { useAccount } from '@/hooks/useAccount';
-import { formatFee_tbc, formatBalance_token,  formatLongString } from '@/lib/util';
+import { formatFee_tbc, formatBalance_token, formatLongString } from '@/lib/util';
 import { useFtTransaction } from '@/hooks/useFtTransaction';
 import { ConfirmModal } from '@/components/modals/confirm-modal';
 import { PasswordModal } from '@/components/modals/password-modal';
@@ -96,7 +96,7 @@ export default function MultiSigTransactionsPage() {
 				Toast.show({
 					type: 'success',
 					text1: 'Success',
-					text2: 'Transaction broadcasted successfully',
+					text2: t('transactionBroadcastedSuccessfully'),
 					position: 'top',
 					visibilityTime: 2000,
 				});
@@ -105,7 +105,7 @@ export default function MultiSigTransactionsPage() {
 				Toast.show({
 					type: 'success',
 					text1: 'Success',
-					text2: 'Transaction withdrawn successfully',
+					text2: t('transactionWithdrawnSuccessfully'),
 					position: 'top',
 					visibilityTime: 2000,
 				});
