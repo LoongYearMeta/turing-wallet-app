@@ -402,14 +402,11 @@ export async function getAllNFTs(userAddress: string): Promise<NFT[]> {
 
 export async function upsertFT(ft: FT, userAddress: string): Promise<void> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
-
 	const existingFT = await db.getFirstAsync<{ is_pin: number }>(
 		'SELECT is_pin FROM FT WHERE id = ? AND user_address = ?',
 		[ft.id, userAddress],
 	);
-
 	const isPinned = existingFT ? Boolean(existingFT.is_pin) : false;
-
 	await db.runAsync(
 		`INSERT OR REPLACE INTO FT (id, name, decimal, amount, symbol, isDeleted, user_address, is_pin, icon)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -707,7 +704,10 @@ export async function getAllFTHistoryByContractId(
 	);
 }
 
-export async function getFTHistoryByTxId(id: string, userAddress: string): Promise<FTHistory | null> {
+export async function getFTHistoryByTxId(
+	id: string,
+	userAddress: string,
+): Promise<FTHistory | null> {
 	const db = await SQLite.openDatabaseAsync('wallet.db');
 	return await db.getFirstAsync('SELECT * FROM FT_History WHERE id = ? AND user_address = ?', [
 		id,

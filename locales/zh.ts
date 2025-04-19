@@ -593,4 +593,8 @@ export default {
 	confirmWithdrawMessage: '您确定要提现此交易吗？',
 	failedToLoadAssets: '加载资产失败',
 	nftIdCopied: 'NFT ID已复制到剪贴板',
+	mergeMultiSigTransaction: '合并多签地址下的UTXO',
+	mergeTransaction: '合并UTXO',
+	transactionMergedSuccessfully: 'UTXO合并成功',
+	failedToMergeTransaction: '合并UTXO失败',
 };

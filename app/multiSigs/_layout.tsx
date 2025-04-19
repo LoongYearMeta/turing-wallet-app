@@ -37,6 +37,14 @@ export default function MultiSigssLayout() {
 					headerBackVisible: true,
 				}}
 			/>
+			<Stack.Screen
+				name="merge-multiSig-transaction"
+				options={{
+					headerTitle: t('mergeMultiSigTransaction'),
+					headerTitleStyle: styles.headerTitle,
+					headerBackVisible: true,
+				}}
+			/>
 		</Stack>
 	);
 }

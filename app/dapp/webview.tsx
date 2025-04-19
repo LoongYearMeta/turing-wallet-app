@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
 	ScrollView,
 	StyleSheet,
@@ -25,19 +25,19 @@ import { verifyPassword } from '@/lib/key';
 import { getNFT } from '@/utils/sqlite';
 import { useTranslation } from 'react-i18next';
 
-const sslExceptionDomains = ['dev.shellswap.org', 'utxopump.fun'];
-
 export default function DAppWebView() {
 	const { url, name } = useLocalSearchParams();
 	const webViewRef = useRef<WebView>(null);
-	const [isConnected, setIsConnected] = useState(false);
+	const [lastConnectedAt, setLastConnectedAt] = useState<number | null>(null);
 	const [showTransactionForm, setShowTransactionForm] = useState(false);
 	const [currentRequest, setCurrentRequest] = useState<SendTransactionRequest[]>([]);
 	const [password, setPassword] = useState('');
 	const [formErrors, setFormErrors] = useState<{ password?: string; isValid?: boolean }>({});
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [isWebViewLoading, setIsWebViewLoading] = useState(true);
+	const [connectedAccount, setConnectedAccount] = useState<string | null>(null);
 	const { t } = useTranslation();
+
 	const {
 		getCurrentAccountAddress,
 		getCurrentAccountTbcPubKey,
@@ -63,105 +63,236 @@ export default function DAppWebView() {
 		mergeFTLPResponse,
 	} = useResponse();
 
+	const currentAccountRef = useRef<string | null>(null);
+
+	useEffect(() => {
+		const initialAddress = getCurrentAccountAddress();
+		currentAccountRef.current = initialAddress;
+
+		const accountCheckInterval = setInterval(() => {
+			const newAddress = getCurrentAccountAddress();
+
+			if (currentAccountRef.current !== newAddress) {
+				currentAccountRef.current = newAddress;
+
+				if (connectedAccount) {
+					handleAutoDisconnect();
+				}
+			}
+		}, 1000);
+
+		return () => {
+			clearInterval(accountCheckInterval);
+		};
+	}, []);
+
+	const handleAutoDisconnect = () => {
+		setLastConnectedAt(null);
+		setConnectedAccount(null);
+
+		webViewRef.current?.reload();
+
+		const disconnectScript = `
+			if (window.Turing) {
+				window.Turing._connected = false;
+				window.Turing._cachedBalance = null;
+				window.Turing._cachedAddress = null;
+				window.Turing._cachedPubKey = null;
+				
+				window.dispatchEvent(new CustomEvent('TuringAccountChanged', {
+					detail: { reason: 'account_switched' }
+				}));
+			}
+			
+			window.dispatchEvent(new CustomEvent('TuringResponse', {
+				detail: { method: 'disconnect', result: true }
+			}));
+			
+			true;
+		`;
+		webViewRef.current?.injectJavaScript(disconnectScript);
+	};
+
 	const injectedJavaScript = `
-    window.Turing = {
-      isReady: true,
-      
-      async connect() {
-        return new Promise((resolve) => {
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            method: 'connect'
-          }));
-          
-          window.addEventListener('TuringResponse', function handleResponse(event) {
-            if (event.detail.method === 'connect') {
-              window.removeEventListener('TuringResponse', handleResponse);
-              resolve(event.detail.result);
-            }
-          });
-        });
-      },
+		if (window.turingEventListeners) {
+			for (const listener of window.turingEventListeners) {
+				window.removeEventListener('TuringResponse', listener);
+			}
+		}
+		window.turingEventListeners = [];
+		
+		window.Turing = {
+			isReady: true,
+			
+			async connect() {
+				return new Promise((resolve) => {
+					window.ReactNativeWebView.postMessage(JSON.stringify({
+						method: 'connect'
+					}));
+					
+					const handleResponse = function(event) {
+						if (event && event.detail && event.detail.method === 'connect') {
+							window.removeEventListener('TuringResponse', handleResponse);
+							const index = window.turingEventListeners.indexOf(handleResponse);
+							if (index > -1) {
+								window.turingEventListeners.splice(index, 1);
+							}
+							resolve(event.detail.result);
+						}
+					};
+					
+					window.turingEventListeners.push(handleResponse);
+					window.addEventListener('TuringResponse', handleResponse);
+				});
+			},
 
-      async disconnect() {
-        return new Promise((resolve) => {
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            method: 'disconnect'
-          }));
-          
-          window.addEventListener('TuringResponse', function handleResponse(event) {
-            if (event.detail.method === 'disconnect') {
-              window.removeEventListener('TuringResponse', handleResponse);
-              resolve(event.detail.result);
-            }
-          });
-        });
-      },
+			async disconnect() {
+				return new Promise((resolve) => {
+					window.ReactNativeWebView.postMessage(JSON.stringify({
+						method: 'disconnect'
+					}));
+					
+					const handleResponse = function(event) {
+						if (event && event.detail && event.detail.method === 'disconnect') {
+							window.removeEventListener('TuringResponse', handleResponse);
+							const index = window.turingEventListeners.indexOf(handleResponse);
+							if (index > -1) {
+								window.turingEventListeners.splice(index, 1);
+							}
+							resolve(event.detail.result);
+						}
+					};
+					
+					window.turingEventListeners.push(handleResponse);
+					window.addEventListener('TuringResponse', handleResponse);
+				});
+			},
 
-      async getPubKey() {
-        return new Promise((resolve) => {
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            method: 'getPubKey'
-          }));
-          
-          window.addEventListener('TuringResponse', function handleResponse(event) {
-            if (event.detail.method === 'getPubKey') {
-              window.removeEventListener('TuringResponse', handleResponse);
-              resolve(event.detail.result);
-            }
-          });
-        });
-      },
+			async getPubKey() {
+				return new Promise((resolve) => {
+					window.ReactNativeWebView.postMessage(JSON.stringify({
+						method: 'getPubKey'
+					}));
+					
+					const handleResponse = function(event) {
+						if (event && event.detail && event.detail.method === 'getPubKey') {
+							window.removeEventListener('TuringResponse', handleResponse);
+							const index = window.turingEventListeners.indexOf(handleResponse);
+							if (index > -1) {
+								window.turingEventListeners.splice(index, 1);
+							}
+							resolve(event.detail.result);
+						}
+					};
+					
+					window.turingEventListeners.push(handleResponse);
+					window.addEventListener('TuringResponse', handleResponse);
+				});
+			},
 
-      async getAddress() {
-        return new Promise((resolve) => {
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            method: 'getAddress'
-          }));
-          
-          window.addEventListener('TuringResponse', function handleResponse(event) {
-            if (event.detail.method === 'getAddress') {
-              window.removeEventListener('TuringResponse', handleResponse);
-              resolve(event.detail.result);
-            }
-          });
-        });
-      },
+			async getAddress() {
+				return new Promise((resolve) => {
+					window.ReactNativeWebView.postMessage(JSON.stringify({
+						method: 'getAddress'
+					}));
+					
+					const handleResponse = function(event) {
+						if (event && event.detail && event.detail.method === 'getAddress') {
+							window.removeEventListener('TuringResponse', handleResponse);
+							const index = window.turingEventListeners.indexOf(handleResponse);
+							if (index > -1) {
+								window.turingEventListeners.splice(index, 1);
+							}
+							resolve(event.detail.result);
+						}
+					};
+					
+					window.turingEventListeners.push(handleResponse);
+					window.addEventListener('TuringResponse', handleResponse);
+				});
+			},
 
-      async getBalance() {
-        return new Promise((resolve) => {
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            method: 'getBalance'
-          }));
-          
-          window.addEventListener('TuringResponse', function handleResponse(event) {
-            if (event.detail.method === 'getBalance') {
-              window.removeEventListener('TuringResponse', handleResponse);
-              resolve(event.detail.result);
-            }
-          });
-        });
-      },
+			async getBalance() {
+				return new Promise((resolve) => {
+					window.ReactNativeWebView.postMessage(JSON.stringify({
+						method: 'getBalance'
+					}));
+					
+					const handleResponse = function(event) {
+						if (event && event.detail && event.detail.method === 'getBalance') {
+							window.removeEventListener('TuringResponse', handleResponse);
+							const index = window.turingEventListeners.indexOf(handleResponse);
+							if (index > -1) {
+								window.turingEventListeners.splice(index, 1);
+							}
+							resolve(event.detail.result);
+						}
+					};
+					
+					window.turingEventListeners.push(handleResponse);
+					window.addEventListener('TuringResponse', handleResponse);
+				});
+			},
 
-      async sendTransaction(params) {
-        return new Promise((resolve) => {
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            method: 'sendTransaction',
-            params
-          }));
-          
-          window.addEventListener('TuringResponse', function handleResponse(event) {
-            if (event.detail.method === 'sendTransaction') {
-              window.removeEventListener('TuringResponse', handleResponse);
-              resolve(event.detail.result);
-            }
-          });
-        });
-      }
-    };
+			async sendTransaction(params) {
+				return new Promise((resolve) => {
+					window.ReactNativeWebView.postMessage(JSON.stringify({
+						method: 'sendTransaction',
+						params: params || []
+					}));
+					
+					const handleResponse = function(event) {
+						if (event && event.detail && event.detail.method === 'sendTransaction') {
+							window.removeEventListener('TuringResponse', handleResponse);
+							const index = window.turingEventListeners.indexOf(handleResponse);
+							if (index > -1) {
+								window.turingEventListeners.splice(index, 1);
+							}
+							resolve(event.detail.result);
+						}
+					};
+					
+					window.turingEventListeners.push(handleResponse);
+					window.addEventListener('TuringResponse', handleResponse);
+				});
+			},
 
-    window.dispatchEvent(new CustomEvent('TuringReady'));
-    true;
-  `;
+			onAccountChanged: function(newAddress) {
+				window.dispatchEvent(new CustomEvent('TuringAccountChanged', {
+					detail: { newAddress }
+				}));
+			},
+
+			async isConnected() {
+				return new Promise((resolve) => {
+					window.ReactNativeWebView.postMessage(JSON.stringify({
+						method: 'isConnected',
+						params: { domain: window.location.hostname }
+					}));
+					
+					const handleResponse = function(event) {
+						if (event && event.detail && event.detail.method === 'isConnected') {
+							window.removeEventListener('TuringResponse', handleResponse);
+							const index = window.turingEventListeners.indexOf(handleResponse);
+							if (index > -1) {
+								window.turingEventListeners.splice(index, 1);
+							}
+							resolve(event.detail.result);
+						}
+					};
+					
+					window.turingEventListeners.push(handleResponse);
+					window.addEventListener('TuringResponse', handleResponse);
+				});
+			},
+		};
+
+		setTimeout(() => {
+			window.dispatchEvent(new CustomEvent('TuringReady'));
+		}, 100);
+		
+		true;
+	`;
 
 	const handlePasswordChange = (value: string) => {
 		value = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
@@ -488,23 +619,38 @@ export default function DAppWebView() {
 
 	const handleMessage = async (event: any) => {
 		try {
+			if (!event || !event.nativeEvent || !event.nativeEvent.data) {
+				return;
+			}
+
 			const data = JSON.parse(event.nativeEvent.data);
+			if (!data || !data.method) {
+				return;
+			}
 
 			switch (data.method) {
 				case 'connect':
-					if (!isConnected) {
-						const pubKey = getCurrentAccountTbcPubKey();
-						setIsConnected(true);
-						webViewRef.current?.injectJavaScript(`
-							window.dispatchEvent(new CustomEvent('TuringResponse', {
-								detail: { method: 'connect', result: '${pubKey}' }
-							}));
-						`);
-					}
+					const pubKey = getCurrentAccountTbcPubKey() || '';
+					const addressOnConnect = getCurrentAccountAddress() || '';
+					currentAccountRef.current = addressOnConnect;
+					setLastConnectedAt(Date.now());
+					setConnectedAccount(addressOnConnect);
+
+					const connectScript = `
+						window.Turing._connected = true;
+						window.Turing._connectedAccount = '${addressOnConnect}';
+						
+						window.dispatchEvent(new CustomEvent('TuringResponse', {
+							detail: { method: 'connect', result: '${pubKey}' }
+						}));
+					`;
+
+					webViewRef.current?.injectJavaScript(connectScript);
 					break;
 
 				case 'disconnect':
-					setIsConnected(false);
+					setLastConnectedAt(null);
+					setConnectedAccount(null);
 					webViewRef.current?.injectJavaScript(`
 						window.dispatchEvent(new CustomEvent('TuringResponse', {
 							detail: { method: 'disconnect', result: true }
@@ -513,43 +659,83 @@ export default function DAppWebView() {
 					break;
 
 				case 'getPubKey':
-					const pubKey = getCurrentAccountTbcPubKey();
+					const currentPubKey = getCurrentAccountTbcPubKey() || '';
 					webViewRef.current?.injectJavaScript(`
 						window.dispatchEvent(new CustomEvent('TuringResponse', {
-							detail: { method: 'getPubKey', result: { tbcPubKey: '${pubKey}' } }
+							detail: { method: 'getPubKey', result: { tbcPubKey: '${currentPubKey}' } }
 						}));
 					`);
 					break;
 
 				case 'getAddress':
-					const currentAddress = getCurrentAccountAddress();
+					const addressOnGetAddress = getCurrentAccountAddress() || '';
 					webViewRef.current?.injectJavaScript(`
 						window.dispatchEvent(new CustomEvent('TuringResponse', {
-							detail: { method: 'getAddress', result: { tbcAddress: '${currentAddress}' } }
+							detail: { method: 'getAddress', result: { tbcAddress: '${addressOnGetAddress}' } }
 						}));
 					`);
 					break;
 
 				case 'getBalance':
 					const balance = getCurrentAccountBalance();
+					const tbcBalance = balance?.tbc || 0;
+
+					const balanceScript = `
+						window.Turing._cachedBalance = ${tbcBalance};
+						
+						window.dispatchEvent(new CustomEvent('TuringResponse', {
+							detail: { method: 'getBalance', result: { tbc: ${tbcBalance} } }
+						}));
+					`;
+
+					webViewRef.current?.injectJavaScript(balanceScript);
+					break;
+
+				case 'sendTransaction':
+					if (!data.params) {
+						webViewRef.current?.injectJavaScript(`
+							window.dispatchEvent(new CustomEvent('TuringResponse', {
+								detail: { 
+									method: 'sendTransaction', 
+									result: { error: 'Missing transaction parameters' }
+								}
+							}));
+						`);
+						return;
+					}
+					setCurrentRequest(Array.isArray(data.params) ? data.params : [data.params]);
+					setShowTransactionForm(true);
+					break;
+
+				case 'isConnected':
+					const isConnectedNow =
+						!!connectedAccount && lastConnectedAt && Date.now() - lastConnectedAt < 30 * 60 * 1000;
+
 					webViewRef.current?.injectJavaScript(`
 						window.dispatchEvent(new CustomEvent('TuringResponse', {
-							detail: { method: 'getBalance', result: { tbc: ${balance?.tbc || 0} } }
+							detail: { method: 'isConnected', result: ${isConnectedNow} }
 						}));
 					`);
 					break;
 
-				case 'sendTransaction':
-					setCurrentRequest(data.params);
-					setShowTransactionForm(true);
-					break;
+				default:
+					webViewRef.current?.injectJavaScript(`
+						window.dispatchEvent(new CustomEvent('TuringResponse', {
+							detail: { 
+								method: '${data.method}', 
+								result: { error: 'Unknown method' }
+							}
+						}));
+					`);
 			}
 		} catch (error) {
 			let errorMessage = 'Invalid message format';
 			let methodName = 'unknown';
 
-			const data = JSON.parse(event.nativeEvent.data);
-			methodName = data.method || 'unknown';
+			if (event && event.nativeEvent && event.nativeEvent.data) {
+				const data = JSON.parse(event.nativeEvent.data);
+				methodName = data && data.method ? data.method : 'unknown';
+			}
 
 			const errorResponse = {
 				method: methodName,
@@ -559,13 +745,15 @@ export default function DAppWebView() {
 					message: errorMessage,
 				},
 			};
+
 			const script = `
-				window.dispatchEvent(new CustomEvent('TuringResponse', { 
-					detail: ${JSON.stringify(errorResponse)}
-				}));
-				true;
-			`;
+					window.dispatchEvent(new CustomEvent('TuringResponse', { 
+						detail: ${JSON.stringify(errorResponse)}
+					}));
+					true;
+				`;
 			webViewRef.current?.injectJavaScript(script);
+
 			Toast.show({
 				type: 'error',
 				text1: t('errorProcessingRequest'),
@@ -584,6 +772,22 @@ export default function DAppWebView() {
 							{name}
 						</Text>
 					</TouchableOpacity>
+
+					<TouchableOpacity
+						style={styles.reloadButton}
+						onPress={() => {
+							setConnectedAccount(null);
+							setLastConnectedAt(null);
+							webViewRef.current?.reload();
+							Toast.show({
+								type: 'info',
+								text1: t('reloadingPage'),
+								position: 'top',
+							});
+						}}
+					>
+						<MaterialIcons name="refresh" size={24} color="#333" />
+					</TouchableOpacity>
 				</View>
 				<WebView
 					ref={webViewRef}
@@ -600,12 +804,6 @@ export default function DAppWebView() {
 							text1: 'Error loading page',
 							text2: nativeEvent.description,
 						});
-					}}
-					onShouldStartLoadWithRequest={(request) => {
-						const { url } = request;
-						const isExceptionDomain = sslExceptionDomains.some((domain) => url.includes(domain));
-
-						return isExceptionDomain || true;
 					}}
 					originWhitelist={['*']}
 					domStorageEnabled={true}
@@ -906,5 +1104,10 @@ const styles = StyleSheet.create({
 		marginTop: hp(2),
 		fontSize: hp(1.8),
 		color: '#333',
+	},
+	reloadButton: {
+		position: 'absolute',
+		right: wp(4),
+		padding: wp(2),
 	},
 });

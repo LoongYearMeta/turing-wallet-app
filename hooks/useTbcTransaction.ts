@@ -121,6 +121,44 @@ export const useTbcTransaction = () => {
 		[],
 	);
 
+	const mergeUtxos_multiSig_create = useCallback(async (address_from: string, password: string) => {
+		try {
+			const encryptedKeys = useAccount.getState().getEncryptedKeys();
+
+			if (!encryptedKeys) {
+				throw new Error('No keys found');
+			}
+
+			const { walletWif } = retrieveKeys(password, encryptedKeys);
+			const privateKey = tbc.PrivateKey.fromString(walletWif);
+			const script_asm = contract.MultiSig.getMultiSigLockScript(address_from);
+			const umtxos = await contract.API.fetchUMTXOs(script_asm, 'mainnet');
+			let amount_satoshis = 0;
+			let amounts: number[] = [];
+			for (let i = 0; i < umtxos.length; i++) {
+				amount_satoshis += umtxos[i].satoshis;
+				amounts.push(umtxos[i].satoshis);
+			}
+			const tx = new tbc.Transaction().from(umtxos);
+			tx.addOutput(
+				new tbc.Transaction.Output({
+					script: tbc.Script.fromASM(script_asm),
+					satoshis: amount_satoshis - 1000,
+				}),
+			).fee(1000);
+
+			const txraw = tx.uncheckedSerialize();
+			const sigs = contract.MultiSig.signMultiSigTransaction_sendTBC(
+				address_from,
+				{ txraw, amounts },
+				privateKey,
+			);
+			return { txraw, sigs };
+		} catch (error: any) {
+			throw new Error(error.message);
+		}
+	}, []);
+
 	const sendTbc_multiSig_sign = useCallback(
 		(multiSigAddress: string, multiTxraw: contract.MultiSigTxRaw, password: string): string[] => {
 			try {
@@ -267,6 +305,7 @@ export const useTbcTransaction = () => {
 	return {
 		sendTbc,
 		sendTbc_multiSig_create,
+		mergeUtxos_multiSig_create,
 		sendTbc_multiSig_sign,
 		sendTbc_multiSig_finish,
 		finish_transaction,

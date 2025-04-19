@@ -67,16 +67,14 @@ export async function initFTs(address: string): Promise<void> {
 export async function syncFTs(address: string): Promise<void> {
 	try {
 		const response = await fetchFTs(address);
+
 		const apiTokenIds = new Set(response.token_list.map((token) => token.ft_contract_id));
-
 		const dbFTs = await getAllFTs(address);
-
 		for (const ft of dbFTs) {
 			if (!apiTokenIds.has(ft.id)) {
 				await removeFT(ft.id, address);
 			}
 		}
-
 		for (const token of response.token_list) {
 			const ftData: FT = {
 				id: token.ft_contract_id,

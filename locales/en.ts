@@ -606,4 +606,8 @@ export default {
 	confirmWithdrawMessage: 'Are you sure you want to withdraw this transaction?',
 	failedToLoadAssets: 'Failed to load assets',
 	nftIdCopied: 'NFT ID copied to clipboard',
+	mergeMultiSigTransaction: 'Merge MultiSig UTXOs',
+	mergeTransaction: 'Merge UTXOs',
+	transactionMergedSuccessfully: 'UTXOs merged successfully',
+	failedToMergeTransaction: 'Failed to merge UTXOs',
 };

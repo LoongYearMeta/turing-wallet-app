@@ -251,7 +251,7 @@ export const useFtTransaction = () => {
 					.toBuffer()
 					.toString('hex');
 
-				const ftutxos = await contract.API.fetchFtUTXOS_multiSig(
+				const ftutxos = await contract.API.getFtUTXOS_multiSig(
 					Token.contractTxid,
 					hash_from,
 					ftutxo_codeScript,

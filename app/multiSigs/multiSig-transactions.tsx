@@ -423,6 +423,12 @@ export default function MultiSigTransactionsPage() {
 					</View>
 					<TouchableOpacity
 						style={styles.actionButton}
+						onPress={() => router.push('/multiSigs/merge-multiSig-transaction')}
+					>
+						<MaterialIcons name="call-merge" size={24} color={theme.colors.primary} />
+					</TouchableOpacity>
+					<TouchableOpacity
+						style={styles.actionButton}
 						onPress={() => router.push('/multiSigs/initiate-multiSig-transaction')}
 					>
 						<MaterialIcons name="add" size={24} color={theme.colors.primary} />

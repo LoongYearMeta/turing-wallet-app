@@ -47,7 +47,7 @@
     "react-native-toast-message": "^2.2.1",
     "react-native-view-shot": "^4.0.3",
     "react-native-webview": "13.12.5",
-    "tbc-contract": "^1.1.25",
+    "tbc-contract": "^1.1.26",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
