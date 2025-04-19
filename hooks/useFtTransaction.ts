@@ -21,8 +21,13 @@ export const useFtTransaction = () => {
 		getCurrentAccountUtxos,
 		getCurrentAccountTbcPubKey,
 	} = useAccount();
-	const { sendTbc_multiSig_create, sendTbc_multiSig_sign, sendTbc_multiSig_finish, sendTbc } =
-		useTbcTransaction();
+	const {
+		sendTbc_multiSig_create,
+		sendTbc_multiSig_sign,
+		sendTbc_multiSig_finish,
+		sendTbc,
+		mergeUtxos_multiSig_create,
+	} = useTbcTransaction();
 
 	const sendFT = useCallback(
 		async (
@@ -128,24 +133,7 @@ export const useFtTransaction = () => {
 					})),
 				};
 			} catch (error: any) {
-				if (
-					error.message &&
-					(error.message.includes('length') ||
-						error.message.includes('Invalid') ||
-						error.message.includes('Password') ||
-						error.message.includes('required') ||
-						error.message.includes('too short') ||
-						error.message.includes('string') ||
-						error.message.includes('input'))
-				) {
-					return {
-						txHex: '',
-						fee: 0,
-						address_to: '',
-						utxos: [],
-					};
-				}
-				throw error;
+				throw new Error(error.message);
 			}
 		},
 		[isTaprootLegacyAccount],
@@ -214,6 +202,108 @@ export const useFtTransaction = () => {
 						await new Promise((resolve) => setTimeout(resolve, 5000));
 					}
 				}
+			} catch (error: any) {
+				throw new Error(error.message);
+			}
+		},
+		[],
+	);
+
+	const mergeFT_multiSig_create = useCallback(
+		async (contractId: string, address: string, password: string) => {
+			try {
+				let result: { multiSigTxraw: contract.MultiSigTxRaw; sigs: string[] }[] = [];
+				const encryptedKeys = useAccount.getState().getEncryptedKeys();
+
+				if (!encryptedKeys) {
+					throw new Error('No keys found');
+				}
+
+				const { walletWif } = retrieveKeys(password, encryptedKeys);
+				const privateKey = tbc.PrivateKey.fromString(walletWif);
+				const script_asm = contract.MultiSig.getMultiSigLockScript(address);
+				const Token = new contract.FT(contractId);
+				const TokenInfo = await contract.API.fetchFtInfo(Token.contractTxid, 'mainnet');
+				Token.initialize(TokenInfo);
+				const hash = tbc.crypto.Hash.sha256ripemd160(
+					tbc.crypto.Hash.sha256(tbc.Script.fromASM(script_asm).toBuffer()),
+				).toString('hex');
+				const ftutxo_codeScript = contract.FT.buildFTtransferCode(Token.codeScript, hash)
+					.toBuffer()
+					.toString('hex');
+				const ftutxos = await contract.API.fetchFtUTXOS_multiSig(
+					Token.contractTxid,
+					hash,
+					ftutxo_codeScript,
+					'mainnet',
+				);
+				const umtxos = await contract.API.fetchUMTXOs(script_asm, 'mainnet');
+
+				const usedUmtxos = new Set<string>();
+				for (let i = 0; i < ftutxos.length; i = i + 5) {
+					const umtxo = umtxos.find(
+						(utxo) => utxo.satoshis >= 10000 && !usedUmtxos.has(`${utxo.txId}:${utxo.outputIndex}`),
+					);
+					if (!umtxo) {
+						break;
+					}
+					usedUmtxos.add(`${umtxo.txId}:${umtxo.outputIndex}`);
+
+					let ftutxos_part: tbc.Transaction.IUnspentOutput[] = [];
+					if (i + 5 >= ftutxos.length) {
+						ftutxos_part = ftutxos.slice(i, ftutxos.length);
+					} else {
+						ftutxos_part = ftutxos.slice(i, i + 5);
+					}
+
+					let preTXs: tbc.Transaction[] = [];
+					let prepreTxDatas: string[] = [];
+					for (let j = 0; j < ftutxos_part.length; j++) {
+						preTXs.push(await contract.API.fetchTXraw(ftutxos_part[j].txId, 'mainnet'));
+						prepreTxDatas.push(
+							await contract.API.fetchFtPrePreTxData(
+								preTXs[j],
+								ftutxos_part[j].outputIndex,
+								'mainnet',
+							),
+						);
+					}
+					const contractTX = await contract.API.fetchTXraw(umtxo.txId, 'mainnet');
+
+					const totalBalance = ftutxos_part.reduce(
+						(acc, curr) => acc + Number(curr.ftBalance || 0),
+						0,
+					);
+
+					const adjustedBalance = totalBalance / Math.pow(10, Token.decimal);
+					const formattedBalance = adjustedBalance.toFixed(6);
+					const finalAmount = Number(formattedBalance);
+
+					const multiSigTxraw = contract.MultiSig.buildMultiSigTransaction_transferFT(
+						address,
+						address,
+						Token,
+						finalAmount,
+						umtxo,
+						ftutxos_part,
+						preTXs,
+						prepreTxDatas,
+						contractTX,
+						privateKey,
+					);
+
+					const sigs = contract.MultiSig.signMultiSigTransaction_transferFT(
+						address,
+						multiSigTxraw,
+						privateKey,
+					);
+
+					result.push({ multiSigTxraw, sigs });
+					if (i + 5 < ftutxos.length) {
+						await new Promise((resolve) => setTimeout(resolve, 5000));
+					}
+				}
+				return result;
 			} catch (error: any) {
 				throw new Error(error.message);
 			}
@@ -434,6 +524,104 @@ export const useFtTransaction = () => {
 			}
 		},
 		[getCurrentAccountTbcPubKey, sendTbc_multiSig_create],
+	);
+
+	const createMultiSigTransaction_merge = useCallback(
+		async (address: string, password: string, contractId?: string) => {
+			try {
+				const url = 'https://turingwallet.xyz/multy/sig/create/history';
+				const pubKey = getCurrentAccountTbcPubKey();
+				if (!pubKey) {
+					throw new Error('No public Key found');
+				}
+				const pubKeys = await getMultiSigPubKeys(address);
+				if (!pubKeys) {
+					throw new Error('No pubKeys list found');
+				}
+
+				if (!contractId) {
+					const { multiTxraw, sigs } = await mergeUtxos_multiSig_create(address, password);
+					const { txraw, amounts } = multiTxraw;
+					const request = {
+						unsigned_txid: tbc.crypto.Hash.sha256sha256(Buffer.from(txraw, 'hex')).toString('hex'),
+						tx_raw: txraw,
+						vin_balance_list: amounts,
+						multi_sig_address: address,
+						ft_contract_id: '',
+						ft_decimal: 6,
+						balance: 0,
+						receiver_addresses: [address],
+						pubkey_list: pubKeys,
+						signature_data: {
+							pubkey: pubKey,
+							sig_list: sigs,
+						},
+					};
+					const response = await api.post(url, request);
+
+					const { status, message } = response.data;
+
+					if (status !== 0) {
+						throw new Error(`Transaction failed: ${message}`);
+					}
+				} else {
+					const transactions = await mergeFT_multiSig_create(contractId, address, password);
+					const ft = new contract.FT(contractId);
+					const TokenInfo = await contract.API.fetchFtInfo(ft.contractTxid, 'mainnet');
+					ft.initialize(TokenInfo);
+
+					const results: { success: boolean; message?: string }[] = [];
+					for (let i = 0; i < transactions.length; i++) {
+						const { multiSigTxraw, sigs } = transactions[i];
+						const { txraw, amounts } = multiSigTxraw;
+
+						const request = {
+							unsigned_txid: tbc.crypto.Hash.sha256sha256(Buffer.from(txraw, 'hex')).toString(
+								'hex',
+							),
+							tx_raw: txraw,
+							vin_balance_list: amounts,
+							multi_sig_address: address,
+							ft_contract_id: contractId,
+							ft_decimal: ft.decimal,
+							balance: 0,
+							receiver_addresses: [address],
+							pubkey_list: pubKeys,
+							signature_data: {
+								pubkey: pubKey,
+								sig_list: sigs,
+							},
+						};
+
+						try {
+							const response = await api.post(url, request);
+
+							if (response.data.status !== 0) {
+								results.push({ success: false, message: response.data.message });
+							} else {
+								results.push({ success: true });
+							}
+
+							if (i < transactions.length - 1) {
+								await new Promise((resolve) => setTimeout(resolve, 2000));
+							}
+						} catch (error: any) {
+							results.push({ success: false, message: error.message });
+						}
+					}
+
+					const failedTransactions = results.filter((r) => !r.success);
+					if (failedTransactions.length > 0) {
+						throw new Error(
+							`${failedTransactions.length}/${transactions.length} transactions failed`,
+						);
+					}
+				}
+			} catch (error: any) {
+				throw new Error(error.message);
+			}
+		},
+		[getCurrentAccountTbcPubKey, mergeUtxos_multiSig_create, mergeFT_multiSig_create],
 	);
 
 	const signMultiSigTransaction = useCallback(
@@ -660,10 +848,12 @@ export const useFtTransaction = () => {
 	return {
 		sendFT,
 		mergeFT,
+		mergeFT_multiSig_create,
 		transferFT_multiSig_create,
 		transferFT_multiSig_sign,
 		transferFT_multiSig_finish,
 		createMultiSigTransaction,
+		createMultiSigTransaction_merge,
 		signMultiSigTransaction,
 		finishMultiSigTransaction,
 		withdrawMultiSigTransaction,

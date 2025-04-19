@@ -610,4 +610,7 @@ export default {
 	mergeTransaction: 'Merge UTXOs',
 	transactionMergedSuccessfully: 'UTXOs merged successfully',
 	failedToMergeTransaction: 'Failed to merge UTXOs',
+	mergeTransactionInitiated: 'Merge transaction initiated',
+	mergeTransactionFailed: 'Merge transaction failed',
+	utxoCount: 'UTXO Count',
 };

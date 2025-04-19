@@ -1,4 +1,4 @@
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -27,6 +27,7 @@ import { formatBalance_tbc, formatBalance_token } from '@/lib/util';
 import { getActiveMultiSigs } from '@/utils/sqlite';
 import { fetchFTs_multiSig } from '@/actions/get-fts';
 import { Asset } from '@/types';
+import { getUTXOsCount_multiSig } from '@/actions/get-utxos';
 
 interface FormData {
 	senderAddress: string;
@@ -48,6 +49,7 @@ interface MultiSigAddress {
 export default function MergeMultiSigTransactionPage() {
 	const { t } = useTranslation();
 	const { getCurrentAccountAddress, getPassKey, getSalt } = useAccount();
+	const { createMultiSigTransaction_merge } = useFtTransaction();
 
 	const [formData, setFormData] = useState<FormData>({
 		senderAddress: '',
@@ -61,6 +63,8 @@ export default function MergeMultiSigTransactionPage() {
 	const [showAssetSelector, setShowAssetSelector] = useState(false);
 	const [multiSigAddresses, setMultiSigAddresses] = useState<MultiSigAddress[]>([]);
 	const [showMultiSigAddressSelector, setShowMultiSigAddressSelector] = useState(false);
+	const [utxoCount, setUtxoCount] = useState<number | null>(null);
+	const [loadingUtxoCount, setLoadingUtxoCount] = useState(false);
 
 	const currentAddress = getCurrentAccountAddress();
 	const passKey = getPassKey();
@@ -69,6 +73,27 @@ export default function MergeMultiSigTransactionPage() {
 	useEffect(() => {
 		loadMultiSigAddresses();
 	}, []);
+
+	useEffect(() => {
+		if (formData.senderAddress && formData.asset) {
+			fetchUtxoCount();
+		}
+	}, [formData.senderAddress, formData.asset]);
+
+	const fetchUtxoCount = async () => {
+		if (!formData.senderAddress || !formData.asset) return;
+
+		setLoadingUtxoCount(true);
+		try {
+			const contractId = formData.asset !== 'TBC' ? formData.asset : undefined;
+			const count = await getUTXOsCount_multiSig(formData.senderAddress, contractId);
+			setUtxoCount(count);
+		} catch (error) {
+			setUtxoCount(0);
+		} finally {
+			setLoadingUtxoCount(false);
+		}
+	};
 
 	const loadMultiSigAddresses = async () => {
 		try {
@@ -132,31 +157,39 @@ export default function MergeMultiSigTransactionPage() {
 		setSelectedAsset(null);
 		setFormErrors((prev) => ({
 			...prev,
-			asset: '',
+			senderAddress: undefined,
+			asset: undefined,
 		}));
+		setShowMultiSigAddressSelector(false);
 		await loadAssets(address);
 	};
 
 	const handleAssetSelect = (asset: Asset) => {
 		setSelectedAsset(asset);
+		setShowAssetSelector(false);
 		setFormData((prev) => ({
 			...prev,
 			asset: asset.value,
 		}));
+		setFormErrors((prev) => ({
+			...prev,
+			asset: undefined,
+		}));
+		setUtxoCount(null);
 	};
 
 	const handleInputChange = (field: keyof FormData, value: string) => {
-		if (field === 'password') {
-			const cleanValue = value.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
-			setFormData((prev) => ({ ...prev, password: cleanValue }));
-			setFormErrors((prev) => ({ ...prev, password: undefined }));
-		} else {
-			setFormData((prev) => ({ ...prev, [field]: value }));
-			setFormErrors((prev) => ({ ...prev, [field]: '' }));
-		}
+		setFormData((prev) => ({
+			...prev,
+			[field]: value,
+		}));
+		setFormErrors((prev) => ({
+			...prev,
+			[field]: undefined,
+		}));
 	};
 
-	const validateForm = (): boolean => {
+	const validateForm = async (): Promise<boolean> => {
 		const errors: FormErrors = {};
 
 		if (!formData.senderAddress) {
@@ -169,6 +202,15 @@ export default function MergeMultiSigTransactionPage() {
 
 		if (!formData.password) {
 			errors.password = t('passwordRequired');
+		} else {
+			try {
+				const isValid = await verifyPassword(formData.password, passKey!, salt!);
+				if (!isValid) {
+					errors.password = t('incorrectPassword');
+				}
+			} catch (error) {
+				errors.password = t('passwordVerificationFailed');
+			}
 		}
 
 		setFormErrors(errors);
@@ -176,37 +218,51 @@ export default function MergeMultiSigTransactionPage() {
 	};
 
 	const handleSubmit = async () => {
-		if (!validateForm()) {
-			return;
-		}
-
-		const isPasswordValid = verifyPassword(formData.password, passKey, salt);
-		if (!isPasswordValid) {
-			setFormErrors((prev) => ({ ...prev, password: t('invalidPassword') }));
-			return;
-		}
-
-		setIsLoading(true);
-
 		try {
-			
-			Toast.show({
-				type: 'success',
-				text1: t('success'),
-				text2: t('transactionMergedSuccessfully'),
-				visibilityTime: 2000,
-			});
+			const isValid = await validateForm();
+			if (!isValid) return;
 
-			router.back();
-		} catch (error) {
+			setIsLoading(true);
+
+			try {
+				if (formData.asset === 'TBC') {
+					await createMultiSigTransaction_merge(formData.senderAddress, formData.password);
+				} else {
+					await createMultiSigTransaction_merge(
+						formData.senderAddress,
+						formData.password,
+						formData.asset,
+					);
+				}
+
+				Toast.show({
+					type: 'success',
+					text1: t('success'),
+					text2: t('mergeTransactionInitiated'),
+					visibilityTime: 3000,
+				});
+
+				await loadAssets(formData.senderAddress);
+				setFormData((prev) => ({ ...prev, password: '' }));
+				router.back();
+			} catch (error: any) {
+				Toast.show({
+					type: 'error',
+					text1: t('error'),
+					text2: error.message || t('mergeTransactionFailed'),
+					visibilityTime: 3000,
+				});
+			} finally {
+				setIsLoading(false);
+			}
+		} catch (error: any) {
+			setIsLoading(false);
 			Toast.show({
 				type: 'error',
 				text1: t('error'),
-				text2: error instanceof Error ? error.message : t('failedToMergeTransaction'),
+				text2: error.message || t('unknownError'),
 				visibilityTime: 2000,
 			});
-		} finally {
-			setIsLoading(false);
 		}
 	};
 
@@ -225,7 +281,7 @@ export default function MergeMultiSigTransactionPage() {
 					<View style={styles.labelRow}>
 						<Text style={styles.label}>{t('senderAddress')}</Text>
 						<TouchableOpacity onPress={() => setShowMultiSigAddressSelector(true)}>
-							<MaterialIcons name="menu-book" size={24} color={theme.colors.primary} />
+							<Ionicons name="book-outline" size={20} color="#333" />
 						</TouchableOpacity>
 					</View>
 					{formData.senderAddress && (
@@ -241,7 +297,20 @@ export default function MergeMultiSigTransactionPage() {
 				<View style={styles.inputGroup}>
 					<View style={styles.labelRow}>
 						<Text style={styles.label}>{t('asset')}</Text>
-						<TouchableOpacity onPress={() => setShowAssetSelector(true)}>
+						<TouchableOpacity
+							onPress={() => {
+								if (assets.length > 0) {
+									setShowAssetSelector(true);
+								} else {
+									Toast.show({
+										type: 'info',
+										text1: t('info'),
+										text2: t('noAssetsAvailable'),
+										visibilityTime: 2000,
+									});
+								}
+							}}
+						>
 							<MaterialIcons name="account-balance-wallet" size={24} color={theme.colors.primary} />
 						</TouchableOpacity>
 					</View>
@@ -257,6 +326,22 @@ export default function MergeMultiSigTransactionPage() {
 					)}
 					{formErrors.asset && <Text style={styles.errorText}>{formErrors.asset}</Text>}
 				</View>
+
+				{/* UTXO Count Display */}
+				{selectedAsset && (
+					<View style={styles.inputGroup}>
+						<View style={styles.labelRow}>
+							<Text style={styles.label}>{t('utxoCount')}</Text>
+						</View>
+						<View style={styles.selectedAssetWrapper}>
+							{loadingUtxoCount ? (
+								<ActivityIndicator size="small" color={theme.colors.primary} />
+							) : (
+								<Text style={styles.selectedAssetText}>{utxoCount !== null ? utxoCount : '-'}</Text>
+							)}
+						</View>
+					</View>
+				)}
 
 				<View style={styles.inputGroup}>
 					<View style={styles.labelRow}>
@@ -316,6 +401,12 @@ export default function MergeMultiSigTransactionPage() {
 }
 
 const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+		backgroundColor: '#fff',
+		padding: wp(4),
+		paddingTop: hp(3),
+	},
 	inputGroup: {
 		marginBottom: hp(2),
 	},
@@ -398,6 +489,26 @@ const styles = StyleSheet.create({
 		opacity: 0.6,
 	},
 	mergeButtonText: {
+		color: '#fff',
+		fontSize: hp(1.8),
+		fontWeight: '600',
+	},
+	addressBookButton: {
+		position: 'absolute',
+		right: wp(2),
+		padding: wp(2),
+	},
+	sendButton: {
+		backgroundColor: theme.colors.primary,
+		padding: wp(4),
+		borderRadius: 8,
+		alignItems: 'center',
+		marginTop: hp(2),
+	},
+	sendButtonDisabled: {
+		opacity: 0.6,
+	},
+	sendButtonText: {
 		color: '#fff',
 		fontSize: hp(1.8),
 		fontWeight: '600',

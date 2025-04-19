@@ -1,5 +1,9 @@
-import { StoredUtxo } from '@/types';
+import '@/shim';
+import * as contract from 'tbc-contract';
+import * as tbc from 'tbc-lib-js';
 import axios from 'axios';
+
+import { StoredUtxo } from '@/types';
 
 interface UTXOResponse {
 	tx_hash: string;
@@ -29,5 +33,37 @@ export async function fetchUTXOs(address: string): Promise<StoredUtxo[]> {
 		}));
 	} catch (error: any) {
 		throw new Error(error.message || 'Failed to fetch UTXOs');
+	}
+}
+
+export async function getUTXOsCount_multiSig(
+	address: string,
+	contractId?: string,
+): Promise<number> {
+	try {
+		const script_asm = contract.MultiSig.getMultiSigLockScript(address);
+		if (!contractId) {
+			const utxos = await contract.API.fetchUMTXOs(script_asm, 'mainnet');
+			return utxos.length;
+		} else {
+			const Token = new contract.FT(contractId);
+			const TokenInfo = await contract.API.fetchFtInfo(Token.contractTxid, 'mainnet');
+			Token.initialize(TokenInfo);
+			const hash = tbc.crypto.Hash.sha256ripemd160(
+				tbc.crypto.Hash.sha256(tbc.Script.fromASM(script_asm).toBuffer()),
+			).toString('hex');
+			const ftutxo_codeScript = contract.FT.buildFTtransferCode(Token.codeScript, hash)
+				.toBuffer()
+				.toString('hex');
+			const ftutxos = await contract.API.fetchFtUTXOS_multiSig(
+				Token.contractTxid,
+				hash,
+				ftutxo_codeScript,
+				'mainnet',
+			);
+			return ftutxos.length;
+		}
+	} catch (error: any) {
+		return 0;
 	}
 }

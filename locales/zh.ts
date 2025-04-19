@@ -597,4 +597,7 @@ export default {
 	mergeTransaction: '合并UTXO',
 	transactionMergedSuccessfully: 'UTXO合并成功',
 	failedToMergeTransaction: '合并UTXO失败',
+	mergeTransactionInitiated: '合并交易已发起',
+	mergeTransactionFailed: '合并交易失败',
+	utxoCount: 'UTXO数量',
 };

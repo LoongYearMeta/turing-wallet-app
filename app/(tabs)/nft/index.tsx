@@ -120,18 +120,14 @@ const CollectionsTab = () => {
 
 	useFocusEffect(
 		useCallback(() => {
-			loadCollections();
-		}, [loadCollections]),
+			if (disableCollection) {
+				setCollections([]);
+				setLoading(false);
+			} else {
+				loadCollections();
+			}
+		}, [loadCollections, disableCollection, accountType]),
 	);
-
-	useEffect(() => {
-		if (disableCollection) {
-			setCollections([]);
-			setLoading(false);
-		} else {
-			loadCollections();
-		}
-	}, [disableCollection, loadCollections, accountType]);
 
 	const handleRefresh = async () => {
 		try {
@@ -282,7 +278,7 @@ const CollectionsTab = () => {
 				columnWrapperStyle={styles.columnWrapper}
 				contentContainerStyle={[
 					styles.listContent,
-					filteredCollections.length === 0 && styles.emptyListContent
+					filteredCollections.length === 0 && styles.emptyListContent,
 				]}
 				showsVerticalScrollIndicator={false}
 				refreshing={refreshing}
@@ -348,18 +344,14 @@ const NFTsTab = () => {
 
 	useFocusEffect(
 		useCallback(() => {
-			loadNFTs();
-		}, [loadNFTs]),
+			if (disableNFT) {
+				setNfts([]);
+				setLoading(false);
+			} else {
+				loadNFTs();
+			}
+		}, [loadNFTs, disableNFT, accountType]),
 	);
-
-	useEffect(() => {
-		if (disableNFT) {
-			setNfts([]);
-			setLoading(false);
-		} else {
-			loadNFTs();
-		}
-	}, [disableNFT, loadNFTs, accountType]);
 
 	const handleRefresh = async () => {
 		try {
@@ -492,7 +484,7 @@ const NFTsTab = () => {
 				columnWrapperStyle={styles.columnWrapper}
 				contentContainerStyle={[
 					styles.listContent,
-					filteredNFTs.length === 0 && styles.emptyListContent
+					filteredNFTs.length === 0 && styles.emptyListContent,
 				]}
 				showsVerticalScrollIndicator={false}
 				refreshing={refreshing}

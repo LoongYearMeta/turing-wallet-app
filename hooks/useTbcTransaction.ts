@@ -153,7 +153,7 @@ export const useTbcTransaction = () => {
 				{ txraw, amounts },
 				privateKey,
 			);
-			return { txraw, sigs };
+			return { multiTxraw: { txraw, amounts }, sigs };
 		} catch (error: any) {
 			throw new Error(error.message);
 		}
@@ -220,7 +220,7 @@ export const useTbcTransaction = () => {
 
 				const { walletWif } = retrieveKeys(password, encryptedKeys);
 				const privateKey = tbc.PrivateKey.fromString(walletWif);
-				const utxos = await getUTXOs(address_from, 0.51);
+				const utxos = await getUTXOs(address_from, 0.501);
 				const txraw = contract.MultiSig.createMultiSigWallet(
 					address_from,
 					pubKeys,
@@ -247,7 +247,7 @@ export const useTbcTransaction = () => {
 						const newUtxos = await fetchUTXOs(address_from);
 						await updateCurrentAccountUtxos(newUtxos, address_from);
 
-						const utxos_new = await getUTXOs(address_from, 0.51);
+						const utxos_new = await getUTXOs(address_from, 0.501);
 						const newTxraw = contract.MultiSig.createMultiSigWallet(
 							address_from,
 							pubKeys,

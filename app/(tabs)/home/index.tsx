@@ -48,19 +48,6 @@ export default function HomePage() {
 	const [tokenToPin, setTokenToPin] = useState<FT | FTPublic | null>(null);
 	const [refreshing, setRefreshing] = useState(false);
 
-	useEffect(() => {
-		if (disableTokens) {
-			setOwnedTokens([]);
-			setAddedTokens([]);
-		} else {
-			if (activeTab === 'owned') {
-				loadOwnedTokens();
-			} else {
-				loadAddedTokens();
-			}
-		}
-	}, [disableTokens, accountType, activeTab]);
-
 	useFocusEffect(
 		useCallback(() => {
 			if (disableTokens) {
@@ -74,7 +61,7 @@ export default function HomePage() {
 			} else {
 				loadAddedTokens();
 			}
-		}, [activeTab, disableTokens]),
+		}, [activeTab, disableTokens, accountType]),
 	);
 
 	const loadOwnedTokens = async () => {

@@ -1,4 +1,4 @@
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState, useCallback } from 'react';
 import {
@@ -304,7 +304,7 @@ export default function InitiateMultiSigTransactionPage() {
 					<View style={styles.labelRow}>
 						<Text style={styles.label}>{t('senderAddress')}</Text>
 						<TouchableOpacity onPress={() => setShowMultiSigAddressSelector(true)}>
-							<MaterialIcons name="menu-book" size={24} color={theme.colors.primary} />
+							<Ionicons name="book-outline" size={20} color="#333" />
 						</TouchableOpacity>
 					</View>
 					{formData.senderAddress && (
@@ -327,7 +327,10 @@ export default function InitiateMultiSigTransactionPage() {
 					{selectedAsset && (
 						<View style={styles.selectedAssetWrapper}>
 							<Text style={styles.selectedAssetText}>
-								{selectedAsset.label}: {selectedAsset.value === 'TBC' ? formatBalance_tbc(selectedAsset.balance) : formatBalance_token(selectedAsset.balance)}
+								{selectedAsset.label}:{' '}
+								{selectedAsset.value === 'TBC'
+									? formatBalance_tbc(selectedAsset.balance)
+									: formatBalance_token(selectedAsset.balance)}
 							</Text>
 						</View>
 					)}
@@ -338,7 +341,7 @@ export default function InitiateMultiSigTransactionPage() {
 					<View style={styles.labelRow}>
 						<Text style={styles.label}>{t('receiverAddress')}</Text>
 						<TouchableOpacity onPress={() => setShowAddressSelector(true)}>
-							<MaterialIcons name="contacts" size={24} color="#666" />
+							<Ionicons name="book-outline" size={20} color="#333" />
 						</TouchableOpacity>
 					</View>
 					<View style={styles.inputWrapper}>

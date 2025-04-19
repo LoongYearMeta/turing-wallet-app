@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from 'react-i18next';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { ScreenWrapper } from '@/components/ui/screen-wrapper';
 import { hp, wp } from '@/lib/common';
@@ -60,11 +61,13 @@ export default function MultiSigTransactionsPage() {
 
 	const pubKey = getCurrentAccountTbcPubKey();
 
-	useEffect(() => {
-		if (pubKey) {
-			fetchTransactions(pubKey, 0);
-		}
-	}, [pubKey]);
+	useFocusEffect(
+		useCallback(() => {
+			if (pubKey) {
+				fetchTransactions(pubKey, 0);
+			}
+		}, [pubKey, fetchTransactions]),
+	);
 
 	const handleLoadMore = useCallback(() => {
 		const currentTotal =
@@ -152,7 +155,7 @@ export default function MultiSigTransactionsPage() {
 				Toast.show({
 					type: 'success',
 					text1: 'Success',
-					text2: 'Transaction signed successfully',
+					text2: t('transactionSignedSuccessfully'),
 					position: 'top',
 					visibilityTime: 2000,
 				});
@@ -164,7 +167,13 @@ export default function MultiSigTransactionsPage() {
 			setPasswordModalVisible(false);
 			setSelectedTransaction(null);
 		} catch (error) {
-			throw new Error('Failed to sign transaction');
+			Toast.show({
+				type: 'error',
+				text1: 'Error',
+				text2: t('failedToSignTransaction'),
+				position: 'top',
+				visibilityTime: 2000,
+			});
 		} finally {
 			setPasswordLoading(false);
 		}
